@@ -15,14 +15,16 @@ import javafx.scene.shape.Circle;
 
 public class Main extends Application {
 	boolean goUp, goDown, goLeft, goRight;
-	Circle Pacman = new Circle(10, Color.YELLOW);
+	//Circle player = new Circle(10, Color.YELLOW);
+	Player player = new Player(new Circle(10, Color.YELLOW), 1);
+	
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-			Group level = new Group(Pacman);
+			Group level = new Group(player.getModel());
 			Scene scene = new Scene(level,800,800,Color.BLACK);
 
-			movePacmanTo(400, 400);
+			player.moveTo(400, 400);
 
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
@@ -64,12 +66,12 @@ public class Main extends Application {
 				public void handle(long now) {
 					int dx = 0, dy = 0;
 
-					if(goUp) dy -= 1;
-					if(goDown) dy += 1;
-					if(goLeft) dx -= 1;
-					if(goRight) dx += 1;
+					if(goUp) dy -= player.getSpeed();
+					if(goDown) dy += player.getSpeed();
+					if(goLeft) dx -= player.getSpeed();
+					if(goRight) dx += player.getSpeed();
 
-					movePacBy(dx, dy);
+					player.moveBy(dx, dy);
 				}
 			};
 
@@ -78,34 +80,6 @@ public class Main extends Application {
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void movePacBy(int dx, int dy) {
-		if(dx == 0 && dy == 0) return;
-
-		final double cx = Pacman.getBoundsInLocal().getWidth()/2;
-		final double cy = Pacman.getBoundsInLocal().getHeight()/2;
-
-		double x = cx + Pacman.getLayoutX() + dx;
-		double y = cy + Pacman.getLayoutY() + dy;
-
-		movePacmanTo(x,y);
-	};
-
-	private void movePacmanTo(double x, double y) {
-		final double cx = Pacman.getBoundsInLocal().getWidth()/2;
-		final double cy = Pacman.getBoundsInLocal().getHeight()/2;
-
-		System.out.println("Xpos is: " + x);
-		System.out.println("ypos is:" + y);
-
-		if((x - cx >= 0) && (x + cx <= 800) && (y - cy >= 0) && (y + cy <= 800)) {
-			Pacman.relocate(x-2*cx, y-cy);
-		}
-
-		System.out.println("UpdatedXpos is: " + x);
-		System.out.println("Updatedypos is:" + y);
-
 	}
 
 
