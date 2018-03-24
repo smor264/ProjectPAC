@@ -1,5 +1,6 @@
 package application;
 
+
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
@@ -14,9 +15,17 @@ import javafx.scene.shape.Circle;
 
 
 public class Main extends Application {
-	boolean goUp, goDown, goLeft, goRight;
-	//Circle player = new Circle(10, Color.YELLOW);
+	
+	private enum Direction {
+		up,
+		down,
+		left,
+		right,
+	}
+	
 	Player player = new Player(new Circle(10, Color.YELLOW), 1);
+	SetArrayList<Direction> directionArray = new SetArrayList<Direction>();
+
 	
 	@Override
 	public void start(Stage primaryStage) {
@@ -30,12 +39,23 @@ public class Main extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
-					case UP: goUp = true; break;
-					case DOWN: goDown = true; break;
-					case LEFT: goLeft = true; break;
-					case RIGHT: goRight = true; break;
-					default:
-						break;
+						case UP: {
+							directionArray.append(Direction.up);
+							break;
+						}
+						case DOWN: {
+							directionArray.append(Direction.down);
+							break;
+						}
+						case LEFT: {
+							directionArray.append(Direction.left);
+							break;
+						}
+						case RIGHT: {
+							directionArray.append(Direction.right);
+							break;
+						}
+						default: break;
 					}
 				}
 
@@ -45,12 +65,23 @@ public class Main extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
-					case UP: goUp = false; break;
-					case DOWN: goDown = false; break;
-					case LEFT: goLeft = false; break;
-					case RIGHT: goRight = false; break;
-					default:
+					case UP: { 
+						directionArray.remove(Direction.up); 
 						break;
+						}
+					case DOWN: {
+						directionArray.remove(Direction.down);
+						break;
+						}
+					case LEFT: {
+						directionArray.remove(Direction.left);
+						break;
+						}
+					case RIGHT: {
+						directionArray.remove(Direction.right);
+						break;
+						}
+					default: break;
 					}
 				}
 
@@ -66,11 +97,18 @@ public class Main extends Application {
 				public void handle(long now) {
 					int dx = 0, dy = 0;
 
-					if(goUp) dy -= player.getSpeed();
-					if(goDown) dy += player.getSpeed();
-					if(goLeft) dx -= player.getSpeed();
-					if(goRight) dx += player.getSpeed();
-
+					if(directionArray.getTop() == Direction.up) {
+						dy -= player.getSpeed();
+					}
+					if(directionArray.getTop() == Direction.down) {
+						dy += player.getSpeed();
+					}
+					if(directionArray.getTop() == Direction.left) {
+						dx -= player.getSpeed();
+					}
+					if(directionArray.getTop() == Direction.right) {
+						dx += player.getSpeed();
+					}
 					player.moveBy(dx, dy);
 				}
 			};

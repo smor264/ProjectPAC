@@ -30,15 +30,8 @@ public abstract class LevelObject {
 		final double cx = model.getBoundsInLocal().getWidth()/2;
 		final double cy = model.getBoundsInLocal().getHeight()/2;
 
-		System.out.println("Xpos is: " + x);
-		System.out.println("ypos is:" + y);
-
 		if((x - 2*cx >= 0) && (x <= 800) && (y - 2*cy >= 0) && (y <= 800)) {
 			model.relocate(x-2*cx, y-2*cy);
 		}
-
-		System.out.println("UpdatedXpos is: " + x);
-		System.out.println("Updatedypos is:" + y);
-
 	}
 }
