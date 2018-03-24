@@ -4,7 +4,11 @@ import javafx.scene.shape.Shape;
 
 public abstract class LevelObject {
 	
-	private Shape model;
+	protected Shape model;
+	
+	public LevelObject() {
+		
+	}
 	
 	public LevelObject(Shape model) {
 		this.model = model;

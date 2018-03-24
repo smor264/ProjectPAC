@@ -18,7 +18,7 @@ public class Main extends Application {
 	public static int windowWidth = 1280;
 	public static int windowHeight = 720;
 	public static int[] centre = {windowWidth/2, windowHeight/2};
-	private static enum Direction {
+	public static enum Direction {
 		up,
 		down,
 		left,
@@ -27,16 +27,20 @@ public class Main extends Application {
 	
 	Player player = new Player(new Circle(10, Color.YELLOW), 2);
 	SetArrayList<Direction> directionArray = new SetArrayList<Direction>();
-
+	
+	Wall wall = new Wall(Wall.WallType.end, Direction.up);
+	
 	
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			Group level = new Group(player.getModel());
-			Scene scene = new Scene(level, windowWidth, windowHeight, Color.BLACK);
+			level.getChildren().add(wall.getModel());
+			Scene scene = new Scene(level, windowWidth, windowHeight, Color.GREY);
 
 			player.moveTo(centre[0], centre[1]);
-
+			wall.moveTo(centre[0],centre[1]);
+			
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
