@@ -30,7 +30,7 @@ public abstract class LevelObject {
 		final double cx = model.getBoundsInLocal().getWidth()/2;
 		final double cy = model.getBoundsInLocal().getHeight()/2;
 
-		if((x - 2*cx >= 0) && (x <= 800) && (y - 2*cy >= 0) && (y <= 800)) {
+		if((x - 2*cx >= 0) && (x <= Main.windowWidth) && (y - 2*cy >= 0) && (y <= Main.windowHeight)) {
 			model.relocate(x-2*cx, y-2*cy);
 		}
 	}

@@ -6,12 +6,14 @@ import java.util.ArrayList;
  * 1) checks for uniqueness of elements.
  * 2) can only append to the end of the list.
  */
+
 public class SetArrayList<T> {
-	ArrayList<T> array = new ArrayList<T>();
+	ArrayList<T> array;
 	
 	public SetArrayList()  {
-		// TODO Auto-generated constructor stub
+		array = new ArrayList<T>();
 	}
+	
 	public boolean append(T element) {
 		if (array.contains(element)) {
 			return false;
@@ -20,12 +22,14 @@ public class SetArrayList<T> {
 			return array.add(element);
 		}
 	}
+	
 	public void remove(T element) {
 		int index = array.indexOf(element);
 		if (index >= 0) {
 			array.remove(index);
 		}
 	}
+	
 	public T getTop() {
 		if (array.size() == 0) {
 			return null;
@@ -34,6 +38,7 @@ public class SetArrayList<T> {
 			return array.get(array.size() - 1);
 		}
 	}
+	
 	public int size() {
 		return array.size();
 	}

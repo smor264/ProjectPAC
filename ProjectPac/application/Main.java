@@ -15,15 +15,17 @@ import javafx.scene.shape.Circle;
 
 
 public class Main extends Application {
-	
-	private enum Direction {
+	public static int windowWidth = 1280;
+	public static int windowHeight = 720;
+	public static int[] centre = {windowWidth/2, windowHeight/2};
+	private static enum Direction {
 		up,
 		down,
 		left,
 		right,
 	}
 	
-	Player player = new Player(new Circle(10, Color.YELLOW), 1);
+	Player player = new Player(new Circle(10, Color.YELLOW), 2);
 	SetArrayList<Direction> directionArray = new SetArrayList<Direction>();
 
 	
@@ -31,9 +33,9 @@ public class Main extends Application {
 	public void start(Stage primaryStage) {
 		try {
 			Group level = new Group(player.getModel());
-			Scene scene = new Scene(level,800,800,Color.BLACK);
+			Scene scene = new Scene(level, windowWidth, windowHeight, Color.BLACK);
 
-			player.moveTo(400, 400);
+			player.moveTo(centre[0], centre[1]);
 
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
