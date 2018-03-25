@@ -7,14 +7,16 @@ import javafx.scene.shape.Polygon;
 
 
 public class Wall extends LevelObject{
+
 	
 	public static enum WallType {
+		single,
 		end,
 		straight,
 		corner,
 		tee,
 		cross,
-		full,		
+		full,
 	}
 
 	WallType walltype;
@@ -86,7 +88,6 @@ public class Wall extends LevelObject{
 			case full:{
 				Rectangle shape = new Rectangle(20,20, Color.BLUE);
 				super.model = shape;
-				System.out.println("Make a square!");
 				break;
 			}
 			default:{return;}

@@ -1,18 +1,24 @@
 package application;
 
 public class Level {
-	private int[][] positionArray = {{1,1,1,1,1,1,1,1,1,1},
-								     {1,0,0,0,0,0,0,0,0,1},
-								     {1,0,0,0,0,0,0,0,0,1},
-								     {1,0,0,0,0,0,0,0,0,1},
+	private int[][] positionArray = new int[Main.levelWidth][Main.levelHeight];
+	
+	public Level() {
+		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1},
+									 {1,0,0,0,0,0,0,0,0,1},
+									 {1,0,0,0,0,0,0,0,0,1},
+								     {1,0,0,2,0,0,0,0,0,1},
 								     {1,0,0,0,0,0,0,0,0,1},
 								     {1,0,0,0,0,0,0,0,0,1},
 								     {1,0,0,0,0,0,0,0,0,1},
 								     {1,0,0,0,0,0,0,0,0,1},
 								     {1,0,0,0,0,0,0,0,0,1},
 								     {1,1,1,1,1,1,1,1,1,1}};
-	public Level() {
-		// TODO Auto-generated constructor stub
 	}
-
+	public Level(int[][] array) {
+		positionArray = array;
+	}
+	public int [][] getArray() {
+		return positionArray;
+	}
 }
