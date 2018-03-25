@@ -22,6 +22,8 @@ public class Main extends Application {
 	public static int[] centre = {windowWidth/2, windowHeight/2};
 	public static int levelWidth = 10;
 	public static int levelHeight = 10;
+	public static int levelOffsetX = 100;
+	public static int levelOffsetY = 100;
 	public static enum Direction {
 		up,
 		down,
@@ -40,16 +42,17 @@ public class Main extends Application {
 	
 	Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY);
 	Level test = new Level();
+	Direction prevDirection;
 	
 	
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
-		System.out.println(array.length);
-		System.out.println(array[0].length);
+		//System.out.println(array.length);
+		//System.out.println(array[0].length);
 		boolean playerExists = false;
-		for (int i = 0; i < array[0].length; i++) {
-			for (int j = 0; j< array.length; j++) {
-				if (array[i][j] == 1) { // If wall exists
+		for (int i = 0; i < array.length; i++) {
+			for (int j = 0; j < array[0].length; j++) {
+				if (array[j][i] == 1) { // If wall exists
 					// Actual code
 					/*ArrayList<Object> wallType = new ArrayList<Object>();
 					wallType = determineWallType(array,i,j);
@@ -62,17 +65,19 @@ public class Main extends Application {
 					
 					// Test code
 					Wall wall = new Wall(Wall.WallType.full, Direction.up); // Make all walls full type
-					System.out.println("Making a wall at x pos:" + (10*i+100) + ", and ypos:" + (10*j+100));
-					wall.moveTo(LevelObject.width*i+100, LevelObject.height*j+100);
+					System.out.println("Making a wall at ypos:" + (LevelObject.height*i+levelOffsetY) + ", and xpos:" + (LevelObject.width*j+levelOffsetX));
+					wall.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
 					currentLevel.getChildren().add(wall.getModel());
 				}
-				else if (array[i][j] == 2) { // player
+				else if (array[j][i] == 2) { // player
 					if (playerExists){
 						throw new UnsupportedOperationException();
 					}
 					else {
-						player.moveTo(LevelObject.width*i + 100, LevelObject.height*j + 100);
+						player.moveTo(LevelObject.height*i + levelOffsetY, LevelObject.width*j + levelOffsetX);
 						playerExists = true;
+						player.setPrevPos(i,j);
+						System.out.println("Moving player to" + (LevelObject.height*i+levelOffsetY) + ", " + (LevelObject.width*j+levelOffsetX));
 					}
 				}
 			}
@@ -125,19 +130,55 @@ public class Main extends Application {
 				@Override
 				public void handle(long now) {
 					int dx = 0, dy = 0;
+					//System.out.println( (player.getPosition()[0] ) +", " + (player.getPosition()[1]) );
+					//System.out.println(directionArray.getTop());
+					if ( (player.getPosition()[0] % LevelObject.width == 0) && (player.getPosition()[1] % LevelObject.height == 0) ) {
+						int xpos = (int)(player.getPosition()[0] - levelOffsetX) / LevelObject.width;
+						int ypos = (int)(player.getPosition()[1] - levelOffsetY) / LevelObject.height;
+						
+						levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
+						levelObjectArray[xpos][ypos] = player; // set new player position in array
+						player.setPrevPos(xpos, ypos);
+						
+						for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
+							if((directionArray.getNFromTop(n) == Direction.up) && (test.getArray()[ypos-1][xpos] != 1)) {
+								dy = -(int)player.getSpeed();
+								prevDirection = Direction.up;
+								break;
+							}
+							else if(directionArray.getNFromTop(n) == Direction.down  && (test.getArray()[ypos+1][xpos] != 1)) {
+								dy = (int)player.getSpeed();
+								prevDirection = Direction.down;
+								break;
+							}
+							else if(directionArray.getNFromTop(n) == Direction.left && (test.getArray()[ypos][xpos-1] != 1)) {
+								dx = -(int)player.getSpeed();
+								prevDirection = Direction.left;
+								break;
+							}
+							else if(directionArray.getNFromTop(n) == Direction.right && (test.getArray()[ypos][xpos+1] != 1)) {
+								dx = (int)player.getSpeed();
+								prevDirection = Direction.right;
+								break;
+							}
+						}
 
-					if(directionArray.getTop() == Direction.up) {
-						dy = -(int)player.getSpeed();
 					}
-					else if(directionArray.getTop() == Direction.down) {
-						dy = (int)player.getSpeed();
+					else {
+						if (prevDirection == Direction.up) {
+							dy = -(int)player.getSpeed();
+						}
+						else if (prevDirection == Direction.down) {
+							dy = (int)player.getSpeed();
+						}
+						else if (prevDirection == Direction.left) {
+							dx = -(int)player.getSpeed();
+						}
+						else if (prevDirection == Direction.right) {
+							 dx = (int)player.getSpeed();
+						}
 					}
-					else if(directionArray.getTop() == Direction.left) {
-						dx = -(int)player.getSpeed();
-					}
-					else if(directionArray.getTop() == Direction.right) {
-						dx = (int)player.getSpeed();
-					}
+					//System.out.println(Integer.toString(dx) + ", " + Integer.toString(dy));
 					player.moveBy(dx, dy);
 				}
 			};
