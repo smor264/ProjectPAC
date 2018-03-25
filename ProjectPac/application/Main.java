@@ -72,6 +72,7 @@ public class Main extends Application {
 					}
 					else {
 						player.moveTo(LevelObject.width*i + 100, LevelObject.height*j + 100);
+						playerExists = true;
 					}
 				}
 			}
