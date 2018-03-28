@@ -6,7 +6,7 @@ public class Character extends LevelObject {
 
 	private double speed = 1;
 	private int[] prevPos; // Previous index in the level array
-	
+	Main.Direction prevDirection; // Previous direction the character was moving
 	public Character(Shape model, double speed) {
 		super(model);
 		this.speed  = speed;
