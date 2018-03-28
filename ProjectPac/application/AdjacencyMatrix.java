@@ -1,7 +1,11 @@
 package application;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+
 /*
  * AdjacencyMatrix creates a representation of a graph from a 2D array of objects
  * Used for calculating paths through the maze
@@ -60,6 +64,16 @@ public class AdjacencyMatrix{
 			return true;
 		}
 		else {return false;}
+	}
+	public ArrayList<Main.Direction> findDijkstraPath(Integer[] source, Integer destination){
+		ArrayList<Main.Direction> path  = new ArrayList<Main.Direction>();
+		int numElements = map.size() - 1; 
+		Queue<Integer> unexplored = new LinkedList<Integer>();
+		Queue<Integer> explored = new LinkedList<Integer>();
+		
+		
+		
+		return path;
 	}
 	
 }
