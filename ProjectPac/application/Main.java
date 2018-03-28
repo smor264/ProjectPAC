@@ -30,21 +30,21 @@ public class Main extends Application {
 		left,
 		right,
 	}
-	
+
 	LevelObject[][] levelObjectArray = new LevelObject[levelWidth][levelHeight];
-	
+
 	Player player = new Player(new Circle(10, Color.YELLOW), 2);
 	SetArrayList<Direction> directionArray = new SetArrayList<Direction>();
-	
+
 	//Wall wall = new Wall(Wall.WallType.end, Direction.up);
-	
+
 	Group currentLevel = new Group(player.getModel());
-	
+
 	Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY);
 	Level test = new Level();
 	Direction prevDirection;
-	
-	
+
+
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
 		//System.out.println(array.length);
@@ -54,20 +54,30 @@ public class Main extends Application {
 			for (int j = 0; j < array[0].length; j++) {
 				if (array[j][i] == 1) { // If wall exists
 					// Actual code
-					/*ArrayList<Object> wallType = new ArrayList<Object>();
+
+					ArrayList<Object> wallType = new ArrayList<Object>();
 					wallType = determineWallType(array,i,j);
-					
+
+					/*
 					Wall wall = new Wall((Wall.WallType)wallType.get(0), (Direction)wallType.get(1));
 					levelObjectArray[i][j] = wall;
-					
-					wall.moveTo(10*i+10, 10*j+10);
-					currentLevel.getChildren().add(wall.getModel());*/
-					
+
+					wall.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
+					currentLevel.getChildren().add(wall.getModel());
+					*/
+
 					// Test code
-					Wall wall = new Wall(Wall.WallType.full, Direction.up); // Make all walls full type
+					System.out.println(java.util.Arrays.asList(wallType.get(0), wallType.get(1)));
+					Wall wall = new Wall((Wall.WallType) wallType.get(0),(Direction) wallType.get(1)); // Make all walls full type
+
+					//Wall wall = new Wall(Wall.WallType.tee, Direction.left);
+
 					System.out.println("Making a wall at ypos:" + (LevelObject.height*i+levelOffsetY) + ", and xpos:" + (LevelObject.width*j+levelOffsetX));
 					wall.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
 					currentLevel.getChildren().add(wall.getModel());
+
+					System.out.println("Wall constructed and placed");
+
 				}
 				else if (array[j][i] == 2) { // player
 					if (playerExists){
@@ -83,16 +93,16 @@ public class Main extends Application {
 			}
 		}
 	}
-	
 
-	
+
+
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			initialiseLevel(test);
 			//player.moveTo(centre[0], centre[1]);
 			//wall.moveTo(centre[0],centre[1]);
-			
+
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
@@ -135,11 +145,11 @@ public class Main extends Application {
 					if ( (player.getPosition()[0] % LevelObject.width == 0) && (player.getPosition()[1] % LevelObject.height == 0) ) {
 						int xpos = (int)(player.getPosition()[0] - levelOffsetX) / LevelObject.width;
 						int ypos = (int)(player.getPosition()[1] - levelOffsetY) / LevelObject.height;
-						
+
 						levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
 						levelObjectArray[xpos][ypos] = player; // set new player position in array
 						player.setPrevPos(xpos, ypos);
-						
+
 						for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
 							if((directionArray.getNFromTop(n) == Direction.up) && (test.getArray()[ypos-1][xpos] != 1)) {
 								dy = -(int)player.getSpeed();
@@ -194,38 +204,38 @@ public class Main extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
-	
+
 	private ArrayList<Object> determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
-			if (array[i-1][j] == 1) {
+			if (array[j-1][i] == 1) {
 				northNeighbour = true;
 			}
 		}
 		catch(ArrayIndexOutOfBoundsException e){;}
 		try {
-			if (array[i+1][j] == 1) {
+			if (array[j+1][i] == 1) {
 				southNeighbour = true;
 			}
 		}
 		catch(ArrayIndexOutOfBoundsException e){;}
 		try {
-			if (array[i][j-1] == 1) {
+			if (array[j][i-1] == 1) {
 				leftNeighbour = true;
 			}
 		}
 		catch(ArrayIndexOutOfBoundsException e){;}
-		
+
 		try {
-			if (array[i][j+1] == 1) {
+			if (array[j][i+1] == 1) {
 				rightNeighbour = true;
 			}
 		}
 		catch(ArrayIndexOutOfBoundsException e){;}
-		
+
 		int numNeighbours = (northNeighbour ? 1:0) + (southNeighbour ? 1:0) + (leftNeighbour ? 1:0) + (rightNeighbour ? 1:0);
 		ArrayList<Object> type = new ArrayList<Object>();
-		
+
 		switch(numNeighbours) {
 			case (4):{
 				type.add(Wall.WallType.cross);
@@ -263,10 +273,10 @@ public class Main extends Application {
 						type.add(Direction.up);
 					}
 					else if (leftNeighbour && southNeighbour) {
-						type.add(Direction.right);
+						type.add(Direction.down);
 					}
 					else if (northNeighbour && leftNeighbour) {
-						type.add(Direction.down);
+						type.add(Direction.right);
 					}
 					else {
 						type.add(Direction.left);
