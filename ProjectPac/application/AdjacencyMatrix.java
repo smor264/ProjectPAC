@@ -1,7 +1,11 @@
 package application;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+
 /*
  * AdjacencyMatrix creates a representation of a graph from a 2D array of objects
  * Used for calculating paths through the maze
@@ -60,6 +64,55 @@ public class AdjacencyMatrix{
 			return true;
 		}
 		else {return false;}
+	}
+	
+	public boolean isConnected(Integer source, Integer destination) {
+		if (matrix[source][destination] == 1) {
+			return true;
+		}
+		else {return false;}
+	}
+	
+	public ArrayList<Main.Direction> findDijkstraPath(Integer[] source, Integer[] destination){
+		int sourceIndex = map.get(Arrays.toString(source));
+		int destinationIndex = map.get(Arrays.toString(destination));
+		int currentNode;
+		ArrayList<Main.Direction> path  = new ArrayList<Main.Direction>();
+		int numElements = map.size() - 1; 
+		Queue<Integer> unexplored = new LinkedList<Integer>(); // Vertices remaining
+		Queue<Integer> explored = new LinkedList<Integer>(); // Vertices already explored
+		int[] parent = new int[numElements]; // Previously visited node in path
+		
+		
+		double[] shortestDistance = new double[numElements]; //Currently known shortest distance form source to node
+		for (int i = 0; i < shortestDistance.length; i++){ //Initialise shortest distance array
+			if (i == (double)map.get(Arrays.toString(source))){
+				shortestDistance[i] = 0.0; // If this is the node we start at, it is distance zero
+			}
+			else {
+				shortestDistance[i] = Double.POSITIVE_INFINITY;
+			}
+		}
+		unexplored.add(sourceIndex);
+		while (!unexplored.isEmpty()){
+			currentNode = unexplored.poll();
+			
+			explored.add(currentNode);
+			for (int testNode = 0; testNode < numElements; testNode++){
+				if (isConnected(source, destination) && explored.contains(testNode)){
+					if (shortestDistance[testNode] > shortestDistance[currentNode] + 1){
+						shortestDistance[testNode] = shortestDistance[currentNode] + 1;
+						parent[testNode] = currentNode;
+					}
+					if(!unexplored.contains(testNode)){
+						unexplored.add(testNode);
+					}
+				}
+			}
+		}
+		int currentParent = destinationIndex;
+		// TO BE CONTINUED
+		return path;
 	}
 	
 }
