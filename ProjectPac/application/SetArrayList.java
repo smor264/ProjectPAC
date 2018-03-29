@@ -3,7 +3,7 @@ package application;
 import java.util.ArrayList;
 /*
  * SetArrayList is an ArrayList that:
- * 1) checks for uniqueness of elements.
+ * 1) checks for uniqueness of elements before adding.
  * 2) can only append to the end of the list.
  */
 
@@ -36,6 +36,14 @@ public class SetArrayList<T> {
 		}
 		else {
 			return array.get(array.size() - 1);
+		}
+	}
+	public T getNFromTop(int n) {
+		if (array.size() == 0) {
+			return null;
+		}
+		else {
+			return array.get(array.size() - 1 - n);
 		}
 	}
 	
