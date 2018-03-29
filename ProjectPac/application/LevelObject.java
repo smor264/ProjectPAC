@@ -3,25 +3,25 @@ package application;
 import javafx.scene.shape.Shape;
 
 public abstract class LevelObject {
-	public static final int width = 20;
-	public static final int height = 20;
+	public int width = 20;
+	public int height = 20;
 	protected Shape model;
-	
+
 	public LevelObject() {
-		
+
 	}
-	
+
 	public LevelObject(Shape model) {
 		this.model = model;
 	}
-	
+
 	public Shape getModel() {
 		return model;
 	}
 	public double[] getPosition() {
 		return (new double[] {model.getLayoutX()+ width/2, model.getLayoutY() + height/2});
 	}
-	
+
 	public void moveBy(int dx, int dy) {
 		if(dx == 0 && dy == 0) return;
 

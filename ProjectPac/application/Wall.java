@@ -136,7 +136,6 @@ public class Wall extends LevelObject{
 						shape.setFill(Color.BLUE);
 						shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0,-10.0, 5.0,-5.0, 10.0, -5.0, 10.0, 5.0, -5.0, 5.0, -5.0,10.0,-5.0,5.0});
 						super.model = shape;
-						System.out.println("Hello from left corner creation!");
 						break;
 					}
 					case right:{

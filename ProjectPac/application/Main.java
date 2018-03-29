@@ -8,10 +8,8 @@ import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.stage.Stage;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
@@ -22,6 +20,7 @@ public class Main extends Application {
 	public static int[] centre = {windowWidth/2, windowHeight/2};
 	public static int levelWidth = 10;
 	public static int levelHeight = 10;
+	public static int gridSquareSize = 20;
 	public static int levelOffsetX = 100;
 	public static int levelOffsetY = 100;
 	public static enum Direction {
@@ -36,12 +35,12 @@ public class Main extends Application {
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 
-	private AdjacencyMatrix adjMatrix; 
+	private AdjacencyMatrix adjMatrix;
 	private Group currentLevel = new Group(player.getModel());
 	private Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();
-	
-	
+
+
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
 		//System.out.println(array.length);
@@ -64,16 +63,16 @@ public class Main extends Application {
 					*/
 
 					// Test code
-					System.out.println(java.util.Arrays.asList(wallType.get(0), wallType.get(1)));
+					//System.out.println(java.util.Arrays.asList(wallType.get(0), wallType.get(1)));
 					Wall wall = new Wall((Wall.WallType) wallType.get(0),(Direction) wallType.get(1)); // Make all walls full type
 					levelObjectArray[j][i] = wall;
 					//Wall wall = new Wall(Wall.WallType.tee, Direction.left);
 
-					System.out.println("Making a wall at ypos:" + (LevelObject.height*i+levelOffsetY) + ", and xpos:" + (LevelObject.width*j+levelOffsetX));
-					wall.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
+					//System.out.println("Making a wall at ypos:" + (LevelObject.height*i+levelOffsetY) + ", and xpos:" + (LevelObject.width*j+levelOffsetX));
+					wall.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
 					currentLevel.getChildren().add(wall.getModel());
 
-					System.out.println("Wall constructed and placed");
+					//System.out.println("Wall constructed and placed");
 
 				}
 				else if (array[j][i] == 2) { // player
@@ -81,35 +80,41 @@ public class Main extends Application {
 						throw new UnsupportedOperationException();
 					}
 					else {
-						player.moveTo(LevelObject.height*i + levelOffsetY, LevelObject.width*j + levelOffsetX);
+						player.moveTo(gridSquareSize*i + levelOffsetY, gridSquareSize*j + levelOffsetX);
 						playerExists = true;
 						player.setPrevPos(i,j);
-						System.out.println("Moving player to" + (LevelObject.height*i+levelOffsetY) + ", " + (LevelObject.width*j+levelOffsetX));
+						System.out.println("Moving player to" + (gridSquareSize*i+levelOffsetY) + ", " + (gridSquareSize*j+levelOffsetX));
 						levelObjectArray[j][i] = player;
 					}
 				}
 				else if (array[j][i] == 3) { //Enemy
 					Enemy enemy = new Enemy(1, Color.RED);
-					enemy.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
+					enemy.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
 					currentLevel.getChildren().add(enemy.getModel());
 					enemyList.add(enemy);
 					enemy.setPrevPos(i,j);
 					levelObjectArray[j][i] = enemy;
 				}
+				else if(array[j][i] == 4 || array[j][i] == 5 || array[j][i] == 6) {
+					PickUp pickUp = new PickUp(array[j][i]);
+					pickUp.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
+					currentLevel.getChildren().add(pickUp.getModel());
+					levelObjectArray[j][i] = pickUp;
+				}
 			}
 		}
 	}
-	
-	
-	
+
+
+
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-			
+
 			initialiseLevel(test);
-			
+
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
-			
+
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
@@ -146,13 +151,13 @@ public class Main extends Application {
 			AnimationTimer timer = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
-					
+
 					int[] delta = {0,0};
 					delta = calculatePlayerMovement();
 					player.moveBy(delta[0], delta[1]);
-					
+
 					for (int i=0; i< enemyList.size(); i++){
-						delta = new int[] {0,0}; 
+						delta = new int[] {0,0};
 						delta = calculateEnemyMovement(enemyList.get(i));
 						enemyList.get(i).moveBy(delta[0], delta[1]);
 					}
@@ -166,22 +171,22 @@ public class Main extends Application {
 		}
 	}
 	private int[] calculateEnemyMovement(Enemy enemy){
-		int[] delta = {0,0}; 
-		
+		int[] delta = {0,0};
+
 		// If enemy is aligned with grid, update the grid position
-		if ( (enemy.getPosition()[0] % LevelObject.width == 0) && (enemy.getPosition()[1] % LevelObject.height == 0) ) {
-			int xIndex = (int)(enemy.getPosition()[0] - levelOffsetX) / LevelObject.width;
-			int yIndex = (int)(enemy.getPosition()[1] - levelOffsetY) / LevelObject.height;
-			
+		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
+			int xIndex = (int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
+			int yIndex = (int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
+
 			levelObjectArray[enemy.getPrevPos()[0]][enemy.getPrevPos()[1]] = null; //clear old player position in collision detection array
 			levelObjectArray[xIndex][yIndex] = enemy; // set new player position in array
 			enemy.setPrevPos(xIndex, yIndex);
-			
+
 			// enemy.setNextMoves(calculatePath(enemy, player)) //or something like that
-			
+
 			//Choose new direction to move in
 			if(test.getArray()[yIndex-1][xIndex] != 1) {
-				
+
 				switch (enemy.getNextMoves().getLast()) {
 				case up: {
 					if (test.getArray()[yIndex-1][xIndex] == 1) {break;} //Is this line needed?
@@ -200,9 +205,9 @@ public class Main extends Application {
 					delta[0] = (int)player.getSpeed();
 					enemy.prevDirection = Direction.right; break;}
 				default:{break;}
-					
+
 				}
-				
+
 			}
 		}
 		else {
@@ -213,7 +218,7 @@ public class Main extends Application {
 				case right:{ delta[0] = (int)enemy.getSpeed(); break;}
 			}
 		}
-		
+
 		return delta;
 	}
 
@@ -221,24 +226,30 @@ public class Main extends Application {
 		if ( (character.getPosition()[0] % LevelObject.width == 0) && (character.getPosition()[1] % LevelObject.height == 0) ) {
 			int xpos = (int)(character.getPosition()[0] - levelOffsetX) / LevelObject.width;
 			int ypos = (int)(character.getPosition()[1] - levelOffsetY) / LevelObject.height;
-			
+
 			levelObjectArray[character.getPrevPos()[0]][character.getPrevPos()[1]] = null; //clear old player position in collision detection array
 			levelObjectArray[xpos][ypos] = player; // set new player position in array
 			character.setPrevPos(xpos, ypos);
 		}
 	}*/
-	
+
 	private int[] calculatePlayerMovement(){
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-		if ( (player.getPosition()[0] % LevelObject.width == 0) && (player.getPosition()[1] % LevelObject.height == 0) ) {
-			int xIndex = (int)(player.getPosition()[0] - levelOffsetX) / LevelObject.width;
-			int yIndex = (int)(player.getPosition()[1] - levelOffsetY) / LevelObject.height;
-			
+		if ( (player.getPosition()[0] % gridSquareSize == 0) && (player.getPosition()[1] % gridSquareSize == 0) ) {
+			int xIndex = (int)(player.getPosition()[0] - levelOffsetX) / gridSquareSize;
+			int yIndex = (int)(player.getPosition()[1] - levelOffsetY) / gridSquareSize;
+
 			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
-			levelObjectArray[xIndex][yIndex] = player; // set new player position in array
+			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
+				player.modifyScore(((PickUp) (levelObjectArray[yIndex][xIndex])).getScoreValue());
+				currentLevel.getChildren().remove(levelObjectArray[yIndex][xIndex]);
+				System.out.println(player.getScore());
+				} // Adds to players score depending on type of pellet eaten
+
+			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			player.setPrevPos(xIndex, yIndex);
-			
+
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
 				// If movement key held, and not in corner of map
@@ -282,7 +293,7 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-	
+
 	public static void main(String[] args) {
 		launch(args);
 	}
