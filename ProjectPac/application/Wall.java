@@ -129,7 +129,6 @@ public class Wall extends LevelObject{
 			}
 
 			case corner:{
-				System.out.println("Hello from corner creation!");
 				switch (orientation) {
 					case left:{
 						Polygon shape = new Polygon();

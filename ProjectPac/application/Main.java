@@ -8,6 +8,7 @@ import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.stage.Stage;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
@@ -29,7 +30,21 @@ public class Main extends Application {
 		left,
 		right,
 	}
-
+	/*TEST VARIABLES*/
+	/*
+	Wall w = new Wall(Wall.WallType.full, Direction.up);
+	LevelObject[][] pathTest = {{w,	 w,		w,	 w,	  w},
+								{w, null, null, null, w},
+								{w, null, 	w,  null, w},
+								{w, null, 	w,  null, w},
+								{w, null, null, null, w}, 
+								{w,	 w,		w,	 w,	  w}};
+	AdjacencyMatrix testAdjMatrix = new AdjacencyMatrix(pathTest);
+	*/
+	/**/
+	
+	
+	
 	private LevelObject[][] levelObjectArray = new LevelObject[levelWidth][levelHeight]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player = new Player(new Circle(10, Color.YELLOW), 2);
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
@@ -110,7 +125,7 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-
+			//System.out.println(testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2}));
 			initialiseLevel(test);
 
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
@@ -155,11 +170,16 @@ public class Main extends Application {
 					int[] delta = {0,0};
 					delta = calculatePlayerMovement();
 					player.moveBy(delta[0], delta[1]);
-
-					for (int i=0; i< enemyList.size(); i++){
-						delta = new int[] {0,0};
-						delta = calculateEnemyMovement(enemyList.get(i));
-						enemyList.get(i).moveBy(delta[0], delta[1]);
+					try {
+						for (int i=0; i< enemyList.size(); i++){
+							delta = new int[] {0,0};
+							delta = calculateEnemyMovement(enemyList.get(i));
+							enemyList.get(i).moveBy(delta[0], delta[1]);
+						}
+					}
+					catch(PlayerCaughtException e){
+						System.out.println("CAUGHT!");
+						this.stop();
 					}
 				}
 			};
@@ -170,45 +190,51 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-	private int[] calculateEnemyMovement(Enemy enemy){
+	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
-
+		
+		// Is this enemy colliding with the player?
+		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < 10) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < 10)) {
+			throw new PlayerCaughtException();
+		}
+		
 		// If enemy is aligned with grid, update the grid position
 		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
-			int xIndex = (int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
-			int yIndex = (int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
-
+			Integer xIndex = (int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
+			Integer yIndex = (int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
+			
+			Integer playerXIndex = (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
+			Integer playerYIndex = (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
+			
+			
 			levelObjectArray[enemy.getPrevPos()[0]][enemy.getPrevPos()[1]] = null; //clear old player position in collision detection array
-			levelObjectArray[xIndex][yIndex] = enemy; // set new player position in array
+			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
+			levelObjectArray[yIndex][xIndex] = enemy; // set new player position in array
 			enemy.setPrevPos(xIndex, yIndex);
 
-			// enemy.setNextMoves(calculatePath(enemy, player)) //or something like that
-
 			//Choose new direction to move in
-			if(test.getArray()[yIndex-1][xIndex] != 1) {
-
-				switch (enemy.getNextMoves().getLast()) {
+			//System.out.println("Attempting to move " + enemy.getNextMove());
+			switch (enemy.popNextMove()) {
 				case up: {
-					if (test.getArray()[yIndex-1][xIndex] == 1) {break;} //Is this line needed?
-					delta[1] = -(int)player.getSpeed();
+					if (test.getArray()[yIndex-1][xIndex] == 1) {break;} //Is this line ever needed?
+					delta[1] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.up; break;}
 				case down:{
 					if (test.getArray()[yIndex+1][xIndex] == 1) {break;}
-					delta[1] = (int)player.getSpeed();
+					delta[1] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.down; break;}
 				case left:{
 					if (test.getArray()[yIndex][xIndex-1] == 1) {break;}
-					delta[0] = -(int)player.getSpeed();
+					delta[0] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.left; break;}
 				case right:{
 					if (test.getArray()[yIndex][xIndex+1] == 1) {break;}
-					delta[0] = (int)player.getSpeed();
+					delta[0] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.right; break;}
 				default:{break;}
 
-				}
-
 			}
+			
 		}
 		else {
 			switch(enemy.prevDirection) {
@@ -242,8 +268,8 @@ public class Main extends Application {
 
 			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
-				player.modifyScore(((PickUp) (levelObjectArray[yIndex][xIndex])).getScoreValue());
-				currentLevel.getChildren().remove(levelObjectArray[yIndex][xIndex]);
+				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
+				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println(player.getScore());
 				} // Adds to players score depending on type of pellet eaten
 
