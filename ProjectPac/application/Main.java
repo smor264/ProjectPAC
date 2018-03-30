@@ -51,76 +51,60 @@ public class Main extends Application {
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 
 	private AdjacencyMatrix adjMatrix;
-	private Group currentLevel = new Group(player.getModel());
+	private Group currentLevel = new Group();
 	private Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();
 
 
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
-		//System.out.println(array.length);
-		//System.out.println(array[0].length);
 		boolean playerExists = false;
 		for (int i = 0; i < array.length; i++) {
 			for (int j = 0; j < array[0].length; j++) {
 				if (array[j][i] == 1) { // Wall
-					// Actual code
-
-					ArrayList<Object> wallType = new ArrayList<Object>();
+					Object[] wallType;
+					//ArrayList<Object> wallType = new ArrayList<Object>();
 					wallType = determineWallType(array,i,j);
-
-					/*
-					Wall wall = new Wall((Wall.WallType)wallType.get(0), (Direction)wallType.get(1));
-					levelObjectArray[i][j] = wall;
-
-					wall.moveTo(LevelObject.height*i+levelOffsetY, LevelObject.width*j+levelOffsetX);
-					currentLevel.getChildren().add(wall.getModel());
-					*/
-
-					// Test code
-					//System.out.println(java.util.Arrays.asList(wallType.get(0), wallType.get(1)));
-					Wall wall = new Wall((Wall.WallType) wallType.get(0),(Direction) wallType.get(1)); // Make all walls full type
-					levelObjectArray[j][i] = wall;
-					//Wall wall = new Wall(Wall.WallType.tee, Direction.left);
-
-					//System.out.println("Making a wall at ypos:" + (LevelObject.height*i+levelOffsetY) + ", and xpos:" + (LevelObject.width*j+levelOffsetX));
-					wall.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
-					currentLevel.getChildren().add(wall.getModel());
-
-					//System.out.println("Wall constructed and placed");
-
+					Wall wall = new Wall( (Wall.WallType)wallType[0], (Direction)wallType[1]);
+					
+					placeLevelObject(wall, i, j);
 				}
 				else if (array[j][i] == 2) { // player
 					if (playerExists){
 						throw new UnsupportedOperationException();
 					}
 					else {
-						player.moveTo(gridSquareSize*i + levelOffsetY, gridSquareSize*j + levelOffsetX);
+						player.setPrevPos(j,i);
 						playerExists = true;
-						player.setPrevPos(i,j);
-						System.out.println("Moving player to" + (gridSquareSize*i+levelOffsetY) + ", " + (gridSquareSize*j+levelOffsetX));
-						levelObjectArray[j][i] = player;
+						
+						placeLevelObject(player, i, j);
 					}
 				}
 				else if (array[j][i] == 3) { //Enemy
 					Enemy enemy = new Enemy(1, Color.RED);
-					enemy.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
-					currentLevel.getChildren().add(enemy.getModel());
 					enemyList.add(enemy);
-					enemy.setPrevPos(i,j);
-					levelObjectArray[j][i] = enemy;
+					enemy.setPrevPos(j,i);
+					
+					placeLevelObject(enemy, i, j);
 				}
 				else if(array[j][i] == 4 || array[j][i] == 5 || array[j][i] == 6) {
 					PickUp pickUp = new PickUp(array[j][i]);
-					pickUp.moveTo(gridSquareSize*i+levelOffsetY, gridSquareSize*j+levelOffsetX);
-					currentLevel.getChildren().add(pickUp.getModel());
-					levelObjectArray[j][i] = pickUp;
+					
+					placeLevelObject(pickUp, i, j);			
 				}
 			}
 		}
+		player.getModel().toFront(); // Draw player and enemies over top of pellets, etc.
+		for (Enemy enemy: enemyList) {
+			enemy.getModel().toFront();
+		}
 	}
-
-
+	
+	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
+		obj.moveTo(gridSquareSize*x + levelOffsetY, gridSquareSize*y + levelOffsetX);
+		levelObjectArray[y][x] = obj;
+		currentLevel.getChildren().add(obj.getModel());
+	}
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -190,6 +174,7 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
+	
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 		
@@ -207,10 +192,10 @@ public class Main extends Application {
 			Integer playerYIndex = (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
 			
 			
-			levelObjectArray[enemy.getPrevPos()[0]][enemy.getPrevPos()[1]] = null; //clear old player position in collision detection array
+			//levelObjectArray[enemy.getPrevPos()[0]][enemy.getPrevPos()[1]] = null; //clear old player position in collision detection array
 			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
-			levelObjectArray[yIndex][xIndex] = enemy; // set new player position in array
-			enemy.setPrevPos(xIndex, yIndex);
+			//levelObjectArray[yIndex][xIndex] = enemy; // set new player position in array
+			enemy.setPrevPos(yIndex, xIndex);
 
 			//Choose new direction to move in
 			//System.out.println("Attempting to move " + enemy.getNextMove());
@@ -248,33 +233,23 @@ public class Main extends Application {
 		return delta;
 	}
 
-	/*private void calculateCharacterMovement(Character character){
-		if ( (character.getPosition()[0] % LevelObject.width == 0) && (character.getPosition()[1] % LevelObject.height == 0) ) {
-			int xpos = (int)(character.getPosition()[0] - levelOffsetX) / LevelObject.width;
-			int ypos = (int)(character.getPosition()[1] - levelOffsetY) / LevelObject.height;
-
-			levelObjectArray[character.getPrevPos()[0]][character.getPrevPos()[1]] = null; //clear old player position in collision detection array
-			levelObjectArray[xpos][ypos] = player; // set new player position in array
-			character.setPrevPos(xpos, ypos);
-		}
-	}*/
-
 	private int[] calculatePlayerMovement(){
 		int[] delta = {0,0};
 		// If player has aligned with the grid
 		if ( (player.getPosition()[0] % gridSquareSize == 0) && (player.getPosition()[1] % gridSquareSize == 0) ) {
 			int xIndex = (int)(player.getPosition()[0] - levelOffsetX) / gridSquareSize;
 			int yIndex = (int)(player.getPosition()[1] - levelOffsetY) / gridSquareSize;
-
+			
 			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
+			
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println(player.getScore());
-				} // Adds to players score depending on type of pellet eaten
+			} // Adds to players score depending on type of pellet eaten
 
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
-			player.setPrevPos(xIndex, yIndex);
+			player.setPrevPos(yIndex, xIndex);
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
@@ -301,20 +276,14 @@ public class Main extends Application {
 				}
 			}
 
-		}
-		// If player not aligned with grid, continue in same direction.
-		else {
-			if (player.prevDirection == Direction.up) {
-				delta[1] = -(int)player.getSpeed();
-			}
-			else if (player.prevDirection == Direction.down) {
-				delta[1] = (int)player.getSpeed();
-			}
-			else if (player.prevDirection == Direction.left) {
-				delta[0] = -(int)player.getSpeed();
-			}
-			else if (player.prevDirection == Direction.right) {
-				delta[0] = (int)player.getSpeed();
+		}	
+		else { // If player not aligned with grid, continue in same direction.
+			switch (player.getPrevDirection()) {
+				case up: {delta[1] = -(int)player.getSpeed(); break;}
+				case down: {delta[1] = (int)player.getSpeed(); break;}
+				case left: {delta[0] = -(int)player.getSpeed(); break;}
+				case right: {delta[0] = (int)player.getSpeed(); break;}
+				default: {break;}
 			}
 		}
 		return delta;
@@ -324,7 +293,7 @@ public class Main extends Application {
 		launch(args);
 	}
 
-	private ArrayList<Object> determineWallType(int[][] array, int i, int j) {
+	private Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
 			if (array[j-1][i] == 1) {
@@ -353,80 +322,77 @@ public class Main extends Application {
 		catch(ArrayIndexOutOfBoundsException e){;}
 
 		int numNeighbours = (northNeighbour ? 1:0) + (southNeighbour ? 1:0) + (leftNeighbour ? 1:0) + (rightNeighbour ? 1:0);
-		ArrayList<Object> type = new ArrayList<Object>();
+		Object[] type = new Object[2];
 
 		switch(numNeighbours) {
 			case (4):{
-				type.add(Wall.WallType.cross);
-				type.add(Direction.up);
+				type[0] = Wall.WallType.cross;
+				type[1] = Direction.up;
 				return type;
 			}
 			case (3): {
-				type.add(Wall.WallType.tee);
+				type[0] = Wall.WallType.tee;
 				if (!northNeighbour) {
-					type.add(Direction.down);
-				}
+					type[1] = Direction.down;}
 				else if (!southNeighbour) {
-					type.add(Direction.up);
+					type[1] = Direction.up;
 				}
 				else if (!leftNeighbour) {
-					type.add(Direction.right);
+					type[1] = Direction.right;
 				}
 				else {
-					type.add(Direction.left);
+					type[1] = Direction.left;
 				}
 				return type;
 			}
 			case (2): {
 				if (northNeighbour && southNeighbour) {
-					type.add(Wall.WallType.straight);
-					type.add(Direction.up);
+					type[0] = Wall.WallType.straight;
+					type[1] = Direction.up;
 				}
 				else if (leftNeighbour && rightNeighbour) {
-					type.add(Wall.WallType.straight);
-					type.add(Direction.right);
+					type[0] = Wall.WallType.straight;
+					type[1] = Direction.right;
 				}
 				else {
-					type.add(Wall.WallType.corner);
+					type[0] = Wall.WallType.corner;
 					if (southNeighbour && rightNeighbour) {
-						type.add(Direction.up);
+						type[1] = Direction.up;
 					}
 					else if (leftNeighbour && southNeighbour) {
-						type.add(Direction.down);
+						type[1] = Direction.down;
 					}
 					else if (northNeighbour && leftNeighbour) {
-						type.add(Direction.right);
+						type[1] = Direction.right;
 					}
 					else {
-						type.add(Direction.left);
+						type[1] = Direction.left;
 					}
 				}
 				return type;
 			}
 			case (1): {
-				type.add(Wall.WallType.end);
+				type[0] = Wall.WallType.end;
 				if (northNeighbour) {
-					type.add(Direction.up);
+					type[1] = Direction.up;
 				}
 				else if (southNeighbour) {
-					type.add(Direction.down);
+					type[1] = Direction.down;
 				}
 				else if (leftNeighbour) {
-					type.add(Direction.left);
+					type[1] = Direction.left;
 				}
 				else {
-					type.add(Direction.right);
+					type[1] = Direction.right;
 				}
 				return type;
 			}
 			case(0): {
-				type.add(Wall.WallType.single);
-				type.add(Direction.up);
+				type[0] = Wall.WallType.single;
+				type[1] = Direction.up;
 				return type;
 			}
-			default: {
-				throw new UnsupportedOperationException();
-			}
+			default: {throw new UnsupportedOperationException();}
 		}
 	}
 }

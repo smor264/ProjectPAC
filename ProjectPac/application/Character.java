@@ -23,4 +23,12 @@ public class Character extends LevelObject {
 	public void setPrevPos(int x, int y) {
 		prevPos = new int[] {x,y};
 	}
+	
+	public Main.Direction getPrevDirection(){
+		return prevDirection;
+	}
+	
+	public void setPrevDirection(Main.Direction dir){
+		prevDirection = dir;
+	}
 }

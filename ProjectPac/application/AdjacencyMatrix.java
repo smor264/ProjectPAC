@@ -82,7 +82,7 @@ public class AdjacencyMatrix{
 		ArrayList<Integer[]> coordPath = new ArrayList<Integer[]>(); // Our shortest path in terms of coordinates e.g (1,2)-> (2,2) -> (3,2)
 		ArrayList<Main.Direction> directionPath  = new ArrayList<Main.Direction>(); // Our node in terms of directions, e.g left -> up, -> down...
 		
-		int numElements = map.size() - 1; 
+		int numElements = map.size(); 
 		Queue<Integer> unexplored = new LinkedList<Integer>(); // Vertices remaining
 		Queue<Integer> explored = new LinkedList<Integer>(); // Vertices already explored
 		int[] parent = new int[numElements]; // Previously visited node in path
