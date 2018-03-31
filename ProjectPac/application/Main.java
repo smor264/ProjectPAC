@@ -1,22 +1,26 @@
 package application;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 /* Thoughts about random level generation:
  * - Every node must have at least two neighbours (degree two)
  * - No loops of four or less (girth of 5+)
- * 
+ *
  * */
 
 public class Main extends Application {
@@ -28,6 +32,8 @@ public class Main extends Application {
 	public static int gridSquareSize = 20;
 	public static int levelOffsetX = 100;
 	public static int levelOffsetY = 100;
+
+
 	public static enum Direction {
 		up,
 		down,
@@ -41,25 +47,26 @@ public class Main extends Application {
 								{w, null, null, null, w},
 								{w, null, 	w,  null, w},
 								{w, null, 	w,  null, w},
-								{w, null, null, null, w}, 
+								{w, null, null, null, w},
 								{w,	 w,		w,	 w,	  w}};
 	AdjacencyMatrix testAdjMatrix = new AdjacencyMatrix(pathTest);
 	*/
 	/**/
-	
-	
-	
+
+
+
 	private LevelObject[][] levelObjectArray = new LevelObject[levelWidth][levelHeight]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player = new Player(new Circle(10, Color.YELLOW), 2);
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
-
+	private AnchorPane gameUI = new AnchorPane();
 	private AdjacencyMatrix adjMatrix;
 	private Group currentLevel = new Group();
-	private Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
+	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();
 
-	private int convertToIndex(double position, boolean isXCoord) { 
+
+	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
 	}
 	private double convertToPosition(int index, boolean isXCoord) {
@@ -76,7 +83,7 @@ public class Main extends Application {
 					//ArrayList<Object> wallType = new ArrayList<Object>();
 					wallType = determineWallType(array,i,j);
 					Wall wall = new Wall( (Wall.WallType)wallType[0], (Direction)wallType[1]);
-					
+
 					placeLevelObject(wall, i, j);
 				}
 				else if (array[j][i] == 2) { // player
@@ -86,7 +93,7 @@ public class Main extends Application {
 					else {
 						player.setPrevPos(j,i);
 						playerExists = true;
-						
+
 						placeLevelObject(player, i, j);
 					}
 				}
@@ -94,13 +101,13 @@ public class Main extends Application {
 					Enemy enemy = new Enemy(1, Color.RED);
 					enemyList.add(enemy);
 					enemy.setPrevPos(j,i);
-					
+
 					placeLevelObject(enemy, i, j);
 				}
 				else if(array[j][i] == 4 || array[j][i] == 5 || array[j][i] == 6) {
 					PickUp pickUp = new PickUp(array[j][i]);
-					
-					placeLevelObject(pickUp, i, j);			
+
+					placeLevelObject(pickUp, i, j);
 				}
 			}
 		}
@@ -109,11 +116,29 @@ public class Main extends Application {
 			enemy.getModel().toFront();
 		}
 	}
-	
+
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
 		obj.moveTo(gridSquareSize*x + levelOffsetY, gridSquareSize*y + levelOffsetX);
 		levelObjectArray[y][x] = obj;
 		currentLevel.getChildren().add(obj.getModel());
+	}
+
+
+	//Initializes the root layout
+	public void initRootLayout() {
+		try {
+			//Load root layout from XML file
+			FXMLLoader loader = new FXMLLoader();
+			loader.setLocation(Main.class.getResource("GameUI.fxml"));
+			gameUI = loader.load();
+
+			//Show the scene containing the root layout
+			//primaryStage.setScene(scene);
+			//primaryStage.show();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	@Override
@@ -152,6 +177,9 @@ public class Main extends Application {
 
 			});
 
+			initRootLayout();
+			gameUI.getChildren().add(currentLevel);
+			scene.setRoot(gameUI);
 
 			primaryStage.show();
 			primaryStage.setScene(scene);
@@ -184,23 +212,23 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
-		
+
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < 10) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < 10)) {
 			throw new PlayerCaughtException();
 		}
-		
+
 		// If enemy is aligned with grid, update the grid position
 		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
 			Integer xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
 			Integer yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
-			
+
 			Integer playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
 			Integer playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
-			
+
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
 			enemy.setPrevPos(yIndex, xIndex);
@@ -210,14 +238,14 @@ public class Main extends Application {
 			switch (enemy.popNextMove()) {
 				case up: {
 					//If wrapping around level...
-					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){ 
+					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(levelObjectArray.length-1, false));
 						break;
 					}
-					
+
 					// Is this needed?
-					if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {break;} 
-					
+					if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {break;}
+
 					//Otherwise, regular move...
 					delta[1] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.up; break;}
@@ -227,10 +255,10 @@ public class Main extends Application {
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(0, false));
 						break;
 					}
-					
+
 					// Is this needed?
 					if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {break;}
-					
+
 					//Otherwise, regular move...
 					delta[1] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.down; break;}
@@ -240,10 +268,10 @@ public class Main extends Application {
 						enemy.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
 						break;
 					}
-					
+
 					// Is this needed?
 					if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {break;}
-					
+
 					//Otherwise, regular move...
 					delta[0] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.left; break;}
@@ -253,17 +281,17 @@ public class Main extends Application {
 						enemy.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
 						break;
 					}
-					
+
 					// Is this needed?
 					if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {break;}
-					
+
 					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.right; break;}
 				default:{break;}
 
 			}
-			
+
 		}
 		else { // Otherwise continue moving until you're aligned with the grid
 			switch(enemy.prevDirection) {
@@ -283,15 +311,15 @@ public class Main extends Application {
 		if ( (player.getPosition()[0] % gridSquareSize == 0) && (player.getPosition()[1] % gridSquareSize == 0) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
-			
+
 			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
-					
+
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println(player.getScore());
 			} // Adds to players score depending on type of pellet eaten
-			
+
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			player.setPrevPos(yIndex, xIndex);
 
@@ -300,7 +328,7 @@ public class Main extends Application {
 				// If movement key held, and not in corner of map
 				if((directionArray.getNFromTop(n) == Direction.up) ) {
 					// If regular move...
-					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) { 
+					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 						delta[1] = -(int)player.getSpeed();
 						player.prevDirection = Direction.up;
 						break;
@@ -341,7 +369,7 @@ public class Main extends Application {
 				}
 			}
 
-		}	
+		}
 		else { // If player not aligned with grid, continue in same direction.
 			switch (player.getPrevDirection()) {
 				case up: {delta[1] = -(int)player.getSpeed(); break;}
@@ -460,4 +488,6 @@ public class Main extends Application {
 			default: {throw new UnsupportedOperationException();}
 		}
 	}
+
+
 }
