@@ -22,6 +22,13 @@ import javafx.scene.shape.Circle;
  * - No loops of four or less (girth of 5+)
  *
  * */
+/*To Do List:
+ * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
+ * Implement pause and end game
+ * Make start menu and transition between levels
+ * 
+ * 
+ * */
 
 public class Main extends Application {
 	public static int windowWidth = 1280;
@@ -63,7 +70,7 @@ public class Main extends Application {
 	private AdjacencyMatrix adjMatrix;
 	private Group currentLevel = new Group();
 	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();
+	private Level test = new Level();                                      //  ^  This does nothing now, btw
 
 
 	private int convertToIndex(double position, boolean isXCoord) {
@@ -146,9 +153,9 @@ public class Main extends Application {
 		try {
 			//System.out.println(testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2}));
 			initialiseLevel(test);
-
+			//testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2});
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
-
+			
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
@@ -212,7 +219,9 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-
+	
+	//private boolean flag = false;
+	
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 
@@ -230,11 +239,32 @@ public class Main extends Application {
 			Integer playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
 
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
-			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
+			
+			
+			//The beginning of more AI decisions goes here
+			/*
+			if ( ai using dfs) {
+				try{enemy.getNextMove();} catch(Exception e) {flag = true;}
+				if (flag == true) {
+					enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
+					flag = false;
+				}
+			if (ai using bfs) {
+			
+			}
+			if (ai using dijkstra){
+			
+			}
+			}*/
+			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+			
+			
+			
+			
 			enemy.setPrevPos(yIndex, xIndex);
 
 			//Choose new direction to move in
-			System.out.println("Attempting to move " + enemy.getNextMove());
+			//System.out.println("Attempting to move " + enemy.getNextMove());
 			switch (enemy.popNextMove()) {
 				case up: {
 					//If wrapping around level...
