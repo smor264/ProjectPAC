@@ -14,9 +14,10 @@ import java.util.Queue;
  *  */
 public class AdjacencyMatrix{
 
-	HashMap<String, Integer> map = new HashMap<String, Integer>();
-	HashMap<Integer, String> reverseMap = new HashMap<Integer, String>();
+	HashMap<String, Integer> map = new HashMap<String, Integer>(); // Used to map coordinate pairs to a unique node ID
+	HashMap<Integer, String> reverseMap = new HashMap<Integer, String>(); // Used to map those node IDs back to our coordinates
 	private int[][] matrix;
+	private int[] dimensions = new int[2];
 	
 	public AdjacencyMatrix(Object[][] array) {
 		for (Integer i = 0; i < array.length; i++) {
@@ -37,6 +38,48 @@ public class AdjacencyMatrix{
 		for (Integer i = 0; i < array.length; i++) {
 			for (Integer j = 0; j < array[0].length; j++) { // Check to see if connected to neighbours
 				if (!(array[i][j] instanceof Wall)) {
+					if ((i == 0) && !(array[array.length-1][j] instanceof Wall)) { 
+						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
+						addEdge(new Integer[] {i,j}, new Integer[] {array.length-1, j});
+						
+						//Also check for (valid) regular neighbours
+						if (!(array[i+1][j] instanceof Wall)) {
+							addEdge(new Integer[] {i, j}, new Integer[] {i+1, j});
+						}
+						continue;
+					}
+					else if (((i == array.length-1) && !(array[0][j] instanceof Wall))) {
+						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
+						addEdge(new Integer[] {i,j}, new Integer[] {array.length-1, j});
+						
+						//Also check for (valid) regular neighbours
+						if (!(array[i-1][j] instanceof Wall)) {
+							addEdge(new Integer[] {i, j}, new Integer[] {i-1, j});
+						}
+						continue;
+					}
+					
+					if ((j == 0) && !(array[i][array[0].length-1] instanceof Wall)) {
+						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
+						addEdge(new Integer[] {i,j}, new Integer[] {i, array[0].length-1});
+						
+						//Also check for (valid) regular neighbours
+						if (!(array[i][j+1] instanceof Wall)) {
+							addEdge(new Integer[] {i, j}, new Integer[] {i, j+1});
+						}
+						continue;
+					}
+					else if ((j == array[0].length-1) && !(array[i][0] instanceof Wall)) {
+						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
+						addEdge(new Integer[] {i,j}, new Integer[] {i, array[0].length-1});
+						
+						//Also check for (valid) regular neighbours
+						if (!(array[i][j-1] instanceof Wall)) {
+							addEdge(new Integer[] {i, j}, new Integer[] {i, j-1});
+						}
+						continue;
+					}
+					//Else, see if regular neighbours are connectable
 					if (!(array[i][j+1] instanceof Wall) && (j!= array[0].length-1)) {
 						addEdge(new Integer[] {i, j}, new Integer[] {i, j+1});
 					}
@@ -52,21 +95,25 @@ public class AdjacencyMatrix{
 				}
 			}
 		}
+		dimensions[0] = array[0].length;
+		dimensions[1] = array.length;
 	}
 	
 	public void addEdge(Integer[] source, Integer[] destination) {
 		matrix[map.get(Arrays.toString(source))][map.get(Arrays.toString(destination))] = 1;
+		matrix[map.get(Arrays.toString(destination))][map.get(Arrays.toString(source))] = 1;
 	}
 	
 	public boolean isConnected(Integer[] source, Integer[] destination) {
-		if (matrix[map.get(Arrays.toString(source))][map.get(Arrays.toString(destination))] == 1) {
+		if (matrix[map.get(Arrays.toString(source))][map.get(Arrays.toString(destination))] == 1 || matrix[map.get(Arrays.toString(destination))][map.get(Arrays.toString(source))] == 1) {
 			return true;
 		}
 		else {return false;}
 	}
 	
-	public boolean isConnected(Integer source, Integer destination) {
-		if (matrix[source][destination] == 1) {
+	//Overloaded function
+	private boolean isConnected(Integer source, Integer destination) {
+		if ((matrix[source][destination] == 1) || (matrix[destination][source] == 1)) {
 			return true;
 		}
 		else {return false;}
@@ -77,7 +124,6 @@ public class AdjacencyMatrix{
 		int destinationIndex = map.get(Arrays.toString(destination));
 		int currentNode;
 		
-		
 		ArrayList<Integer> path = new ArrayList<Integer>(); // Our shortest path in terms of graph node indices e.g 1-> 2 -> 4
 		ArrayList<Integer[]> coordPath = new ArrayList<Integer[]>(); // Our shortest path in terms of coordinates e.g (1,2)-> (2,2) -> (3,2)
 		ArrayList<Main.Direction> directionPath  = new ArrayList<Main.Direction>(); // Our node in terms of directions, e.g left -> up, -> down...
@@ -85,6 +131,7 @@ public class AdjacencyMatrix{
 		int numElements = map.size(); 
 		Queue<Integer> unexplored = new LinkedList<Integer>(); // Vertices remaining
 		Queue<Integer> explored = new LinkedList<Integer>(); // Vertices already explored
+		
 		int[] parent = new int[numElements]; // Previously visited node in path
 		Arrays.fill(parent, -1);
 		parent[sourceIndex] = 0;
@@ -145,7 +192,16 @@ public class AdjacencyMatrix{
 		/*Translate coordinates into directions*/
 		for (Integer i = 0; i < coordPath.size()-1; i++) {// Convert coordinates into moves e.g {(1,1) -> (1,2) -> (2,2)} => {right -> down}
 			if (coordPath.get(i)[0] == coordPath.get(i+1)[0]) { // If move is horizontal
-				if (coordPath.get(i)[1] < coordPath.get(i+1)[1]) {
+				//If we need to wrap around the screen...
+				if (coordPath.get(i)[1] == 0 && coordPath.get(i+1)[1] == dimensions[0] - 1) {
+					directionPath.add(Main.Direction.left); // Wrap right
+				}
+				else if (coordPath.get(i+1)[1] == 0 && coordPath.get(i)[1] == dimensions[0] - 1) {
+					directionPath.add(Main.Direction.right); // Wrap left
+				}
+				
+				//Otherwise regular movements
+				else if (coordPath.get(i)[1] < coordPath.get(i+1)[1]) {
 					directionPath.add(Main.Direction.right);
 				}
 				else if (coordPath.get(i)[1] > coordPath.get(i+1)[1]) {
@@ -156,7 +212,16 @@ public class AdjacencyMatrix{
 				}
 			}
 			else if (coordPath.get(i)[1] == coordPath.get(i+1)[1]) { // If move is vertical
-				if (coordPath.get(i)[0] < coordPath.get(i+1)[0]) {
+				//If we need to wrap around the screen...
+				if (coordPath.get(i)[0] == 0 && coordPath.get(i+1)[0] == dimensions[1] - 1) {
+					directionPath.add(Main.Direction.up); // Wrap down to the bottom
+				}
+				else if (coordPath.get(i+1)[0] == 0 && coordPath.get(i)[0] == dimensions[1] - 1) {
+					directionPath.add(Main.Direction.down); // Wrap up to the top
+				}
+				
+				//Otherwise regular movements
+				else if (coordPath.get(i)[0] < coordPath.get(i+1)[0]) {
 					directionPath.add(Main.Direction.down);
 				}
 				else if (coordPath.get(i)[0] > coordPath.get(i+1)[0]) {

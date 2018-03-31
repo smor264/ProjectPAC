@@ -38,7 +38,7 @@ public class Wall extends LevelObject{
 					case down:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double[] {-5.0,-5.0, 5.0, -5.0, 5.0, 10.0, -5.0 , 10.0});
+						shape.getPoints().addAll(new Double[] {-5.0,-5.0, 5.0, -5.0, 5.0, 10.0, -5.0 , 10.0, 10.0,10.0, -5.0, 10.0});
 						super.model = shape;
 						break;
 					}

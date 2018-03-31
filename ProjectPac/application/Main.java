@@ -13,7 +13,11 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-
+/* Thoughts about random level generation:
+ * - Every node must have at least two neighbours (degree two)
+ * - No loops of four or less (girth of 5+)
+ * 
+ * */
 
 public class Main extends Application {
 	public static int windowWidth = 1280;
@@ -55,6 +59,12 @@ public class Main extends Application {
 	private Scene scene = new Scene(currentLevel, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();
 
+	private int convertToIndex(double position, boolean isXCoord) { 
+		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
+	}
+	private double convertToPosition(int index, boolean isXCoord) {
+		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
+	}
 
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
@@ -185,35 +195,69 @@ public class Main extends Application {
 		
 		// If enemy is aligned with grid, update the grid position
 		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
-			Integer xIndex = (int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
-			Integer yIndex = (int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
+			Integer xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
+			Integer yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
 			
-			Integer playerXIndex = (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
-			Integer playerYIndex = (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
+			Integer playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
+			Integer playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
 			
-			
-			//levelObjectArray[enemy.getPrevPos()[0]][enemy.getPrevPos()[1]] = null; //clear old player position in collision detection array
+			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
-			//levelObjectArray[yIndex][xIndex] = enemy; // set new player position in array
 			enemy.setPrevPos(yIndex, xIndex);
 
 			//Choose new direction to move in
-			//System.out.println("Attempting to move " + enemy.getNextMove());
+			System.out.println("Attempting to move " + enemy.getNextMove());
 			switch (enemy.popNextMove()) {
 				case up: {
-					if (test.getArray()[yIndex-1][xIndex] == 1) {break;} //Is this line ever needed?
+					//If wrapping around level...
+					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){ 
+						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(levelObjectArray.length-1, false));
+						break;
+					}
+					
+					// Is this needed?
+					if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {break;} 
+					
+					//Otherwise, regular move...
 					delta[1] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.up; break;}
 				case down:{
-					if (test.getArray()[yIndex+1][xIndex] == 1) {break;}
+					//If wrapping around level...
+					if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
+						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(0, false));
+						break;
+					}
+					
+					// Is this needed?
+					if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {break;}
+					
+					//Otherwise, regular move...
 					delta[1] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.down; break;}
 				case left:{
-					if (test.getArray()[yIndex][xIndex-1] == 1) {break;}
+					//If wrapping around level...
+					if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+						enemy.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
+						break;
+					}
+					
+					// Is this needed?
+					if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {break;}
+					
+					//Otherwise, regular move...
 					delta[0] = -(int)enemy.getSpeed();
 					enemy.prevDirection = Direction.left; break;}
 				case right:{
-					if (test.getArray()[yIndex][xIndex+1] == 1) {break;}
+					//If wrapping around level...
+					if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+						enemy.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+						break;
+					}
+					
+					// Is this needed?
+					if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {break;}
+					
+					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.right; break;}
 				default:{break;}
@@ -221,7 +265,7 @@ public class Main extends Application {
 			}
 			
 		}
-		else {
+		else { // Otherwise continue moving until you're aligned with the grid
 			switch(enemy.prevDirection) {
 				case up:{ delta[1] = -(int)enemy.getSpeed(); break;}
 				case down:{ delta[1] = (int)enemy.getSpeed(); break;}
@@ -237,42 +281,63 @@ public class Main extends Application {
 		int[] delta = {0,0};
 		// If player has aligned with the grid
 		if ( (player.getPosition()[0] % gridSquareSize == 0) && (player.getPosition()[1] % gridSquareSize == 0) ) {
-			int xIndex = (int)(player.getPosition()[0] - levelOffsetX) / gridSquareSize;
-			int yIndex = (int)(player.getPosition()[1] - levelOffsetY) / gridSquareSize;
+			int xIndex = convertToIndex(player.getPosition()[0], true);
+			int yIndex = convertToIndex(player.getPosition()[1], false);
 			
 			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
-			
+					
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println(player.getScore());
 			} // Adds to players score depending on type of pellet eaten
-
+			
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			player.setPrevPos(yIndex, xIndex);
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
 				// If movement key held, and not in corner of map
-				if((directionArray.getNFromTop(n) == Direction.up) && (test.getArray()[yIndex-1][xIndex] != 1)) {
-					delta[1] = -(int)player.getSpeed();
-					player.prevDirection = Direction.up;
-					break;
+				if((directionArray.getNFromTop(n) == Direction.up) ) {
+					// If regular move...
+					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) { 
+						delta[1] = -(int)player.getSpeed();
+						player.prevDirection = Direction.up;
+						break;
+					} // If wrapping around screen...
+					else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
+						player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
+					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.down  && (test.getArray()[yIndex+1][xIndex] != 1)) {
-					delta[1] = (int)player.getSpeed();
-					player.prevDirection = Direction.down;
-					break;
+				else if(directionArray.getNFromTop(n) == Direction.down) {
+					if ((yIndex != levelObjectArray.length - 1) && (test.getArray()[yIndex+1][xIndex] != 1)) {
+						delta[1] = (int)player.getSpeed();
+						player.prevDirection = Direction.down;
+						break;
+					}
+					else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
+						player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
+					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.left && (test.getArray()[yIndex][xIndex-1] != 1)) {
-					delta[0] = -(int)player.getSpeed();
-					player.prevDirection = Direction.left;
-					break;
+				else if(directionArray.getNFromTop(n) == Direction.left) {
+					if ((xIndex != 0) && (test.getArray()[yIndex][xIndex-1] != 1)) {
+						delta[0] = -(int)player.getSpeed();
+						player.prevDirection = Direction.left;
+						break;
+					}
+					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
+					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.right && (test.getArray()[yIndex][xIndex+1] != 1)) {
-					delta[0] = (int)player.getSpeed();
-					player.prevDirection = Direction.right;
-					break;
+				else if(directionArray.getNFromTop(n) == Direction.right) {
+					if ((xIndex != levelObjectArray[0].length - 1) && (test.getArray()[yIndex][xIndex+1] != 1)) {
+						delta[0] = (int)player.getSpeed();
+						player.prevDirection = Direction.right;
+						break;
+					}
+					else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+						player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+					}
 				}
 			}
 
