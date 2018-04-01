@@ -220,8 +220,7 @@ public class Main extends Application {
 		}
 	}
 	
-	//private boolean flag = false;
-	
+
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 
@@ -232,50 +231,97 @@ public class Main extends Application {
 
 		// If enemy is aligned with grid, update the grid position
 		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
-			Integer xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
-			Integer yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
+			int xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
+			int yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
 
-			Integer playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
-			Integer playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
+			int playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
+			int playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
 
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 			
 			
 			//The beginning of more AI decisions goes here
-			switch (enemy.getAlgorithm()) {
-				case bfs:{
-					// set next moves to be the directions from enemy to player
-					enemy.setNextMoves(adjMatrix.findBFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
-					break;
+			switch(enemy.getBehaviour()) {
+				case hunter: {
+					moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					/*switch (enemy.getAlgorithm()) {
+						case bfs:{
+							// set next moves to be the directions from enemy to player
+							enemy.setNextMoves(adjMatrix.findBFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
+							break;
+						}
+						case dfs:{
+							// Since DFS's paths are so windy, we actually need to let them complete before repathing
+							if (enemy.checkPathLength() == 0) {
+								enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+							}
+							break;
+						}
+						case dijkstra:{
+							//System.out.println(targetXIndex + ", " + targetYIndex);
+							enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
+							break;
+						}
+				
+						case euclidean:{
+							enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+							break;
+						}
+						default:{throw new IllegalArgumentException("Invalid algorithm");}
+					}*/
 				}
-				case dfs:{
-					// Since DFS's paths are so windy, we actually need to let them complete before repathing
-					if (enemy.checkPathLength() == 0) {
-						enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+				case ambusher: {
+					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > 4) {
+						//If close to the player, chase
+						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					}
+					else {
+						//If far away, try to cut the player off
+						//use player direction to aim ahead of the player
+						
+					}
+				}
+				case guard: {
+					int guardRadius = 4;
+					int guardYIndex = 2;
+					int guardXIndex = 2;
+					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					}
+					else {
+						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
 					}
 					break;
 				}
-				case dijkstra:{
-					enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
+				case indecisive: {break;}
+				case patrol: {
+					int aggroRadius = 4;
+					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < aggroRadius) {
+						//If close to the player, chase
+						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					}
+					else {
+						//move between points
+					}
 					break;
 				}
-	
-				case euclidean:{
-					enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+				case scared: { // Probably repurpose euclidean pathfinding?
+					int scaredRadius = 4;
+					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius) {
+						//If chase the player
+						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					}
+					else {
+						//run away somehow???
+					}
 					break;
 				}
-				default:{
-					break;
-				}
-
+			default: {throw new IllegalArgumentException("Invalid behaviour specified");}
 			}
-
 			
+		
 			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
-			
-			
-			
-			
+
 			enemy.setPrevPos(yIndex, xIndex);
 
 			//Choose new direction to move in
@@ -333,7 +379,7 @@ public class Main extends Application {
 					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
 					enemy.prevDirection = Direction.right; break;}
-				default:{break;}
+				default:{ throw new IllegalArgumentException("No move to make!");}
 
 			}
 
@@ -350,6 +396,34 @@ public class Main extends Application {
 		return delta;
 	}
 
+	private void moveEnemy(Enemy enemy, Integer[] source, Integer[] destination) {
+		/*switch (enemy.getAlgorithm()) {
+			case bfs:{
+				// set next moves to be the directions from enemy to player
+				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination)); 
+				break;
+			}
+			case dfs:{
+				// Since DFS's paths are so windy, we actually need to let them complete before repathing
+				if (enemy.checkPathLength() == 0) {
+					enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+				}
+				break;
+			}
+			case dijkstra:{
+				//System.out.println(targetXIndex + ", " + targetYIndex);
+				enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination)); 
+				break;
+			}
+	
+			case euclidean:{
+				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination));
+				break;
+			}
+			default:{throw new IllegalArgumentException("Invalid algorithm");}
+		}*/
+	}
+	
 	private int[] calculatePlayerMovement(){
 		int[] delta = {0,0};
 		// If player has aligned with the grid

@@ -50,7 +50,7 @@ public class Enemy extends Character {
 		nextMoves = new ArrayList<Main.Direction>();
 		model.setFill(color);
 		
-		intelligence = Intelligence.dumb;
+		intelligence = Intelligence.moderate;
 		behaviour = Behaviour.hunter;
 		algorithm = Algorithm.dijkstra;
 	}
@@ -66,6 +66,9 @@ public class Enemy extends Character {
 	}
 	
 	public Main.Direction popNextMove() {
+		if (nextMoves.isEmpty()) {
+			return null;
+		}
 		Main.Direction rightMove = nextMoves.remove(0);
 		double lowerBound;
 

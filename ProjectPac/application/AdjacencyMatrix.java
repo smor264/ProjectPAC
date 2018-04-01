@@ -428,7 +428,7 @@ public class AdjacencyMatrix{
 		return direction;
 		
 	}
-	private Double calcDistance(Integer[] source, Integer[] destination) {
+	public static Double calcDistance(Integer[] source, Integer[] destination) {
 		// sqrt( (x1-x2)^2 + (y1-y2)^2 )
 		
 		Double total = 0.0;
