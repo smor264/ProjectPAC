@@ -115,7 +115,7 @@ public class AdjacencyMatrix{
 		else {return false;}
 	}
 	
-	//Overloaded function
+	//Private overloaded version to save from having to convert there and back
 	private boolean isConnected(Integer source, Integer destination) {
 		if ((matrix[source][destination] == 1) || (matrix[destination][source] == 1)) {
 			return true;
@@ -374,12 +374,80 @@ public class AdjacencyMatrix{
 		return directionPath;
 	}
 	
+	public Main.Direction findEuclideanDirection(Integer[] source, Integer[] destination) {
+		/* Finds the direction which minimises the euclidean distance to the destination */
+		int sourceIndex = map.get(Arrays.toString(source));
+		
+		Main.Direction direction;
+		
+		ArrayList<Integer> neighbours = new ArrayList<Integer>();
+		neighbours = getNeighbours(sourceIndex);
+		
+		Double[] distanceArray = new Double[neighbours.size()];
+		Arrays.fill(distanceArray, Double.POSITIVE_INFINITY);
+		//System.out.println("I am at: " + Arrays.toString(source));
+		
+		//System.out.print("I have neighbours: ");
+		/* Loop through node's neighbours, store distance from this node to destination*/
+		for (int i = 0; i < neighbours.size(); i++) {
+			//Splice our string "[x, y]" into "x" and "y" 
+			String[] stringCoords = (reverseMap.get(neighbours.get(i))).replace("[", "").replace("]", "").split(", "); 
+			//System.out.print(reverseMap.get(neighbours.get(i)) + ", ");
+			// Parse our "x" and "y" strings into ints
+			Integer[] coords = {Integer.parseInt(stringCoords[0]), Integer.parseInt(stringCoords[1])}; 
+			distanceArray[i] = calcDistance(coords, destination);
+		}
+		//System.out.println();
+		/*Find min distance, and consequently the index of the point that gives least distance*/
+		Double minDist = Double.POSITIVE_INFINITY;
+		int minIndex = 0;
+		
+		for (int i = 0; i < distanceArray.length; i++) {
+			if (distanceArray[i] < minDist) {
+				
+				minDist = distanceArray[i];
+				minIndex = i;
+			}
+		}
+		//System.out.println("It looks like " + reverseMap.get(neighbours.get(minIndex)) + " minimises the distance to my target at " + Arrays.toString(destination));
+		/*Convert the coordinates of our point that minimises distance*/
+		String[] minStringCoords = (reverseMap.get(neighbours.get(minIndex))).replace("[", "").replace("]", "").split(", "); 
+		Integer[] minCoords = {Integer.parseInt(minStringCoords[0]), Integer.parseInt(minStringCoords[1])}; 
+		
+		ArrayList<Integer[]> coordPath = new ArrayList<Integer[]>();
+		coordPath.add(source);
+		coordPath.add(minCoords);
+		
+		/*Find direction from the two coordinates*/
+		ArrayList<Main.Direction> directionPath = new ArrayList<Main.Direction>();
+		directionPath = convertCoordPathToDirections(coordPath);
+
+		direction = directionPath.get(0);
+		//System.out.println("So I'll go " + direction);
+		//System.out.println();
+		return direction;
+		
+	}
+	private Double calcDistance(Integer[] source, Integer[] destination) {
+		// sqrt( (x1-x2)^2 + (y1-y2)^2 )
+		
+		Double total = 0.0;
+		for (int i = 0; i < source.length; i++) {
+			Double diff = (double) (source[i] - destination[i]);
+			diff = Math.pow(diff, 2);
+			total += diff;
+		}
+		total = Math.sqrt(total);
+		
+		return total;
+	}
+	
 	private ArrayList<Integer> getNeighbours(Integer currentNode) {
 		ArrayList<Integer> neighbours = new ArrayList<Integer>();
 		int numElements = map.size();
 		
 		for (int testNode = 0; testNode < numElements; testNode++) {
-			if (isConnected(currentNode, testNode)) {
+			if (isConnected(currentNode, testNode) && (currentNode != testNode)) {
 				neighbours.add(testNode);
 			}
 		}

@@ -242,20 +242,35 @@ public class Main extends Application {
 			
 			
 			//The beginning of more AI decisions goes here
-			/*
-			if ( ai using dfs) {
-				try{enemy.getNextMove();} catch(Exception e) {flag = true;}
-				if (flag == true) {
-					enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); // set next moves to be the directions from enemy to player
-					flag = false;
+			switch (enemy.getAlgorithm()) {
+				case bfs:{
+					// set next moves to be the directions from enemy to player
+					enemy.setNextMoves(adjMatrix.findBFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
+					break;
 				}
-			if (ai using bfs) {
-			
+				case dfs:{
+					// Since DFS's paths are so windy, we actually need to let them complete before repathing
+					if (enemy.checkPathLength() == 0) {
+						enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+					}
+					break;
+				}
+				case dijkstra:{
+					enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
+					break;
+				}
+	
+				case euclidean:{
+					enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
+					break;
+				}
+				default:{
+					break;
+				}
+
 			}
-			if (ai using dijkstra){
+
 			
-			}
-			}*/
 			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
 			
 			
