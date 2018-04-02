@@ -7,16 +7,16 @@ import java.util.ArrayList;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
 /* Thoughts about random level generation:
  * - Every node must have at least two neighbours (degree two)
  * - No loops of four or less (girth of 5+)
@@ -32,6 +32,8 @@ public class Main extends Application {
 	public static int gridSquareSize = 20;
 	public static int levelOffsetX = 100;
 	public static int levelOffsetY = 100;
+	public Text currentScoreText = new Text();
+	public AnchorPane HUDBar = new AnchorPane();
 
 
 	public static enum Direction {
@@ -132,20 +134,35 @@ public class Main extends Application {
 			loader.setLocation(Main.class.getResource("GameUI.fxml"));
 			gameUI = loader.load();
 
-			//Show the scene containing the root layout
-			//primaryStage.setScene(scene);
-			//primaryStage.show();
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 
 	}
 
+	@FXML
+	//Prints when currentScoreText changes
+	private void initialize(){
+		currentScoreText.textProperty().addListener((orbservable, oldValue, newValue) -> {
+		System.out.println("changed from " + oldValue + " to " + newValue);
+		});
+	}
+
+
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			//System.out.println(testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2}));
 			initialiseLevel(test);
+			initialize();
+
+				if(player != null) {
+				currentScoreText.setText(player.getScoreString());
+					//currentScoreText.setStyle("-fx-font-size: 4em;");
+					}
+						else { currentScoreText.setText("");
+					}
+
 
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
 
@@ -318,6 +335,11 @@ public class Main extends Application {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println(player.getScore());
+				initialize();
+				currentScoreText.setText(player.getScoreString());
+				HUDBar.getChildren().remove(currentScoreText);
+				HUDBar.getChildren().add(currentScoreText);
+
 			} // Adds to players score depending on type of pellet eaten
 
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array

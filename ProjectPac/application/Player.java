@@ -31,4 +31,8 @@ public class Player extends Character{
 		return Score;
 	}
 
+	public String getScoreString(){
+		return Integer.toString(Score);
+	}
+
 }
