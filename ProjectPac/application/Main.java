@@ -3,6 +3,8 @@ package application;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -36,9 +38,9 @@ public class Main extends Application {
 	public static int[] centre = {windowWidth/2, windowHeight/2};
 	public static int levelWidth = 10;
 	public static int levelHeight = 10;
-	public static int gridSquareSize = 20;
+	public static int gridSquareSize = 40; // ONLY WORKS FOR EVEN NUMBERS
 	public static int levelOffsetX = 100;
-	public static int levelOffsetY = 100;
+	public static int levelOffsetY = 200;
 
 
 	public static enum Direction {
@@ -60,10 +62,18 @@ public class Main extends Application {
 	*/
 	/**/
 
-
-
+	private void println() {
+		System.out.println();
+	}
+	private void println(String str) {
+		System.out.println(str); // because I'm tired of writing System.out.println
+	}
+	private void print(String str) {
+		System.out.print(str); // because I'm tired of writing System.out.print
+	}
+	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelWidth][levelHeight]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(new Circle(10, Color.YELLOW), 2);
+	private Player player = new Player(new Circle(gridSquareSize/2, Color.YELLOW), 2);
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 	private AnchorPane gameUI = new AnchorPane();
@@ -71,7 +81,8 @@ public class Main extends Application {
 	private Group currentLevel = new Group();
 	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();                                      //  ^  This does nothing now, btw
-
+	private int pelletsRemaining = 0;
+	private boolean pausePressed = false;
 
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
@@ -82,39 +93,44 @@ public class Main extends Application {
 
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
+		enemyList.clear();
 		boolean playerExists = false;
-		for (int i = 0; i < array.length; i++) {
-			for (int j = 0; j < array[0].length; j++) {
-				if (array[j][i] == 1) { // Wall
+		for (int xPos = 0; xPos < array.length; xPos++) {
+			for (int yPos = 0; yPos < array[0].length; yPos++) {
+				if (array[yPos][xPos] == 1) { // Wall
 					Object[] wallType;
 					//ArrayList<Object> wallType = new ArrayList<Object>();
-					wallType = determineWallType(array,i,j);
+					wallType = determineWallType(array,xPos,yPos);
 					Wall wall = new Wall( (Wall.WallType)wallType[0], (Direction)wallType[1]);
 
-					placeLevelObject(wall, i, j);
+					placeLevelObject(wall, xPos, yPos);
 				}
-				else if (array[j][i] == 2) { // player
+				else if (array[yPos][xPos] == 2) { // player
 					if (playerExists){
 						throw new UnsupportedOperationException();
 					}
 					else {
-						player.setPrevPos(j,i);
+						player.setPrevPos(xPos,yPos);
+						player.setStartPosition(new int[] {xPos,yPos});
+						println("player started at " + xPos + ", " + yPos);
 						playerExists = true;
 
-						placeLevelObject(player, i, j);
+						placeLevelObject(player, xPos, yPos);
 					}
 				}
-				else if (array[j][i] == 3) { //Enemy
-					Enemy enemy = new Enemy(1, Color.RED);
+				else if (array[yPos][xPos] == 3) { //Enemy
+					Enemy enemy = new Enemy(1, Color.RED, Enemy.Intelligence.moderate, Enemy.Behaviour.hunter, Enemy.Algorithm.dfs);
 					enemyList.add(enemy);
-					enemy.setPrevPos(j,i);
-
-					placeLevelObject(enemy, i, j);
+					
+					enemy.setPrevPos(xPos, yPos);
+					enemy.setStartPosition(new int[] {xPos, yPos});
+					
+					placeLevelObject(enemy, xPos, yPos);
 				}
-				else if(array[j][i] == 4 || array[j][i] == 5 || array[j][i] == 6) {
-					PickUp pickUp = new PickUp(array[j][i]);
-
-					placeLevelObject(pickUp, i, j);
+				else if(array[yPos][xPos] == 4 || array[yPos][xPos] == 5 || array[yPos][xPos] == 6) {
+					PickUp pickUp = new PickUp(array[yPos][xPos]);
+					pelletsRemaining++;
+					placeLevelObject(pickUp, xPos, yPos);
 				}
 			}
 		}
@@ -123,9 +139,22 @@ public class Main extends Application {
 			enemy.getModel().toFront();
 		}
 	}
+	
+	private void restartLevel() {
+		int playerStartYPos = player.getStartPosition()[0];
+		int playerStartXPos = player.getStartPosition()[1];
+		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
+		
+		levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null;
+		levelObjectArray[playerStartYPos][playerStartXPos] = player;
+		
+		for (Enemy enemy : enemyList) {
+			enemy.moveTo(convertToPosition(enemy.getStartPosition()[0], true), convertToPosition(enemy.getStartPosition()[1], false));	
+		}
+	}
 
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
-		obj.moveTo(gridSquareSize*x + levelOffsetY, gridSquareSize*y + levelOffsetX);
+		obj.moveTo(gridSquareSize*x + levelOffsetX, gridSquareSize*y + levelOffsetY);
 		levelObjectArray[y][x] = obj;
 		currentLevel.getChildren().add(obj.getModel());
 	}
@@ -151,9 +180,9 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-			//System.out.println(testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2}));
+			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 			initialiseLevel(test);
-			//testAdjMatrix.findDijkstraPath(new Integer[] {1,1}, new Integer[] {4,2});
+			
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
 			
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
@@ -164,6 +193,11 @@ public class Main extends Application {
 						case DOWN: { directionArray.append(Direction.down); break;}
 						case LEFT: { directionArray.append(Direction.left); break;}
 						case RIGHT: { directionArray.append(Direction.right); break;}
+						case P: { pausePressed = !pausePressed; 
+							if (pausePressed) {println("PAUSED!");} 
+							else { println("UNPAUSED!"); }; 
+							break;
+						}
 						default: break;
 					}
 				}
@@ -195,10 +229,30 @@ public class Main extends Application {
 			AnimationTimer timer = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
-
+					while (pausePressed) {
+						return;
+					}
+					
 					int[] delta = {0,0};
-					delta = calculatePlayerMovement();
+					
+					try { delta = calculatePlayerMovement(); }
+					catch(LevelCompleteException e1) {
+						println("LEVEL COMPLETE!");
+						this.stop();
+						try {
+							TimeUnit.SECONDS.sleep(1);
+							currentLevel.getChildren().clear();
+							initialiseLevel(test);
+							this.start();
+							return;
+						}
+						catch(InterruptedException e2){
+							Thread.currentThread().interrupt(); // I'm sure this does something, but reight now it's just to stop the compiler complaining.
+						}
+					}
+					
 					player.moveBy(delta[0], delta[1]);
+					
 					try {
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
@@ -206,10 +260,34 @@ public class Main extends Application {
 							enemyList.get(i).moveBy(delta[0], delta[1]);
 						}
 					}
-					catch(PlayerCaughtException e){
-						System.out.println("CAUGHT!");
-						this.stop();
+					catch(PlayerCaughtException e1){
+						println("CAUGHT!");
+						//this.stop();
+						try {
+							TimeUnit.SECONDS.sleep(1);
+							extraLives--;
+							
+							if (extraLives < 0) {
+								println("GAME OVER!");
+								player.setScore(0);
+								this.stop();
+								return;
+							}
+							else if (extraLives == 0) {
+								print("Careful! ");
+							}
+							print("You have " + extraLives + " extra lives remaining");
+							println();
+							restartLevel();
+							this.start();
+							return;
+
+						} 
+						catch (InterruptedException e2){
+							Thread.currentThread().interrupt(); // I'm sure this does something, but reight now it's just to stop the compiler complaining.
+						}
 					}
+					
 				}
 			};
 
@@ -225,71 +303,48 @@ public class Main extends Application {
 		int[] delta = {0,0};
 
 		// Is this enemy colliding with the player?
-		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < 10) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < 10)) {
+		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
 			throw new PlayerCaughtException();
 		}
 
 		// If enemy is aligned with grid, update the grid position
-		if ( (enemy.getPosition()[0] % gridSquareSize == 0) && (enemy.getPosition()[1] % gridSquareSize == 0) ) {
+		if ( ((enemy.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((enemy.getPosition()[1]- levelOffsetY) % gridSquareSize == 0) ) {
 			int xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
 			int yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
 
 			int playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
 			int playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
-
+			
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 			
 			
 			//The beginning of more AI decisions goes here
 			switch(enemy.getBehaviour()) {
 				case hunter: {
-					moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-					/*switch (enemy.getAlgorithm()) {
-						case bfs:{
-							// set next moves to be the directions from enemy to player
-							enemy.setNextMoves(adjMatrix.findBFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
-							break;
-						}
-						case dfs:{
-							// Since DFS's paths are so windy, we actually need to let them complete before repathing
-							if (enemy.checkPathLength() == 0) {
-								enemy.setNextMoves(adjMatrix.findDFSPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
-							}
-							break;
-						}
-						case dijkstra:{
-							//System.out.println(targetXIndex + ", " + targetYIndex);
-							enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex})); 
-							break;
-						}
-				
-						case euclidean:{
-							enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
-							break;
-						}
-						default:{throw new IllegalArgumentException("Invalid algorithm");}
-					}*/
+					chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+					break;
 				}
 				case ambusher: {
 					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > 4) {
 						//If close to the player, chase
-						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 					}
 					else {
 						//If far away, try to cut the player off
 						//use player direction to aim ahead of the player
 						
 					}
+					break;
 				}
 				case guard: {
 					int guardRadius = 4;
 					int guardYIndex = 2;
 					int guardXIndex = 2;
 					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
-						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 					}
 					else {
-						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
+						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
 					}
 					break;
 				}
@@ -298,31 +353,28 @@ public class Main extends Application {
 					int aggroRadius = 4;
 					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < aggroRadius) {
 						//If close to the player, chase
-						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 					}
 					else {
 						//move between points
 					}
 					break;
 				}
-				case scared: { // Probably repurpose euclidean pathfinding?
+				case scared: { // Probably repurpose euclidean pathfinding to maximise distance from player?
 					int scaredRadius = 4;
 					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius) {
 						//If chase the player
-						moveEnemy(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 					}
 					else {
 						//run away somehow???
 					}
 					break;
 				}
-			default: {throw new IllegalArgumentException("Invalid behaviour specified");}
-			}
+			default: { throw new IllegalArgumentException("Invalid behaviour specified");} }
 			
-		
-			enemy.setNextMoves(adjMatrix.findDijkstraPath(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}));
 
-			enemy.setPrevPos(yIndex, xIndex);
+			enemy.setPrevPos(xIndex, yIndex);
 
 			//Choose new direction to move in
 			//System.out.println("Attempting to move " + enemy.getNextMove());
@@ -339,7 +391,7 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[1] = -(int)enemy.getSpeed();
-					enemy.prevDirection = Direction.up; break;}
+					enemy.setPrevDirection(Direction.up); break;}
 				case down:{
 					//If wrapping around level...
 					if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
@@ -352,7 +404,7 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[1] = (int)enemy.getSpeed();
-					enemy.prevDirection = Direction.down; break;}
+					enemy.setPrevDirection(Direction.down); break;}
 				case left:{
 					//If wrapping around level...
 					if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
@@ -365,7 +417,7 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[0] = -(int)enemy.getSpeed();
-					enemy.prevDirection = Direction.left; break;}
+					enemy.setPrevDirection(Direction.left); break;}
 				case right:{
 					//If wrapping around level...
 					if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
@@ -378,26 +430,28 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
-					enemy.prevDirection = Direction.right; break;}
+					enemy.setPrevDirection(Direction.right); break;}
 				default:{ throw new IllegalArgumentException("No move to make!");}
 
 			}
 
 		}
 		else { // Otherwise continue moving until you're aligned with the grid
-			switch(enemy.prevDirection) {
+			switch(enemy.getPrevDirection()) {
 				case up:{ delta[1] = -(int)enemy.getSpeed(); break;}
 				case down:{ delta[1] = (int)enemy.getSpeed(); break;}
 				case left:{ delta[0] = -(int)enemy.getSpeed(); break;}
 				case right:{ delta[0] = (int)enemy.getSpeed(); break;}
+				default: { throw new IllegalArgumentException("prevDirection is undefined");}
 			}
 		}
 
 		return delta;
 	}
 
-	private void moveEnemy(Enemy enemy, Integer[] source, Integer[] destination) {
-		/*switch (enemy.getAlgorithm()) {
+	private void chooseMoveFromAlgorithm(Enemy enemy, Integer[] source, Integer[] destination) {
+		
+		switch (enemy.getAlgorithm()) {
 			case bfs:{
 				// set next moves to be the directions from enemy to player
 				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination)); 
@@ -421,26 +475,31 @@ public class Main extends Application {
 				break;
 			}
 			default:{throw new IllegalArgumentException("Invalid algorithm");}
-		}*/
+		}
 	}
 	
-	private int[] calculatePlayerMovement(){
+	private int[] calculatePlayerMovement() throws LevelCompleteException{
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-		if ( (player.getPosition()[0] % gridSquareSize == 0) && (player.getPosition()[1] % gridSquareSize == 0) ) {
+		
+		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
 
-			levelObjectArray[player.getPrevPos()[0]][player.getPrevPos()[1]] = null; //clear old player position in collision detection array
+			levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null; //clear old player position in collision detection array
 
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
-				System.out.println(player.getScore());
+				System.out.println("Score: " + player.getScore());
+				pelletsRemaining--;
+				if (pelletsRemaining == 0) {
+					throw new LevelCompleteException();
+				}
 			} // Adds to players score depending on type of pellet eaten
 
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
-			player.setPrevPos(yIndex, xIndex);
+			player.setPrevPos(xIndex, yIndex);
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
@@ -449,7 +508,7 @@ public class Main extends Application {
 					// If regular move...
 					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 						delta[1] = -(int)player.getSpeed();
-						player.prevDirection = Direction.up;
+						player.setPrevDirection(Direction.up);
 						break;
 					} // If wrapping around screen...
 					else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
@@ -459,7 +518,7 @@ public class Main extends Application {
 				else if(directionArray.getNFromTop(n) == Direction.down) {
 					if ((yIndex != levelObjectArray.length - 1) && (test.getArray()[yIndex+1][xIndex] != 1)) {
 						delta[1] = (int)player.getSpeed();
-						player.prevDirection = Direction.down;
+						player.setPrevDirection(Direction.down);
 						break;
 					}
 					else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
@@ -469,7 +528,7 @@ public class Main extends Application {
 				else if(directionArray.getNFromTop(n) == Direction.left) {
 					if ((xIndex != 0) && (test.getArray()[yIndex][xIndex-1] != 1)) {
 						delta[0] = -(int)player.getSpeed();
-						player.prevDirection = Direction.left;
+						player.setPrevDirection(Direction.left);
 						break;
 					}
 					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
@@ -479,7 +538,7 @@ public class Main extends Application {
 				else if(directionArray.getNFromTop(n) == Direction.right) {
 					if ((xIndex != levelObjectArray[0].length - 1) && (test.getArray()[yIndex][xIndex+1] != 1)) {
 						delta[0] = (int)player.getSpeed();
-						player.prevDirection = Direction.right;
+						player.setPrevDirection(Direction.right);
 						break;
 					}
 					else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {

@@ -3,7 +3,7 @@ package application;
 public class PlayerCaughtException extends Exception {
 
 	/**
-	 * 
+	 * Thrown when the player is caught by an enemy
 	 */
 	private static final long serialVersionUID = 4112159384215101384L;
 

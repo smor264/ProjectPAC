@@ -8,7 +8,6 @@ import javafx.scene.shape.Polygon;
 
 public class Wall extends LevelObject{
 
-
 	public static enum WallType {
 		single,
 		end,
@@ -31,28 +30,28 @@ public class Wall extends LevelObject{
 					case up:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double[]{-5.0,-10.0, 5.0,-10.0, 5.0,5.0, 5.0,10.0, 5.0,5.0, 10.0,5.0, 5.0,5.0, -5.0,5.0});
+						shape.getPoints().addAll(new Double[]{-width/4.0,-width/2.0, width/4.0,-width/2.0, width/4.0,width/4.0, width/4.0,width/2.0, width/4.0,width/4.0, width/2.0,width/4.0, width/4.0,width/4.0, -width/4.0,width/4.0});
 						super.model = shape;
 						break;
 					}
 					case down:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double[] {-5.0,-5.0, 5.0, -5.0, 5.0, 10.0, -5.0 , 10.0, 10.0,10.0, -5.0, 10.0});
+						shape.getPoints().addAll(new Double[] {-width/4.0,-width/4.0, width/4.0, -width/4.0, width/4.0, width/2.0, -width/4.0 , width/2.0, width/2.0,width/2.0, -width/4.0, width/2.0});
 						super.model = shape;
 						break;
 					}
 					case left:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double[] {-10.0,-5.0, 5.0,-5.0, 5.0,5.0, 5.0,10.0, 5.0,5.0, 10.0,5.0, 5.0,5.0, -10.0,5.0});
+						shape.getPoints().addAll(new Double[] {-width/2.0,-width/4.0, width/4.0,-width/4.0, width/4.0,width/4.0, width/4.0,width/2.0, width/4.0,width/4.0, width/2.0,width/4.0, width/4.0,width/4.0, -width/2.0,width/4.0});
 						super.model = shape;
 						break;
 					}
 					case right:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double[] {-5.0,-5.0, 10.0, -5.0, 10.0, 5.0, -5.0, 5.0, -5.0,10.0, -5.0,5.0});
+						shape.getPoints().addAll(new Double[] {-width/4.0,-width/4.0, width/2.0, -width/4.0, width/2.0, width/4.0, -width/4.0, width/4.0, -width/4.0,width/2.0, -width/4.0,width/4.0});
 						super.model = shape;
 						break;
 					}
@@ -65,7 +64,7 @@ public class Wall extends LevelObject{
 					case down: {
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0, -10.0, 10.0,-10.0, 5.0,-10.0,  5.0, 10.0, -5.0, 10.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/2.0, width/4.0, -width/2.0, width/2.0,-width/2.0, width/4.0,-width/2.0,  width/4.0, width/2.0, -width/4.0, width/2.0});
 						super.model = shape;
 						break;
 					}
@@ -73,7 +72,7 @@ public class Wall extends LevelObject{
 					case right: {
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-10.0,-5.0, 10.0,-5.0, 10.0,5.0, 10.0,10.0, 10.0,5.0, -10.0,5.0});
+						shape.getPoints().addAll(new Double [] {-width/2.0,-width/4.0, width/2.0,-width/4.0, width/2.0,width/4.0, width/2.0,width/2.0, width/2.0,width/4.0, -width/2.0,width/4.0});
 						super.model = shape;
 						break;
 					}
@@ -85,28 +84,28 @@ public class Wall extends LevelObject{
 					case up:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0,-10.0, 5.0,-5.0, 10.0,-5.0, 10.0,5.0, 10.0, 10.0,10.0,5.0, -10.0, 5.0, -10.0, -5.0, -5.0, -5.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/2.0, width/4.0,-width/2.0, width/4.0,-width/4.0, width/2.0,-width/4.0, width/2.0,width/4.0, width/2.0, width/2.0,width/2.0,width/4.0, -width/2.0, width/4.0, -width/2.0, -width/4.0, -width/4.0, -width/4.0});
 						super.model = shape;
 						break;
 					}
 					case down:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-10.0, -5.0, 10.0, -5.0, 10.0, 5.0, 5.0, 5.0, 5.0, 10.0, -5.0, 10.0, -5.0, 5.0, -10.0, 5.0});
+						shape.getPoints().addAll(new Double [] {-width/2.0, -width/4.0, width/2.0, -width/4.0, width/2.0, width/4.0, width/4.0, width/4.0, width/4.0, width/2.0, -width/4.0, width/2.0, -width/4.0, width/4.0, -width/2.0, width/4.0});
 						super.model = shape;
 						break;
 					}
 					case left:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-5.0, -5.0,-10.0, 5.0,-10.0, 5.0,10.0, 10.0,10.0, 5.0,10.0, -5.0,10.0, -5.0,5.0, -10.0,5.0, -10.0,-5.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/4.0, -width/4.0,-width/2.0, width/4.0,-width/2.0, width/4.0,width/2.0, width/2.0,width/2.0, width/4.0,width/2.0, -width/4.0,width/2.0, -width/4.0,width/4.0, -width/2.0,width/4.0, -width/2.0,-width/4.0});
 						super.model = shape;
 						break;
 					}
 					case right:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0, -10.0, 5.0, -5.0, 10.0, -5.0, 10.0, 5.0, 5.0, 5.0, 5.0, 10.0, -5.0, 10.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/2.0, width/4.0, -width/2.0, width/4.0, -width/4.0, width/2.0, -width/4.0, width/2.0, width/4.0, width/4.0, width/4.0, width/4.0, width/2.0, -width/4.0, width/2.0});
 						super.model = shape;
 						break;
 					}
@@ -116,14 +115,14 @@ public class Wall extends LevelObject{
 			case cross:{
 				Polygon shape = new Polygon();
 				shape.setFill(Color.BLUE);
-				shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0, -10.0, 5.0, -5.0, 10.0, -5.0, 10.0, 5.0, 5.0, 5.0, 5.0, 10.0, -5.0, 10.0, -5.0, 5.0, -10.0, 5.0, -10.0, -5.0, -5.0, -5.0});
+				shape.getPoints().addAll(new Double [] {-width/4.0,-width/2.0, width/4.0, -width/2.0, width/4.0, -width/4.0, width/2.0, -width/4.0, width/2.0, width/4.0, width/4.0, width/4.0, width/4.0, width/2.0, -width/4.0, width/2.0, -width/4.0, width/4.0, -width/2.0, width/4.0, -width/2.0, -width/4.0, -width/4.0, -width/4.0});
 				super.model = shape;
 				break;
 			}
 			case single:{
 				Polygon shape = new Polygon();
 				shape.setFill(Color.BLUE);
-				shape.getPoints().addAll(new Double [] {-5.0,-5.0, 5.0,-5.0, 5.0,5.0, 10.0,10.0, 5.0,5.0, -5.0,5.0});
+				shape.getPoints().addAll(new Double [] {-width/4.0,-width/4.0, width/4.0,-width/4.0, width/4.0,width/4.0, width/2.0,width/2.0, width/4.0,width/4.0, -width/4.0,width/4.0});
 				super.model = shape;
 				break;
 			}
@@ -133,28 +132,28 @@ public class Wall extends LevelObject{
 					case left:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-10.0, 5.0,-10.0, 5.0,-5.0, 10.0, -5.0, 10.0, 5.0, -5.0, 5.0, -5.0,10.0,-5.0,5.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/2.0, width/4.0,-width/2.0, width/4.0,-width/4.0, width/2.0, -width/4.0, width/2.0, width/4.0, -width/4.0, width/4.0, -width/4.0,width/2.0,-width/4.0,width/4.0});
 						super.model = shape;
 						break;
 					}
 					case right:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-5.0, -5.0,-10.0, 5.0,-10.0, 10.0,-10.0, 5.0,-10.0, 5.0,5.0, 5.0, 10.0, 5.0,5.0, -10.0,5.0, -10.0,-5.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/4.0, -width/4.0,-width/2.0, width/4.0,-width/2.0, width/2.0,-width/2.0, width/4.0,-width/2.0, width/4.0,width/4.0, width/4.0, width/2.0, width/4.0,width/4.0, -width/2.0,width/4.0, -width/2.0,-width/4.0});
 						super.model = shape;
 						break;
 					}
 					case up:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-5.0,-5.0, 10.0,-5.0, 10.0,5.0, 5.0,5.0, 5.0,10.0, -5.0,10.0});
+						shape.getPoints().addAll(new Double [] {-width/4.0,-width/4.0, width/2.0,-width/4.0, width/2.0,width/4.0, width/4.0,width/4.0, width/4.0,width/2.0, -width/4.0,width/2.0});
 						super.model = shape;
 						break;
 					}
 					case down:{
 						Polygon shape = new Polygon();
 						shape.setFill(Color.BLUE);
-						shape.getPoints().addAll(new Double [] {-10.0,-5.0, 5.0,-5.0, 10.0,-5.0, 5.0,-5.0, 5.0,10.0, -5.0,10.0, -5.0,5.0, -10.0,5.0});
+						shape.getPoints().addAll(new Double [] {-width/2.0,-width/4.0, width/4.0,-width/4.0, width/2.0,-width/4.0, width/4.0,-width/4.0, width/4.0,width/2.0, -width/4.0,width/2.0, -width/4.0,width/4.0, -width/2.0,width/4.0});
 						super.model = shape;
 						break;
 					}

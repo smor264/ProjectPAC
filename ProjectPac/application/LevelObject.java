@@ -3,8 +3,9 @@ package application;
 import javafx.scene.shape.Shape;
 
 public abstract class LevelObject {
-	public int width = 20;
-	public int height = 20;
+	protected int width = Main.gridSquareSize;
+	protected int height = Main.gridSquareSize;
+
 	protected Shape model;
 
 	public LevelObject() {

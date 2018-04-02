@@ -46,7 +46,7 @@ public class Enemy extends Character {
 	}
 	
 	public Enemy(double speed, Color color) { // Otherwise make it a triangle
-		super(new Polygon(0.0,-10.0, 10.0,10.0, -10.0,10.0), speed);
+		super(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), speed);
 		nextMoves = new ArrayList<Main.Direction>();
 		model.setFill(color);
 		
@@ -56,7 +56,7 @@ public class Enemy extends Character {
 	}
 	
 	public Enemy(double speed, Color color, Intelligence intelligence, Behaviour behaviour, Algorithm algorithm) { // Otherwise make it a triangle
-		super(new Polygon(0.0,-10.0, 10.0,10.0, -10.0,10.0), speed);
+		super(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), speed);
 		nextMoves = new ArrayList<Main.Direction>();
 		model.setFill(color);
 		
