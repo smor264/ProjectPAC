@@ -60,5 +60,8 @@ public class PickUp extends LevelObject {
 			return 0;
 		}
 	}
+	public PickUpType getPickUpType() {
+		return type;
+	}
 
 }

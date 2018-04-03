@@ -374,8 +374,8 @@ public class AdjacencyMatrix{
 		return directionPath;
 	}
 	
-	public Main.Direction findEuclideanDirection(Integer[] source, Integer[] destination) {
-		/* Finds the direction which minimises the euclidean distance to the destination */
+	public Main.Direction findEuclideanDirection(Integer[] source, Integer[] destination, boolean getCloser) {
+		/* Finds the direction which minimises/maximises (depending on getCloser) the euclidean distance to the destination */
 		int sourceIndex = map.get(Arrays.toString(source));
 		
 		Main.Direction direction;
@@ -398,20 +398,38 @@ public class AdjacencyMatrix{
 			distanceArray[i] = calcDistance(coords, destination);
 		}
 		//System.out.println();
-		/*Find min distance, and consequently the index of the point that gives least distance*/
-		Double minDist = Double.POSITIVE_INFINITY;
-		int minIndex = 0;
-		
-		for (int i = 0; i < distanceArray.length; i++) {
-			if (distanceArray[i] < minDist) {
-				
-				minDist = distanceArray[i];
-				minIndex = i;
+		int index;
+		if (getCloser) {
+			/*Find min distance, and consequently the index of the point that gives least distance*/
+			Double minDist = Double.POSITIVE_INFINITY;
+			int minIndex = 0;
+			
+			for (int i = 0; i < distanceArray.length; i++) {
+				if (distanceArray[i] < minDist) {
+					
+					minDist = distanceArray[i];
+					minIndex = i;
+				}
 			}
+			index = minIndex;
+		}
+		else {
+			/*Find max distance, and consequently the index of the point that gives most distance*/
+			Double maxDist = 0.0;
+			int maxIndex = 0;
+			
+			for (int i = 0; i < distanceArray.length; i++) {
+				if (distanceArray[i] > maxDist) {
+					
+					maxDist = distanceArray[i];
+					maxIndex = i;
+				}
+			}
+			index = maxIndex;
 		}
 		//System.out.println("It looks like " + reverseMap.get(neighbours.get(minIndex)) + " minimises the distance to my target at " + Arrays.toString(destination));
 		/*Convert the coordinates of our point that minimises distance*/
-		String[] minStringCoords = (reverseMap.get(neighbours.get(minIndex))).replace("[", "").replace("]", "").split(", "); 
+		String[] minStringCoords = (reverseMap.get(neighbours.get(index))).replace("[", "").replace("]", "").split(", "); 
 		Integer[] minCoords = {Integer.parseInt(minStringCoords[0]), Integer.parseInt(minStringCoords[1])}; 
 		
 		ArrayList<Integer[]> coordPath = new ArrayList<Integer[]>();

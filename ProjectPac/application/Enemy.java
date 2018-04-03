@@ -13,6 +13,7 @@ public class Enemy extends Character {
 	private Intelligence intelligence;
 	private Behaviour behaviour;
 	private Algorithm algorithm;
+	private Color regularColor;
 	
 	public static enum Intelligence {
 		random, 	// makes correct choice 25% of the time
@@ -43,6 +44,7 @@ public class Enemy extends Character {
 		intelligence = Intelligence.moderate;
 		behaviour = Behaviour.hunter;
 		algorithm = Algorithm.dijkstra;
+		regularColor = (Color)model.getFill();
 	}
 	
 	public Enemy(double speed, Color color) { // Otherwise make it a triangle
@@ -53,6 +55,7 @@ public class Enemy extends Character {
 		intelligence = Intelligence.moderate;
 		behaviour = Behaviour.hunter;
 		algorithm = Algorithm.dijkstra;
+		regularColor = color;
 	}
 	
 	public Enemy(double speed, Color color, Intelligence intelligence, Behaviour behaviour, Algorithm algorithm) { // Otherwise make it a triangle
@@ -63,6 +66,7 @@ public class Enemy extends Character {
 		this.intelligence = intelligence;
 		this.behaviour = behaviour;
 		this.algorithm = algorithm;
+		regularColor = color;
 	}
 	
 	public Main.Direction popNextMove() {
@@ -110,9 +114,19 @@ public class Enemy extends Character {
 	public void setNextMoves(ArrayList<Main.Direction> moves){
 		nextMoves = moves;
 	}
+	
 	public void setNextMove(Main.Direction move){
 		nextMoves.clear();
 		nextMoves.add(move);
 	}
+	
+	public void setColor(Color color) {
+		model.setFill(color);
+	}
+	
+	public void resetColor() {
+		model.setFill(regularColor);
+	}
+	
 
 }

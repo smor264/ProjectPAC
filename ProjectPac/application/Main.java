@@ -28,7 +28,7 @@ import javafx.scene.shape.Circle;
  * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
  * Implement pause and end game
  * Make start menu and transition between levels
- * 
+ * Implement more behaviour types
  * 
  * */
 
@@ -83,6 +83,11 @@ public class Main extends Application {
 	private Level test = new Level();                                      //  ^  This does nothing now, btw
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
+	private boolean playerCanEatGhosts = false;
+	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
+	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
+	private int ateGhostScore = 200; //Score give nfor eating a ghost
+	
 
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
@@ -112,14 +117,13 @@ public class Main extends Application {
 					else {
 						player.setPrevPos(xPos,yPos);
 						player.setStartPosition(new int[] {xPos,yPos});
-						println("player started at " + xPos + ", " + yPos);
 						playerExists = true;
 
 						placeLevelObject(player, xPos, yPos);
 					}
 				}
 				else if (array[yPos][xPos] == 3) { //Enemy
-					Enemy enemy = new Enemy(1, Color.RED, Enemy.Intelligence.moderate, Enemy.Behaviour.hunter, Enemy.Algorithm.dfs);
+					Enemy enemy = new Enemy(1, Color.RED, Enemy.Intelligence.moderate, Enemy.Behaviour.hunter, Enemy.Algorithm.dijkstra);
 					enemyList.add(enemy);
 					
 					enemy.setPrevPos(xPos, yPos);
@@ -141,8 +145,9 @@ public class Main extends Application {
 	}
 	
 	private void restartLevel() {
-		int playerStartYPos = player.getStartPosition()[0];
-		int playerStartXPos = player.getStartPosition()[1];
+		int playerStartXPos = player.getStartPosition()[0];
+		int playerStartYPos = player.getStartPosition()[1];
+
 		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
 		
 		levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null;
@@ -251,6 +256,26 @@ public class Main extends Application {
 						}
 					}
 					
+					if (playerPowerUpTimer == 0) { 
+						playerCanEatGhosts = false; 
+						for (Enemy enemy : enemyList) {
+							enemy.resetColor();
+						}
+					}
+					else { 
+						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
+							for (Enemy enemy :enemyList) {
+								enemy.setColor(Color.WHITE);
+							}
+						}
+						else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
+							for (Enemy enemy :enemyList) {
+								enemy.setColor(Color.DODGERBLUE);
+							}
+						}
+						playerPowerUpTimer--; 
+					}
+					
 					player.moveBy(delta[0], delta[1]);
 					
 					try {
@@ -304,7 +329,12 @@ public class Main extends Application {
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
-			throw new PlayerCaughtException();
+			if (playerCanEatGhosts == true) {
+				player.modifyScore(ateGhostScore);
+				enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
+				println("Score: " + player.getScore());
+			}
+			else { throw new PlayerCaughtException(); }
 		}
 
 		// If enemy is aligned with grid, update the grid position
@@ -319,66 +349,78 @@ public class Main extends Application {
 			
 			
 			//The beginning of more AI decisions goes here
-			switch(enemy.getBehaviour()) {
-				case hunter: {
-					chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-					break;
-				}
-				case ambusher: {
-					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > 4) {
-						//If close to the player, chase
+			if (playerCanEatGhosts) {
+				//Take the direction that maximises euclidean distance to the player
+				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
+			}
+			else {
+				switch(enemy.getBehaviour()) {
+					case hunter: {
 						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						break;
 					}
-					else {
-						//If far away, try to cut the player off
-						//use player direction to aim ahead of the player
-						
+					case ambusher: {
+						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > 4) {
+							//If close to the player, chase
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						}
+						else {
+							//If far away, try to cut the player off
+							//use player direction to aim ahead of the player
+							
+						}
+						break;
 					}
-					break;
+					case guard: {
+						int guardRadius = 4;
+						int guardYIndex = 2;
+						int guardXIndex = 2;
+						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						}
+						else {
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
+						}
+						break;
+					}
+					case indecisive: {break;}
+					case patrol: {
+						int aggroRadius = 4;
+						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < aggroRadius) {
+							//If close to the player, chase
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						}
+						else {
+							//move between points
+						}
+						break;
+					}
+					case scared: { // Probably repurpose euclidean pathfinding to maximise distance from player?
+						int scaredRadius = 4;
+						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius) {
+							//If chase the player
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+						}
+						else {
+							//run away somehow???
+						}
+						break;
+					}
+					default: { throw new IllegalArgumentException("Invalid behaviour specified");} 
 				}
-				case guard: {
-					int guardRadius = 4;
-					int guardYIndex = 2;
-					int guardXIndex = 2;
-					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
-						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-					}
-					else {
-						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
-					}
-					break;
-				}
-				case indecisive: {break;}
-				case patrol: {
-					int aggroRadius = 4;
-					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < aggroRadius) {
-						//If close to the player, chase
-						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-					}
-					else {
-						//move between points
-					}
-					break;
-				}
-				case scared: { // Probably repurpose euclidean pathfinding to maximise distance from player?
-					int scaredRadius = 4;
-					if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius) {
-						//If chase the player
-						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-					}
-					else {
-						//run away somehow???
-					}
-					break;
-				}
-			default: { throw new IllegalArgumentException("Invalid behaviour specified");} }
+			}
 			
 
 			enemy.setPrevPos(xIndex, yIndex);
 
 			//Choose new direction to move in
 			//System.out.println("Attempting to move " + enemy.getNextMove());
-			switch (enemy.popNextMove()) {
+			Direction next = enemy.popNextMove();
+			if (next == null){
+				return delta;
+			}
+			
+			switch (next) {
 				case up: {
 					//If wrapping around level...
 					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
@@ -471,7 +513,7 @@ public class Main extends Application {
 			}
 	
 			case euclidean:{
-				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination));
+				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
 				break;
 			}
 			default:{throw new IllegalArgumentException("Invalid algorithm");}
@@ -493,8 +535,17 @@ public class Main extends Application {
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				System.out.println("Score: " + player.getScore());
 				pelletsRemaining--;
+				
 				if (pelletsRemaining == 0) {
 					throw new LevelCompleteException();
+				}
+				
+				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
+					playerCanEatGhosts = true;
+					playerPowerUpTimer = playerPowerUpDuration;
+					for (Enemy enemy : enemyList) {
+						enemy.setColor(Color.DODGERBLUE);
+					}
 				}
 			} // Adds to players score depending on type of pellet eaten
 
