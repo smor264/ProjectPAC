@@ -137,6 +137,7 @@ public class Main extends Application {
 					placeLevelObject(pickUp, xPos, yPos);
 				}
 			}
+			resetPlayerPowerUpState();
 		}
 		player.getModel().toFront(); // Draw player and enemies over top of pellets, etc.
 		for (Enemy enemy: enemyList) {
@@ -156,6 +157,7 @@ public class Main extends Application {
 		for (Enemy enemy : enemyList) {
 			enemy.moveTo(convertToPosition(enemy.getStartPosition()[0], true), convertToPosition(enemy.getStartPosition()[1], false));	
 		}
+		resetPlayerPowerUpState();
 	}
 
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
@@ -181,7 +183,14 @@ public class Main extends Application {
 		}
 
 	}
-
+	
+	private void resetPlayerPowerUpState() {
+		playerCanEatGhosts = false; 
+		playerPowerUpTimer = 0;
+		for (Enemy enemy : enemyList) {
+			enemy.resetColor();
+		}
+	}
 	@Override
 	public void start(Stage primaryStage) {
 		try {
@@ -257,10 +266,7 @@ public class Main extends Application {
 					}
 					
 					if (playerPowerUpTimer == 0) { 
-						playerCanEatGhosts = false; 
-						for (Enemy enemy : enemyList) {
-							enemy.resetColor();
-						}
+						resetPlayerPowerUpState();
 					}
 					else { 
 						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
