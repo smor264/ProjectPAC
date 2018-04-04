@@ -16,6 +16,9 @@ public class Character extends LevelObject {
 	public double getSpeed() {
 		return speed;
 	}
+	public void setSpeed(int speed) {
+		this.speed = speed;
+	}
 	
 	public int[] getPrevPos() {
 		return prevPos;

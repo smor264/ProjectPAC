@@ -375,7 +375,8 @@ public class AdjacencyMatrix{
 	}
 	
 	public Main.Direction findEuclideanDirection(Integer[] source, Integer[] destination, boolean getCloser) {
-		/* Finds the direction which minimises/maximises (depending on getCloser) the euclidean distance to the destination */
+		/* Finds the direction which minimises/maximises (depending on getCloser) the euclidean distance to the destination.
+		 * Returns null if staying still is the best move */
 		int sourceIndex = map.get(Arrays.toString(source));
 		
 		Main.Direction direction;
@@ -412,6 +413,11 @@ public class AdjacencyMatrix{
 				}
 			}
 			index = minIndex;
+			
+			/* If we are better off not moving, return null*/
+			if(minDist > calcDistance(source, destination)) {
+				return null;
+			}
 		}
 		else {
 			/*Find max distance, and consequently the index of the point that gives most distance*/
@@ -426,7 +432,13 @@ public class AdjacencyMatrix{
 				}
 			}
 			index = maxIndex;
+			
+			/* If we are better off not moving, return null*/
+			if(maxDist < calcDistance(source, destination)) {
+				return null;
+			}
 		}
+		
 		//System.out.println("It looks like " + reverseMap.get(neighbours.get(minIndex)) + " minimises the distance to my target at " + Arrays.toString(destination));
 		/*Convert the coordinates of our point that minimises distance*/
 		String[] minStringCoords = (reverseMap.get(neighbours.get(index))).replace("[", "").replace("]", "").split(", "); 

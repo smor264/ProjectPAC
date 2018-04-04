@@ -14,6 +14,7 @@ public class Enemy extends Character {
 	private Behaviour behaviour;
 	private Algorithm algorithm;
 	private Color regularColor;
+	private int isScaredTimer = 0; // Is only used for the scared behaviour. Used to give some hysteresis
 	
 	public static enum Intelligence {
 		random, 	// makes correct choice 25% of the time
@@ -127,6 +128,16 @@ public class Enemy extends Character {
 	public void resetColor() {
 		model.setFill(regularColor);
 	}
-	
+	public boolean isScared() {
+		return (isScaredTimer == 0) ? false : true;
+	}
+	public void manageScared() {
+		if (isScaredTimer == 0) {
+			isScaredTimer = 7;
+		}
+		else {
+			isScaredTimer--;
+		}
+	}
 
 }

@@ -4,6 +4,7 @@ package application;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javafx.animation.AnimationTimer;
@@ -29,18 +30,18 @@ import javafx.scene.shape.Circle;
  * Implement pause and end game
  * Make start menu and transition between levels
  * Implement more behaviour types
- * 
+ * Think about flood-fill-esque algorithm for detecting surrounded wall pieces to make them look filled in rather than cross pieces
  * */
 
 public class Main extends Application {
 	public static int windowWidth = 1280;
-	public static int windowHeight = 720;
+	public static int windowHeight = 990;
 	public static int[] centre = {windowWidth/2, windowHeight/2};
-	public static int levelWidth = 10;
-	public static int levelHeight = 10;
-	public static int gridSquareSize = 40; // ONLY WORKS FOR EVEN NUMBERS
+	public static int levelWidth = 27;
+	public static int levelHeight = 25;
+	public static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
 	public static int levelOffsetX = 100;
-	public static int levelOffsetY = 200;
+	public static int levelOffsetY = 60;
 
 
 	public static enum Direction {
@@ -49,6 +50,8 @@ public class Main extends Application {
 		left,
 		right,
 	}
+	public static Color[] enemyColors = {Color.RED, Color.DARKORANGE, Color.DARKMAGENTA, Color.DARKCYAN, Color.GREENYELLOW, Color.SPRINGGREEN};
+	
 	/*TEST VARIABLES*/
 	/*
 	Wall w = new Wall(Wall.WallType.full, Direction.up);
@@ -72,7 +75,7 @@ public class Main extends Application {
 		System.out.print(str); // because I'm tired of writing System.out.print
 	}
 	private int extraLives = 2;
-	private LevelObject[][] levelObjectArray = new LevelObject[levelWidth][levelHeight]; //Array storing all objects in the level (walls, pellets, enemies, player)
+	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player = new Player(new Circle(gridSquareSize/2, Color.YELLOW), 2);
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
@@ -86,22 +89,69 @@ public class Main extends Application {
 	private boolean playerCanEatGhosts = false;
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
-	private int ateGhostScore = 200; //Score give nfor eating a ghost
+	private int ateGhostScore = 200; //Score given for eating a ghost
+	
 	
 
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
 	}
+	
 	private double convertToPosition(int index, boolean isXCoord) {
 		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
 	}
-
+	
+	private Object[] determineEnemyCharacteristics(int num) {
+		// Enemies have their characteristics encoded using prime factorisation. 
+		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
+		Object[] array = new Object[3];
+		
+		int twoExponent = 0;
+		while(num%2 == 0) {
+			twoExponent++;
+			num = num/2;
+		}
+		switch (twoExponent) {
+			case 0: {array[0] = Enemy.Intelligence.dumb; break;}
+			case 1: {array[0] = Enemy.Intelligence.moderate; break;}
+			case 2: {array[0] = Enemy.Intelligence.smart; break;}
+			case 3: {array[0] = Enemy.Intelligence.perfect; break;}
+		}
+		
+		int threeExponent = 0;
+		while (num%3 == 0) {
+			threeExponent++;
+			num = num/3;
+		}
+		switch (threeExponent) {
+			case 0: {array[1] = Enemy.Behaviour.hunter; break;}
+			case 1: {array[1] = Enemy.Behaviour.ambusher; break;}
+			case 2: {array[1] = Enemy.Behaviour.guard; break;}
+			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
+			case 4: {array[1] = Enemy.Behaviour.scared; break;}
+		}
+		
+		int fiveExponent = 0;
+		while (num%5 == 0) {
+			fiveExponent++;
+			num = num/5;
+		}
+		switch (fiveExponent) {
+			case 0: {array[2] = Enemy.Algorithm.dijkstra; break;}
+			case 1: {array[2] = Enemy.Algorithm.euclidean; break;}
+			case 2: {array[2] = Enemy.Algorithm.bfs; break;}
+			case 3: {array[2] = Enemy.Algorithm.dfs; break;}
+		}
+		
+		return array;
+	} 
+	
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
 		enemyList.clear();
 		boolean playerExists = false;
-		for (int xPos = 0; xPos < array.length; xPos++) {
-			for (int yPos = 0; yPos < array[0].length; yPos++) {
+		for (int xPos = 0; xPos < array[0].length; xPos++) {
+			for (int yPos = 0; yPos < array.length; yPos++) {
 				if (array[yPos][xPos] == 1) { // Wall
 					Object[] wallType;
 					//ArrayList<Object> wallType = new ArrayList<Object>();
@@ -122,8 +172,9 @@ public class Main extends Application {
 						placeLevelObject(player, xPos, yPos);
 					}
 				}
-				else if (array[yPos][xPos] == 3) { //Enemy
-					Enemy enemy = new Enemy(1, Color.RED, Enemy.Intelligence.moderate, Enemy.Behaviour.hunter, Enemy.Algorithm.dijkstra);
+				else if (array[yPos][xPos] < 0) { //Enemy
+					Object[] characteristics = determineEnemyCharacteristics(-array[yPos][xPos]);
+					Enemy enemy = new Enemy(2, enemyColors[enemyList.size()], (Enemy.Intelligence)characteristics[0], (Enemy.Behaviour)characteristics[1], (Enemy.Algorithm)characteristics[2]);
 					enemyList.add(enemy);
 					
 					enemy.setPrevPos(xPos, yPos);
@@ -189,6 +240,20 @@ public class Main extends Application {
 		playerPowerUpTimer = 0;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
+			enemy.setSpeed(2);
+			
+			int[] delta = {0,0};
+			if (((int)enemy.getPosition()[0] & 1) != 0) {
+				// If horizontal position is odd
+				delta[0] = 1;
+				
+			}
+			if (((int)enemy.getPosition()[1] & 1) != 0) {
+				// If position is odd
+				delta[1] = 1;
+			}
+			enemy.moveBy(delta[0], delta[1]);
+			
 		}
 	}
 	@Override
@@ -261,7 +326,7 @@ public class Main extends Application {
 							return;
 						}
 						catch(InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but reight now it's just to stop the compiler complaining.
+							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
 					
@@ -315,7 +380,7 @@ public class Main extends Application {
 
 						} 
 						catch (InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but reight now it's just to stop the compiler complaining.
+							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
 					
@@ -378,14 +443,45 @@ public class Main extends Application {
 						break;
 					}
 					case guard: {
-						int guardRadius = 4;
-						int guardYIndex = 2;
-						int guardXIndex = 2;
-						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+						int guardRadius = 10;
+						int guardYIndex = 5;
+						int guardXIndex = 6;
+						if (AdjacencyMatrix.calcDistance(new Integer[] {guardYIndex, guardXIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+							// Is the player near my guard point? Chase them!
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						}
-						else {
+						else if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex}) > guardRadius) {
+							// Am I far from my guard point? Move closer
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
+						}
+						else {
+							//I am near my guard point and the player is not. Do a random move?
+							if (enemy.checkPathLength() >= 1) {
+								break;
+							}
+							Random random = new Random();
+							
+							int randomXCoord;
+							int randomYCoord;
+							boolean validMove = true;
+							do {
+								validMove = true;
+								randomXCoord = random.nextInt(2*guardRadius) - guardRadius; // random index from (-guardRadius) to (guardRadius)
+								randomYCoord = random.nextInt(2*guardRadius) - guardRadius;
+								try{ 
+									if (levelObjectArray[guardYIndex - randomYCoord][guardXIndex - randomXCoord] instanceof Wall) {
+										validMove = false;
+										//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is a wall, retrying...");
+									}
+								} 
+								catch(ArrayIndexOutOfBoundsException e) {
+									validMove = false;
+									//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is outside the level bounds, retrying...");
+								}
+								
+							} while (!validMove);
+							//println("Looks like I'm gonna check out " + (guardXIndex - randomXCoord) + ", " + (guardYIndex - randomYCoord));
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex - randomYCoord, guardXIndex - randomXCoord});
 						}
 						break;
 					}
@@ -401,14 +497,19 @@ public class Main extends Application {
 						}
 						break;
 					}
-					case scared: { // Probably repurpose euclidean pathfinding to maximise distance from player?
-						int scaredRadius = 4;
-						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius) {
-							//If chase the player
+					case scared: { 
+						int scaredRadius = 3;
+						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
+							//If the player is far away
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						}
 						else {
-							//run away somehow???
+							/* Choose the direction that maximises euclidean distance to the player */
+							
+							//This function acts as hysteresis, to keep the ghost scared for a few turns
+							enemy.manageScared();
+							
+							enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 						}
 						break;
 					}
@@ -551,6 +652,7 @@ public class Main extends Application {
 					playerPowerUpTimer = playerPowerUpDuration;
 					for (Enemy enemy : enemyList) {
 						enemy.setColor(Color.DODGERBLUE);
+						enemy.setSpeed(1);
 					}
 				}
 			} // Adds to players score depending on type of pellet eaten
