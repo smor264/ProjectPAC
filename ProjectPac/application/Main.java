@@ -17,6 +17,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
@@ -29,27 +30,50 @@ import javafx.scene.text.Text;
  * */
 /*To Do List:
  * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
- * Implement pause and end game
+ * Implement end game
  * Make start menu and transition between levels
  * Implement more behaviour types
  * Think about flood-fill-esque algorithm for detecting surrounded wall pieces to make them look filled in rather than cross pieces
  * */
 
 public class Main extends Application {
-	public static int windowWidth = 1280;
-	public static int windowHeight = 990;
-	public static int[] centre = {windowWidth/2, windowHeight/2};
-	public static int levelWidth = 27;
-	public static int levelHeight = 25;
-	public static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
-	public static int levelOffsetX = 100;
-	public static int levelOffsetY = 60;
-	
-	public Text currentScoreText = new Text(); 
-    public AnchorPane HUDBar = new AnchorPane(); 
-    
+	//Unchanged
+	public final static int windowWidth = 1280;
+	public final static int windowHeight = 990;
+	public final static int[] centre = {windowWidth/2, windowHeight/2};
+	public final static int levelWidth = 27;
+	public final static int levelHeight = 25;
+	public final static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
+	public final static int levelOffsetX = 100;
+	public final static int levelOffsetY = 60;
+
+	//Managed Variables and Objects
+	private int extraLives = 2;
+	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
+	private Player player = new Player(playerCharacter.model(), 2);
+	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
+	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
+	private AnchorPane gameUI = new AnchorPane();
+	private AdjacencyMatrix adjMatrix;
+	private Group currentLevel = new Group();
+	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
+	private Level test = new Level();                                      //  ^  This does nothing now, btw
+	private int pelletsRemaining = 0;
+	private boolean pausePressed = false;
+	private boolean playerCanEatGhosts = false;
+	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
+	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
+	private int ateGhostScore = 200; //Score given for eating a ghost
+	private Rectangle PauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
+	private Text PauseText = new Text("Paused");
+	private StackPane PauseOverlay = new StackPane();
+
+
+	public Text currentScoreText = new Text();
+    public AnchorPane HUDBar = new AnchorPane();
+
 	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
-	
+
 	/**
 	 * A list of all characters that the player can use.
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
@@ -61,20 +85,17 @@ public class Main extends Application {
 		GlitchTheGhost (null, Ability.eatSameColor),
 		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Ability.snake),
 		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Ability.gun);
-		
+
 		private final Shape model;
 		private final Ability ability;
-		
+
 		PlayerCharacter(Shape model, Ability ability){
 			this.model = model;
 			this.ability = ability;
 		}
 		private Shape model() {return model;}
-	public Text currentScoreText = new Text();
-	public AnchorPane HUDBar = new AnchorPane();
-
 	}
-	
+
 	/**
 	 * A list of all valid directions characters can move
 	 * */
@@ -84,9 +105,9 @@ public class Main extends Application {
 		left,
 		right,
 	}
-	
+
 	/**
-	 * PlayerCharacter-specific special actions 
+	 * PlayerCharacter-specific special actions
 	 * */
 	public static enum Ability {
 		eatGhosts,
@@ -95,7 +116,7 @@ public class Main extends Application {
 		eatSameColor,
 		snake,
 	}
-	
+
 	/**
 	 * Special actions usable by any PlayerCharacter
 	 * */
@@ -106,12 +127,12 @@ public class Main extends Application {
 		invertControls,
 		randomTeleport,
 	}
-	
+
 	/**
 	 * A list of colours that are given to enemies based on the order that they are initialised in the Level
 	 * */
 	public static Color[] enemyColors = {Color.RED, Color.DARKORANGE, Color.DARKMAGENTA, Color.DARKCYAN, Color.GREENYELLOW, Color.SPRINGGREEN};
-	
+
 	/*TEST VARIABLES*/
 	/*
 	Wall w = new Wall(Wall.WallType.full, Direction.up);
@@ -134,38 +155,20 @@ public class Main extends Application {
 	private void print(String str) {
 		System.out.print(str); // because I'm tired of writing System.out.print
 	}
-	private int extraLives = 2;
-	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(playerCharacter.model(), 2);
-	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
-	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
-	private AnchorPane gameUI = new AnchorPane();
-	private AdjacencyMatrix adjMatrix;
-	private Group currentLevel = new Group();
-	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();                                      //  ^  This does nothing now, btw
-	private int pelletsRemaining = 0;
-	private boolean pausePressed = false;
-	private boolean playerCanEatGhosts = false;
-	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
-	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
-	private int ateGhostScore = 200; //Score given for eating a ghost
-	
-	
 
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
 	}
-	
+
 	private double convertToPosition(int index, boolean isXCoord) {
 		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
 	}
-	
+
 	private Object[] determineEnemyCharacteristics(int num) {
-		// Enemies have their characteristics encoded using prime factorisation. 
+		// Enemies have their characteristics encoded using prime factorisation.
 		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
 		Object[] array = new Object[3];
-		
+
 		int twoExponent = 0;
 		while(num%2 == 0) {
 			twoExponent++;
@@ -177,7 +180,7 @@ public class Main extends Application {
 			case 2: {array[0] = Enemy.Intelligence.smart; break;}
 			case 3: {array[0] = Enemy.Intelligence.perfect; break;}
 		}
-		
+
 		int threeExponent = 0;
 		while (num%3 == 0) {
 			threeExponent++;
@@ -190,7 +193,7 @@ public class Main extends Application {
 			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
 			case 4: {array[1] = Enemy.Behaviour.scared; break;}
 		}
-		
+
 		int fiveExponent = 0;
 		while (num%5 == 0) {
 			fiveExponent++;
@@ -202,14 +205,21 @@ public class Main extends Application {
 			case 2: {array[2] = Enemy.Algorithm.bfs; break;}
 			case 3: {array[2] = Enemy.Algorithm.dfs; break;}
 		}
-		
+
 		return array;
-	} 
-	
+	}
+
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
 		enemyList.clear();
 		boolean playerExists = false;
+
+		PauseOverlay.getChildren().addAll(PauseScreen, PauseText);
+		PauseScreen.setFill(Color.BLACK);
+		PauseScreen.setOpacity(0.8);
+		PauseText.setFill(Color.WHITE);
+		PauseText.setStyle("-fx-font: 24 arial;");
+
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
 				if (array[yPos][xPos] == 1) { // Wall
@@ -236,10 +246,10 @@ public class Main extends Application {
 					Object[] characteristics = determineEnemyCharacteristics(-array[yPos][xPos]);
 					Enemy enemy = new Enemy(2, enemyColors[enemyList.size()], (Enemy.Intelligence)characteristics[0], (Enemy.Behaviour)characteristics[1], (Enemy.Algorithm)characteristics[2]);
 					enemyList.add(enemy);
-					
+
 					enemy.setPrevPos(xPos, yPos);
 					enemy.setStartPosition(new int[] {xPos, yPos});
-					
+
 					placeLevelObject(enemy, xPos, yPos);
 				}
 				else if(array[yPos][xPos] == 4 || array[yPos][xPos] == 5 || array[yPos][xPos] == 6) {
@@ -254,19 +264,20 @@ public class Main extends Application {
 		for (Enemy enemy: enemyList) {
 			enemy.getModel().toFront();
 		}
+
 	}
-	
+
 	private void restartLevel() {
 		int playerStartXPos = player.getStartPosition()[0];
 		int playerStartYPos = player.getStartPosition()[1];
 
 		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
-		
+
 		levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null;
 		levelObjectArray[playerStartYPos][playerStartXPos] = player;
-		
+
 		for (Enemy enemy : enemyList) {
-			enemy.moveTo(convertToPosition(enemy.getStartPosition()[0], true), convertToPosition(enemy.getStartPosition()[1], false));	
+			enemy.moveTo(convertToPosition(enemy.getStartPosition()[0], true), convertToPosition(enemy.getStartPosition()[1], false));
 		}
 		resetPlayerPowerUpState();
 	}
@@ -291,26 +302,26 @@ public class Main extends Application {
 		}
 
 	}
-	
+
 	private void resetPlayerPowerUpState() {
-		playerCanEatGhosts = false; 
+		playerCanEatGhosts = false;
 		playerPowerUpTimer = 0;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
 			enemy.setSpeed(2);
-			
+
 			int[] delta = {0,0};
 			if (((int)enemy.getPosition()[0] & 1) != 0) {
 				// If horizontal position is odd
 				delta[0] = 1;
-				
+
 			}
 			if (((int)enemy.getPosition()[1] & 1) != 0) {
 				// If position is odd
 				delta[1] = 1;
 			}
 			enemy.moveBy(delta[0], delta[1]);
-			
+
 		}
 	}
 
@@ -328,7 +339,6 @@ public class Main extends Application {
 		try {
 			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 			initialiseLevel(test);
-			initialize();
 
 				if(player != null) {
 				currentScoreText.setText(player.getScoreString());
@@ -338,9 +348,9 @@ public class Main extends Application {
 					}
 
 
-			
+
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
-			
+
 			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
@@ -349,9 +359,15 @@ public class Main extends Application {
 						case DOWN: { directionArray.append(Direction.down); break;}
 						case LEFT: { directionArray.append(Direction.left); break;}
 						case RIGHT: { directionArray.append(Direction.right); break;}
-						case P: { pausePressed = !pausePressed; 
-							if (pausePressed) {println("PAUSED!");} 
-							else { println("UNPAUSED!"); }; 
+						case P: { pausePressed = !pausePressed;
+							if (pausePressed) {
+								println("PAUSED!");
+								currentLevel.getChildren().add(PauseOverlay);
+								}
+							else {
+								println("UNPAUSED!");
+								currentLevel.getChildren().removeAll(PauseOverlay);
+							}
 							break;
 						}
 						default: break;
@@ -388,9 +404,9 @@ public class Main extends Application {
 					while (pausePressed) {
 						return;
 					}
-					
+
 					int[] delta = {0,0};
-					
+
 					try { delta = calculatePlayerMovement(); }
 					catch(LevelCompleteException e1) {
 						println("LEVEL COMPLETE!");
@@ -406,11 +422,11 @@ public class Main extends Application {
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
-					
-					if (playerPowerUpTimer == 0) { 
+
+					if (playerPowerUpTimer == 0) {
 						resetPlayerPowerUpState();
 					}
-					else { 
+					else {
 						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
 							for (Enemy enemy :enemyList) {
 								enemy.setColor(Color.WHITE);
@@ -421,11 +437,11 @@ public class Main extends Application {
 								enemy.setColor(Color.DODGERBLUE);
 							}
 						}
-						playerPowerUpTimer--; 
+						playerPowerUpTimer--;
 					}
-					
+
 					player.moveBy(delta[0], delta[1]);
-					
+
 					try {
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
@@ -439,7 +455,7 @@ public class Main extends Application {
 						try {
 							TimeUnit.SECONDS.sleep(1);
 							extraLives--;
-							
+
 							if (extraLives < 0) {
 								println("GAME OVER!");
 								player.setScore(0);
@@ -455,12 +471,12 @@ public class Main extends Application {
 							this.start();
 							return;
 
-						} 
+						}
 						catch (InterruptedException e2){
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
-					
+
 				}
 			};
 
@@ -470,7 +486,7 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-	
+
 
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
@@ -492,10 +508,10 @@ public class Main extends Application {
 
 			int playerXIndex = convertToIndex(player.getPosition()[0], true);// (int)((player.getPosition()[0] - levelOffsetX) / gridSquareSize);
 			int playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
-			
+
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
-			
-			
+
+
 			//The beginning of more AI decisions goes here
 			if (playerCanEatGhosts) {
 				//Take the direction that maximises euclidean distance to the player
@@ -509,11 +525,11 @@ public class Main extends Application {
 					}
 					case ambusher: {
 						switch (enemy.getAmbusherState()) {
-							case reposition1:{							
+							case reposition1:{
 								/* If it's now time to ambush, pick a random spot on the map to move to, from there we can try to cut the player off */
 								//println("Choosing a random position to move to...");
 								Random rand = new Random();
-								int randXIndex; 
+								int randXIndex;
 								int randYIndex;
 								/*Check to see if this move is valid*/
 								boolean validMove = true;
@@ -528,7 +544,7 @@ public class Main extends Application {
 									}
 									catch (Exception e) { validMove = false; }
 								} while(!validMove);
-								
+
 								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {randYIndex, randXIndex});
 								enemy.manageAmbusherFSM();
 								break;
@@ -564,7 +580,7 @@ public class Main extends Application {
 									}
 								} catch(ArrayIndexOutOfBoundsException e){break;}
 								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex+del[1], playerXIndex + del[0]});
-								
+
 								enemy.manageAmbusherFSM();
 								break;
 							}
@@ -575,7 +591,7 @@ public class Main extends Application {
 								break;
 							}
 							default: {break;}
-							
+
 						}
 						break;
 					}
@@ -597,7 +613,7 @@ public class Main extends Application {
 								break;
 							}
 							Random random = new Random();
-							
+
 							int randomXCoord;
 							int randomYCoord;
 							boolean validMove = true;
@@ -605,17 +621,17 @@ public class Main extends Application {
 								validMove = true;
 								randomXCoord = random.nextInt(2*guardRadius) - guardRadius; // random index from (-guardRadius) to (guardRadius)
 								randomYCoord = random.nextInt(2*guardRadius) - guardRadius;
-								try{ 
+								try{
 									if (levelObjectArray[guardYIndex - randomYCoord][guardXIndex - randomXCoord] instanceof Wall) {
 										validMove = false;
 										//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is a wall, retrying...");
 									}
-								} 
+								}
 								catch(ArrayIndexOutOfBoundsException e) {
 									validMove = false;
 									//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is outside the level bounds, retrying...");
 								}
-								
+
 							} while (!validMove);
 							//println("Looks like I'm gonna check out " + (guardXIndex - randomXCoord) + ", " + (guardYIndex - randomYCoord));
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex - randomYCoord, guardXIndex - randomXCoord});
@@ -634,7 +650,7 @@ public class Main extends Application {
 						}
 						break;
 					}
-					case scared: { 
+					case scared: {
 						int scaredRadius = 1;
 						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
 							//If the player is far away
@@ -642,18 +658,18 @@ public class Main extends Application {
 						}
 						else {
 							/* Choose the direction that maximises euclidean distance to the player */
-							
+
 							//This function acts as hysteresis, to keep the ghost scared for a few turns
 							enemy.manageScared();
-							
+
 							enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 						}
 						break;
 					}
-					default: { throw new IllegalArgumentException("Invalid behaviour specified");} 
+					default: { throw new IllegalArgumentException("Invalid behaviour specified");}
 				}
 			}
-			
+
 
 			enemy.setPrevPos(xIndex, yIndex);
 
@@ -663,7 +679,7 @@ public class Main extends Application {
 			if (next == null){
 				return delta;
 			}
-			
+
 			switch (next) {
 				case up: {
 					//If wrapping around level...
@@ -736,11 +752,11 @@ public class Main extends Application {
 	}
 
 	private void chooseMoveFromAlgorithm(Enemy enemy, Integer[] source, Integer[] destination) {
-		
+
 		switch (enemy.getAlgorithm()) {
 			case bfs:{
 				// set next moves to be the directions from enemy to player
-				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination)); 
+				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
 				break;
 			}
 			case dfs:{
@@ -752,10 +768,10 @@ public class Main extends Application {
 			}
 			case dijkstra:{
 				//System.out.println(targetXIndex + ", " + targetYIndex);
-				enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination)); 
+				enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
 				break;
 			}
-	
+
 			case euclidean:{
 				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
 				break;
@@ -763,11 +779,11 @@ public class Main extends Application {
 			default:{throw new IllegalArgumentException("Invalid algorithm");}
 		}
 	}
-	
+
 	private int[] calculatePlayerMovement() throws LevelCompleteException{
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-		
+
 		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
@@ -779,15 +795,14 @@ public class Main extends Application {
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				initialize();
 				currentScoreText.setText(player.getScoreString());
-				HUDBar.getChildren().remove(currentScoreText);
-				HUDBar.getChildren().add(currentScoreText);
+
 				System.out.println("Score: " + player.getScore());
 				pelletsRemaining--;
-				
+
 				if (pelletsRemaining == 0) {
 					throw new LevelCompleteException();
 				}
-				
+
 				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
 					playerCanEatGhosts = true;
 					playerPowerUpTimer = playerPowerUpDuration;
