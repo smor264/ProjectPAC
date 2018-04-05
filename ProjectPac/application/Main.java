@@ -20,6 +20,8 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 /* Thoughts about random level generation:
  * - Every node must have at least two neighbours (degree two)
  * - No loops of four or less (girth of 5+)
@@ -42,14 +44,66 @@ public class Main extends Application {
 	public static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
 	public static int levelOffsetX = 100;
 	public static int levelOffsetY = 60;
+	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
+	
+	/**
+	 * A list of all characters that the player can use.
+	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
+	 * */
+	public static enum PlayerCharacter {
+		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Ability.eatGhosts),
+		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Ability.eatGhosts),
+		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Ability.wallJump),
+		GlitchTheGhost (null, Ability.eatSameColor),
+		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Ability.snake),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Ability.gun);
+		
+		private final Shape model;
+		private final Ability ability;
+		
+		PlayerCharacter(Shape model, Ability ability){
+			this.model = model;
+			this.ability = ability;
+		}
+		private Shape model() {return model;}
 
-
+	}
+	
+	/**
+	 * A list of all valid directions characters can move
+	 * */
 	public static enum Direction {
 		up,
 		down,
 		left,
 		right,
 	}
+	
+	/**
+	 * PlayerCharacter-specific special actions 
+	 * */
+	public static enum Ability {
+		eatGhosts,
+		wallJump,
+		gun,
+		eatSameColor,
+		snake,
+	}
+	
+	/**
+	 * Special actions usable by any PlayerCharacter
+	 * */
+	public static enum Boost {
+		timeSlow, superTimeStop,
+		dash, superDash,
+		pelletMagnet, superPelletMagnet,
+		invertControls,
+		randomTeleport,
+	}
+	
+	/**
+	 * A list of colours that are given to enemies based on the order that they are initialised in the Level
+	 * */
 	public static Color[] enemyColors = {Color.RED, Color.DARKORANGE, Color.DARKMAGENTA, Color.DARKCYAN, Color.GREENYELLOW, Color.SPRINGGREEN};
 	
 	/*TEST VARIABLES*/
@@ -76,7 +130,7 @@ public class Main extends Application {
 	}
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(new Circle(gridSquareSize/2, Color.YELLOW), 2);
+	private Player player = new Player(playerCharacter.model(), 2);
 	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 	private AnchorPane gameUI = new AnchorPane();
@@ -558,7 +612,7 @@ public class Main extends Application {
 						break;
 					}
 					case scared: { 
-						int scaredRadius = 3;
+						int scaredRadius = 1;
 						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
 							//If the player is far away
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
