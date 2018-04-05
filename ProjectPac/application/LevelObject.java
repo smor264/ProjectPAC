@@ -18,6 +18,7 @@ public abstract class LevelObject {
 		
 		int mult = 1;
 		if (model instanceof Rectangle) {
+			//God only knows why, but Rectangles behave weirdly. This band-aid fixes it
 			mult = 2;
 		}
 		width = model.getBoundsInLocal().getWidth() * mult;

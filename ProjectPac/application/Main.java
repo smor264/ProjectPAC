@@ -44,6 +44,10 @@ public class Main extends Application {
 	public static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
 	public static int levelOffsetX = 100;
 	public static int levelOffsetY = 60;
+	
+	public Text currentScoreText = new Text(); 
+    public AnchorPane HUDBar = new AnchorPane(); 
+    
 	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
 	
 	/**
