@@ -15,7 +15,7 @@ public class PickUp extends LevelObject {
 
 	private PickUpType type;
 
-	private final static double powerPelletSize = 4.0;
+	private final static double powerPelletSize = Main.gridSquareSize / 5.0; // 4 when gridsquare = 20
 
 
 	public PickUp(int ID) {
@@ -24,7 +24,7 @@ public class PickUp extends LevelObject {
 				type = PickUpType.pellet;
 				Polygon shape = new Polygon();
 				shape.setFill(Color.LIGHTSKYBLUE);
-				shape.getPoints().addAll(new Double [] {0.0,-2.5, 2.5,0.0, 10.0,10.0, 2.5,0.0, 0.0,2.5, -2.5, 0.0});
+				shape.getPoints().addAll(new Double [] {0.0,-powerPelletSize/1.6, powerPelletSize/1.6,0.0, powerPelletSize*2.5,powerPelletSize*2.5, powerPelletSize/1.6,0.0, 0.0,powerPelletSize/1.6, -powerPelletSize/1.6, 0.0});
 				super.model = shape;
 				break;
 				}
@@ -33,7 +33,7 @@ public class PickUp extends LevelObject {
 				type = PickUpType.powerPellet;
 				Polygon shape = new Polygon();
 				shape.setFill(Color.GOLD);
-				shape.getPoints().addAll(new Double [] {-powerPelletSize,-powerPelletSize, powerPelletSize,-powerPelletSize, powerPelletSize,powerPelletSize, 10.0,10.0, powerPelletSize,powerPelletSize, -powerPelletSize,powerPelletSize});
+				shape.getPoints().addAll(new Double [] {-powerPelletSize,-powerPelletSize, powerPelletSize,-powerPelletSize, powerPelletSize,powerPelletSize, powerPelletSize*2.5,powerPelletSize*2.5, powerPelletSize,powerPelletSize, -powerPelletSize,powerPelletSize});
 				super.model = shape;
 				break;
 			}
@@ -59,6 +59,9 @@ public class PickUp extends LevelObject {
 		else {
 			return 0;
 		}
+	}
+	public PickUpType getPickUpType() {
+		return type;
 	}
 
 }
