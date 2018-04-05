@@ -431,13 +431,73 @@ public class Main extends Application {
 						break;
 					}
 					case ambusher: {
-						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > 4) {
-							//If close to the player, chase
-							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
-						}
-						else {
-							//If far away, try to cut the player off
-							//use player direction to aim ahead of the player
+						switch (enemy.getAmbusherState()) {
+							case reposition1:{							
+								/* If it's now time to ambush, pick a random spot on the map to move to, from there we can try to cut the player off */
+								//println("Choosing a random position to move to...");
+								Random rand = new Random();
+								int randXIndex; 
+								int randYIndex;
+								/*Check to see if this move is valid*/
+								boolean validMove = true;
+								do {
+									validMove = true;
+									randXIndex = rand.nextInt(levelWidth);
+									randYIndex = rand.nextInt(levelHeight);
+									try {
+										if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) {
+											validMove = false;
+										}
+									}
+									catch (Exception e) { validMove = false; }
+								} while(!validMove);
+								
+								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {randYIndex, randXIndex});
+								enemy.manageAmbusherFSM();
+								break;
+							}
+							case reposition2:{
+
+								enemy.manageAmbusherFSM();
+								break;
+							}
+							case ambush:{
+								//If far away, try to cut the player off
+								//use player direction to aim ahead of the player
+								//println("Time to ambush!");
+								int[] del = {0,0};
+								if (player.getPrevDirection() != null) {
+									switch (player.getPrevDirection()) {
+										case up:    {del[1] = -3; break;}
+										case down:  {del[1] = 3; break;}
+										case left:  {del[0] = -3; break;}
+										case right: {del[0] = 3; break;}
+										default:    {break;}
+									}
+								}
+								if (playerYIndex + del[1] > levelHeight || playerYIndex+del[1] < 0) {
+									del[1] = 0;
+								}
+								if (playerXIndex + del[0] > levelWidth || playerXIndex+del[0] < 0) {
+									del[0] =  0;
+								}
+								try {
+									if (levelObjectArray[playerYIndex+del[1]][playerXIndex + del[0]] instanceof Wall) {
+										break;
+									}
+								} catch(ArrayIndexOutOfBoundsException e){break;}
+								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex+del[1], playerXIndex + del[0]});
+								
+								enemy.manageAmbusherFSM();
+								break;
+							}
+							case chase:{
+								//println("Chasing the player...");
+								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
+								enemy.manageAmbusherFSM();
+								break;
+							}
+							default: {break;}
 							
 						}
 						break;
@@ -456,7 +516,7 @@ public class Main extends Application {
 						}
 						else {
 							//I am near my guard point and the player is not. Do a random move?
-							if (enemy.checkPathLength() >= 1) {
+							if (enemy.getPathLength() >= 1) {
 								break;
 							}
 							Random random = new Random();
@@ -608,7 +668,7 @@ public class Main extends Application {
 			}
 			case dfs:{
 				// Since DFS's paths are so windy, we actually need to let them complete before repathing
-				if (enemy.checkPathLength() == 0) {
+				if (enemy.getPathLength() == 0) {
 					enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
 				}
 				break;

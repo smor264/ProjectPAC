@@ -15,6 +15,9 @@ public class Enemy extends Character {
 	private Algorithm algorithm;
 	private Color regularColor;
 	private int isScaredTimer = 0; // Is only used for the scared behaviour. Used to give some hysteresis
+	private int chaseTimer = 0; // Is used to make ambushers break away after pursuing for a while
+	private AmbusherState ambusherState;
+	private int ambushTimer = 0;
 	
 	public static enum Intelligence {
 		random, 	// makes correct choice 25% of the time
@@ -37,6 +40,13 @@ public class Enemy extends Character {
 		bfs, // Uses breadth-first search to find 'a' path
 		dfs, // Uses depth first search to find a not great path
 		dijkstra, // Uses dijkstra's to calculate shortest path
+	}
+	
+	public static enum AmbusherState {
+		reposition1, // selecting a random position on the map
+		reposition2, // moving to that position
+		ambush, //aiming ahead of the player
+		chase, // aiming at the player
 	}
 	
 	public Enemy(Shape model, double speed) { // If we have an enemy model already
@@ -68,6 +78,9 @@ public class Enemy extends Character {
 		this.behaviour = behaviour;
 		this.algorithm = algorithm;
 		regularColor = color;
+		if (behaviour == Behaviour.ambusher) {
+			ambusherState = AmbusherState.reposition1;
+		}
 	}
 	
 	public Main.Direction popNextMove() {
@@ -108,7 +121,7 @@ public class Enemy extends Character {
 		return algorithm;
 	}
 	
-	public Integer checkPathLength() {
+	public Integer getPathLength() {
 		return nextMoves.size();
 	}
 	
@@ -139,5 +152,58 @@ public class Enemy extends Character {
 			isScaredTimer--;
 		}
 	}
+	
+	/**
+	 * Updates the ambusher FSM. Reposition -> Ambush -> Chase -> Reposition ...
+	 * */
+	public void manageAmbusherFSM() {
+		switch(ambusherState) {
+			case ambush:{
+				if (nextMoves.size() < 6 || ambushTimer > 30) {
+					//If close to the player, stop trying to cut them off and just chase
+					System.out.println("Chasing the player!");
+					ambushTimer = 0;
+					ambusherState = AmbusherState.chase;
+				}
+				else {
+					ambushTimer++;
+				}
+				break;
+			}
+			case chase:{
+				if (chaseTimer >= 10) {
+					//signal to pick a random spot on the map to move to so you might be able to ambush
+					System.out.println("Choosing a random position to move to...");
+					ambusherState = AmbusherState.reposition1;
+					chaseTimer = 0;
+				}
+				else {
+					//Just keep chasing
+					chaseTimer++;
+				}
+				break;
+			}
+			case reposition1:{
+				/*We've chosen a random position to move to in the datapath section*/
+				System.out.println("Moving to selected random location...");
+				ambusherState = AmbusherState.reposition2;
+				break;
+			}
+			case reposition2:{
+				if (nextMoves.size() == 0){
+					System.out.println("Time to ambush!");
+					ambusherState = AmbusherState.ambush;
+				}
+			}
+			default:{break;}
+		
+		}
+		
+	}
+	
 
+	public AmbusherState getAmbusherState() {
+		return ambusherState;
+	}
+	
 }
