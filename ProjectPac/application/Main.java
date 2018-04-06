@@ -3,18 +3,14 @@ package application;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javafx.animation.AnimationTimer;
-import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-
-import javafx.concurrent.Task;
 
 import javafx.stage.Stage;
 import javafx.scene.Group;
@@ -74,9 +70,11 @@ public class Main extends Application {
 	private double currentGameTime = 0;
 	private double maxTime = 7200;
 	private AnimationTimer gameLoop;
+	public FXMLController controller = new FXMLController();
 
 
-	public Text currentScoreText = new Text();
+	public Text currentScoreText;
+
     public AnchorPane HUDBar = new AnchorPane();
 
 	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
@@ -303,6 +301,7 @@ public class Main extends Application {
 			FXMLLoader loader = new FXMLLoader();
 			loader.setLocation(Main.class.getResource("GameUI.fxml"));
 			gameUI = loader.load();
+			currentScoreText = (Text) scene.lookup("#currentScoreText");
 
 		} catch(IOException e) {
 			e.printStackTrace();
@@ -358,14 +357,19 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		try {
+			initRootLayout();
+			gameUI.getChildren().add(currentLevel);
+			scene.setRoot(gameUI);
+
 			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 			initialiseLevel(test);
 
-				if(player != null) {
-				currentScoreText.setText(player.getScoreString());
-					}
-						else { currentScoreText.setText("");
-					}
+			if(player != null && player.getScoreString() != null && currentScoreText != null) {
+				currentScoreText.setText(player.getScoreString()); }
+			else {
+				currentScoreText.setText("--");
+				}
+
 
 			ProgressBar timeBar = new ProgressBar();
 			currentLevel.getChildren().add(timeBar);
@@ -412,9 +416,6 @@ public class Main extends Application {
 
 			});
 
-			initRootLayout();
-			gameUI.getChildren().add(currentLevel);
-			scene.setRoot(gameUI);
 
 			primaryStage.show();
 			primaryStage.setScene(scene);
