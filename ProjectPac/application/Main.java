@@ -35,7 +35,6 @@ import javafx.scene.text.Text;
  * */
 /*To Do List:
  * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
- * Implement end game
  * Make start menu and transition between levels
  * Implement more behaviour types
  * Think about flood-fill-esque algorithm for detecting surrounded wall pieces to make them look filled in rather than cross pieces
@@ -48,9 +47,9 @@ public class Main extends Application {
 	public final static int[] centre = {windowWidth/2, windowHeight/2};
 	public final static int levelWidth = 27;
 	public final static int levelHeight = 25;
-	public final static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
+	public final static int gridSquareSize = 36; // ONLY WORKS FOR EVEN NUMBERS
 	public final static int levelOffsetX = 100;
-	public final static int levelOffsetY = 60;
+	public final static int levelOffsetY = 100;
 
 	//Managed Variables and Objects
 	private int extraLives = 2;
