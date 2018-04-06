@@ -14,6 +14,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -43,15 +44,14 @@ public class Main extends Application {
 	public final static int[] centre = {windowWidth/2, windowHeight/2};
 	public final static int levelWidth = 27;
 	public final static int levelHeight = 25;
-	public final static int gridSquareSize = 38; // ONLY WORKS FOR EVEN NUMBERS
+	public final static int gridSquareSize = 36; // ONLY WORKS FOR EVEN NUMBERS
 	public final static int levelOffsetX = 100;
-	public final static int levelOffsetY = 60;
+	public final static int levelOffsetY = 100;
 
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player = new Player(playerCharacter.model(), 2);
-	private SetArrayList<Direction> directionArray = new SetArrayList<Direction>(); //Stores currently pressed buttons in chronological order (top = newest)
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 	private AnchorPane gameUI = new AnchorPane();
 	private AdjacencyMatrix adjMatrix;
@@ -64,15 +64,19 @@ public class Main extends Application {
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
-	private Rectangle PauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
-	private Text PauseText = new Text("Paused");
-	private StackPane PauseOverlay = new StackPane();
-
+	
+	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
+	private Text pauseText = new Text("Paused");
+	private StackPane pauseOverlay = new StackPane(pauseScreen, pauseText);
+	
+	private Rectangle startScreen = new Rectangle(0,0, (double) windowWidth, (double) windowHeight);
+	private Text startText = new Text();
+	private StackPane startOverlay = new StackPane(startScreen, startText);
 
 	public Text currentScoreText = new Text();
     public AnchorPane HUDBar = new AnchorPane();
 
-	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
+	public static PlayerCharacter playerCharacter = PlayerCharacter.Robot;
 
 	/**
 	 * A list of all characters that the player can use.
@@ -214,12 +218,6 @@ public class Main extends Application {
 		enemyList.clear();
 		boolean playerExists = false;
 
-		PauseOverlay.getChildren().addAll(PauseScreen, PauseText);
-		PauseScreen.setFill(Color.BLACK);
-		PauseScreen.setOpacity(0.8);
-		PauseText.setFill(Color.WHITE);
-		PauseText.setStyle("-fx-font: 24 arial;");
-
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
 				if (array[yPos][xPos] == 1) { // Wall
@@ -333,19 +331,38 @@ public class Main extends Application {
 		});
 	}
 
+	private boolean showOverlay(StackPane overlay) {
+		return currentLevel.getChildren().add(overlay);
+	}
+	private boolean hideOverlay(StackPane overlay) {
+		return currentLevel.getChildren().removeAll(overlay);
+	}
 
+	private void initialiseOverlays(){
+		pauseScreen.setFill(Color.BLACK);
+		pauseScreen.setOpacity(0.8);
+		pauseText.setFill(Color.WHITE);
+		pauseText.setStyle("-fx-font: 24 arial;");		
+		
+		startScreen.setFill(Color.BLACK);
+		startScreen.setOpacity(0.8);
+		startText.setFill(Color.WHITE);
+		startText.setStyle("-fx-font: 24 arial;");		
+	}
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 			initialiseLevel(test);
-
-				if(player != null) {
-				currentScoreText.setText(player.getScoreString());
-					//currentScoreText.setStyle("-fx-font-size: 4em;");
-					}
-						else { currentScoreText.setText("");
-					}
+			initialiseOverlays();
+			
+			
+			if(player != null) {
+			currentScoreText.setText(player.getScoreString());
+				//currentScoreText.setStyle("-fx-font-size: 4em;");
+				}
+					else { currentScoreText.setText("");
+				}
 
 
 
@@ -355,18 +372,18 @@ public class Main extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
-						case UP: { directionArray.append(Direction.up); break;}
-						case DOWN: { directionArray.append(Direction.down); break;}
-						case LEFT: { directionArray.append(Direction.left); break;}
-						case RIGHT: { directionArray.append(Direction.right); break;}
+						case UP: { player.getHeldButtons().append(Direction.up); break;}
+						case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+						case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+						case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
 						case P: { pausePressed = !pausePressed;
 							if (pausePressed) {
 								println("PAUSED!");
-								currentLevel.getChildren().add(PauseOverlay);
+								showOverlay(pauseOverlay);
 								}
 							else {
 								println("UNPAUSED!");
-								currentLevel.getChildren().removeAll(PauseOverlay);
+								hideOverlay(pauseOverlay);
 							}
 							break;
 						}
@@ -380,10 +397,10 @@ public class Main extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
-						case UP: { directionArray.remove(Direction.up); break; }
-						case DOWN: { directionArray.remove(Direction.down); break; }
-						case LEFT: { directionArray.remove(Direction.left); break; }
-						case RIGHT: { directionArray.remove(Direction.right); break; }
+						case UP: { player.getHeldButtons().remove(Direction.up); break; }
+						case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+						case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+						case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
 						default: break;
 					}
 				}
@@ -479,8 +496,35 @@ public class Main extends Application {
 
 				}
 			};
-
+			
+			
+			
 			timer.start();
+			
+			try{
+				showOverlay(startOverlay);
+				
+				println("3!");
+				startText.setText("3!");
+				TimeUnit.SECONDS.sleep(1);
+				
+				println("2!");
+				startText.setText("2!");
+				TimeUnit.SECONDS.sleep(1);
+				
+				println("1!");
+				startText.setText("1!");
+				TimeUnit.SECONDS.sleep(1);
+				
+				println("Start!");
+				startText.setText("Start!");
+				TimeUnit.SECONDS.sleep(1);
+				
+				hideOverlay(startOverlay);
+				
+			}catch(InterruptedException e){
+				Thread.currentThread().interrupt();
+			}
 
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -817,9 +861,9 @@ public class Main extends Application {
 			player.setPrevPos(xIndex, yIndex);
 
 			//Loop through the held movement keys in order of preference
-			for (int n = 0; n< Integer.min(directionArray.size(), 2) ; n++) {
+			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
 				// If movement key held, and not in corner of map
-				if((directionArray.getNFromTop(n) == Direction.up) ) {
+				if((player.getHeldButtons().getNFromTop(n) == Direction.up) ) {
 					// If regular move...
 					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 						delta[1] = -(int)player.getSpeed();
@@ -830,7 +874,7 @@ public class Main extends Application {
 						player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
 					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.down) {
+				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
 					if ((yIndex != levelObjectArray.length - 1) && (test.getArray()[yIndex+1][xIndex] != 1)) {
 						delta[1] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.down);
@@ -840,7 +884,7 @@ public class Main extends Application {
 						player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
 					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.left) {
+				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
 					if ((xIndex != 0) && (test.getArray()[yIndex][xIndex-1] != 1)) {
 						delta[0] = -(int)player.getSpeed();
 						player.setPrevDirection(Direction.left);
@@ -850,7 +894,7 @@ public class Main extends Application {
 						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
 					}
 				}
-				else if(directionArray.getNFromTop(n) == Direction.right) {
+				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
 					if ((xIndex != levelObjectArray[0].length - 1) && (test.getArray()[yIndex][xIndex+1] != 1)) {
 						delta[0] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.right);
