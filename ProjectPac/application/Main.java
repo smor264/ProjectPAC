@@ -8,14 +8,19 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javafx.animation.AnimationTimer;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+
+import javafx.concurrent.Task;
+
 import javafx.stage.Stage;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
@@ -31,7 +36,6 @@ import javafx.scene.text.Text;
  * */
 /*To Do List:
  * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
- * Implement end game
  * Make start menu and transition between levels
  * Implement more behaviour types
  * Think about flood-fill-esque algorithm for detecting surrounded wall pieces to make them look filled in rather than cross pieces
@@ -72,6 +76,9 @@ public class Main extends Application {
 	private Rectangle startScreen = new Rectangle(0,0, (double) windowWidth, (double) windowHeight);
 	private Text startText = new Text();
 	private StackPane startOverlay = new StackPane(startScreen, startText);
+	private AnimationTimer gameLoop;
+	private double maxTime = 7200;
+	private double currentGameTime = 0;
 
 	public Text currentScoreText = new Text();
     public AnchorPane HUDBar = new AnchorPane();
@@ -323,6 +330,10 @@ public class Main extends Application {
 		}
 	}
 
+
+	/**
+	 * Prints when currentScoreText changes
+	 */
 	@FXML
 	//Prints when currentScoreText changes
 	private void initialize(){
@@ -331,6 +342,13 @@ public class Main extends Application {
 		});
 	}
 
+	/**
+	 * Stops the gameLoop and handles game over UI
+	 */
+	private void gameOver() {
+		println("GAME OVER!");
+		player.setScore(0);
+		gameLoop.stop();
 	private boolean showOverlay(StackPane overlay) {
 		return currentLevel.getChildren().add(overlay);
 	}
@@ -364,7 +382,15 @@ public class Main extends Application {
 					else { currentScoreText.setText("");
 				}
 
+				if(player != null) {
+				currentScoreText.setText(player.getScoreString());
+					//currentScoreText.setStyle("-fx-font-size: 4em;");
+					}
+						else { currentScoreText.setText("");
+					}
 
+			ProgressBar timeBar = new ProgressBar();
+			currentLevel.getChildren().add(timeBar);
 
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
 
@@ -376,6 +402,7 @@ public class Main extends Application {
 						case DOWN: { player.getHeldButtons().append(Direction.down); break;}
 						case LEFT: { player.getHeldButtons().append(Direction.left); break;}
 						case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+						case PAGE_DOWN:{ currentGameTime = maxTime; break;}
 						case P: { pausePressed = !pausePressed;
 							if (pausePressed) {
 								println("PAUSED!");
@@ -415,7 +442,7 @@ public class Main extends Application {
 			primaryStage.setScene(scene);
 
 
-			AnimationTimer timer = new AnimationTimer() {
+			gameLoop = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
 					while (pausePressed) {
@@ -423,6 +450,18 @@ public class Main extends Application {
 					}
 
 					int[] delta = {0,0};
+
+					try {
+					timeBar.setProgress(currentGameTime/maxTime);
+					if(currentGameTime >= maxTime) {
+						print("Time's Up!");
+						throw(new TimeOutException());}
+
+					else {
+						currentGameTime++;
+					}
+
+
 
 					try { delta = calculatePlayerMovement(); }
 					catch(LevelCompleteException e1) {
@@ -492,14 +531,17 @@ public class Main extends Application {
 						catch (InterruptedException e2){
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
+						}
+					} catch (TimeOutException e) {
+						e.printStackTrace();
+						gameOver();
+
 					}
 
 				}
 			};
-			
-			
-			
-			timer.start();
+
+			gameLoop.start();
 			
 			try{
 				showOverlay(startOverlay);
@@ -525,6 +567,7 @@ public class Main extends Application {
 			}catch(InterruptedException e){
 				Thread.currentThread().interrupt();
 			}
+
 
 		} catch(Exception e) {
 			e.printStackTrace();
