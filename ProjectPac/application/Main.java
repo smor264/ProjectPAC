@@ -15,7 +15,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -53,34 +55,46 @@ public class Main extends Application {
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player = new Player(playerCharacter.model(), 2);
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
-	private AnchorPane gameUI = new AnchorPane();
 	private AdjacencyMatrix adjMatrix;
-	private Group currentLevel = new Group();
-	private Scene scene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();                                      //  ^  This does nothing now, btw
+
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
 	private boolean playerCanEatGhosts = false;
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
-	
+	private double currentGameTime = 0;
+	private double maxTime = 7200;
+
+	//Scenes and Panes
+	private AnchorPane gameUI = new AnchorPane();
+	private AnchorPane launchScreen = new AnchorPane();
+	private Scene launchScene = new Scene(launchScreen, windowWidth, windowHeight);
+	private Group currentLevel = new Group();
+	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
+	private Level test = new Level();                                      //  ^  This does nothing now, btw
+
+
+
+	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
 	private Text pauseText = new Text("Paused");
 	private StackPane pauseOverlay = new StackPane(pauseScreen, pauseText);
-	
 	private Rectangle startScreen = new Rectangle(0,0, (double) windowWidth, (double) windowHeight);
 	private Text startText = new Text();
 	private StackPane startOverlay = new StackPane(startScreen, startText);
-	private AnimationTimer gameLoop;
-	private double maxTime = 7200;
-	private double currentGameTime = 0;
-	private double maxTime = 7200;
-	private AnimationTimer gameLoop;
-	public FXMLController controller = new FXMLController();
 
-	public Text currentScoreText = new Text();
-    public AnchorPane HUDBar = new AnchorPane();
+	private AnimationTimer gameLoop;
+
+
+	//FXML
+	//Game FXML
+	public FXMLController controller = new FXMLController();
+	public Text currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+    public AnchorPane HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+
+    //Start Screen FXML
+    public Button playButton = (Button) launchScene.lookup("#playButton");
 
 	public static PlayerCharacter playerCharacter = PlayerCharacter.Robot;
 
@@ -293,14 +307,33 @@ public class Main extends Application {
 	}
 
 
-	//Initializes the root layout
-	public void initRootLayout() {
+	/**
+	 * Initializes the root game layout
+	 */
+	public void initRootGameLayout() {
 		try {
 			//Load root layout from XML file
-			FXMLLoader loader = new FXMLLoader();
-			loader.setLocation(Main.class.getResource("GameUI.fxml"));
-			gameUI = loader.load();
-			currentScoreText = (Text) scene.lookup("#currentScoreText");
+			AnchorPane gameUI = (AnchorPane) FXMLLoader.load(getClass().getResource("GameUI.fxml"));
+			gameUI.getChildren().add(currentLevel);
+			gameScene.setRoot(gameUI);
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * Initializes the root launch layout
+	 * @throws IOException
+	 */
+	private void initRootLaunchLayout() {
+		try {
+		AnchorPane launchScreen = (AnchorPane) FXMLLoader.load(getClass().getResource("StartScreen.fxml"));
+		launchScene.setRoot(launchScreen);
+		//FXMLLoader loader = new FXMLLoader(getClass().getResource("StartScreen.fxml"));
+		//loader.setController(controller);
+		//launchScreen = loader.load();
 
 		} catch(IOException e) {
 			e.printStackTrace();
@@ -330,18 +363,6 @@ public class Main extends Application {
 		}
 	}
 
-
-	/**
-	 * Prints when currentScoreText changes
-	 */
-	@FXML
-	//Prints when currentScoreText changes
-	private void initialize(){
-		currentScoreText.textProperty().addListener((orbservable, oldValue, newValue) -> {
-		System.out.println("changed from " + oldValue + " to " + newValue);
-		});
-	}
-
 	/**
 	 * Stops the gameLoop and handles game over UI
 	 */
@@ -349,6 +370,7 @@ public class Main extends Application {
 		println("GAME OVER!");
 		player.setScore(0);
 		gameLoop.stop();
+	}
 	private boolean showOverlay(StackPane overlay) {
 		return currentLevel.getChildren().add(overlay);
 	}
@@ -360,34 +382,258 @@ public class Main extends Application {
 		pauseScreen.setFill(Color.BLACK);
 		pauseScreen.setOpacity(0.8);
 		pauseText.setFill(Color.WHITE);
-		pauseText.setStyle("-fx-font: 24 arial;");		
-		
+		pauseText.setStyle("-fx-font: 24 arial;");
+
 		startScreen.setFill(Color.BLACK);
 		startScreen.setOpacity(0.8);
 		startText.setFill(Color.WHITE);
-		startText.setStyle("-fx-font: 24 arial;");		
+		startText.setStyle("-fx-font: 24 arial;");
 	}
+
+	private void startCountdown() {
+		try{
+			showOverlay(startOverlay);
+
+			println("3!");
+			startText.setText("3!");
+			TimeUnit.SECONDS.sleep(1);
+
+			println("2!");
+			startText.setText("2!");
+			TimeUnit.SECONDS.sleep(1);
+
+			println("1!");
+			startText.setText("1!");
+			TimeUnit.SECONDS.sleep(1);
+
+			println("Start!");
+			startText.setText("Start!");
+			TimeUnit.SECONDS.sleep(1);
+
+			hideOverlay(startOverlay);
+
+		}catch(InterruptedException e){
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void game(Stage primaryStage) {
+		try {
+		initRootGameLayout();
+		primaryStage.setScene(gameScene);
+		primaryStage.show();
+
+		initialiseLevel(test);
+		initialiseOverlays();
+
+
+		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+
+
+
+		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
+
+
+		if(player != null && player.getScoreString() != null && currentScoreText != null) {
+			currentScoreText.setText(player.getScoreString());
+			}
+		else {
+			currentScoreText.setText("--");
+			}
+
+
+		ProgressBar timeBar = new ProgressBar();
+		currentLevel.getChildren().add(timeBar);
+
+		adjMatrix = new AdjacencyMatrix(levelObjectArray);
+
+		gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent event) {
+				switch (event.getCode()) {
+					case UP: { player.getHeldButtons().append(Direction.up); break;}
+					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+					case PAGE_DOWN:{ currentGameTime = maxTime; break;}
+					case P: { pausePressed = !pausePressed;
+						if (pausePressed) {
+							println("PAUSED!");
+							showOverlay(pauseOverlay);
+							}
+						else {
+							println("UNPAUSED!");
+							hideOverlay(pauseOverlay);
+						}
+						break;
+					}
+					default: break;
+				}
+			}
+
+		});
+
+		gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent event) {
+				switch (event.getCode()) {
+					case UP: { player.getHeldButtons().remove(Direction.up); break; }
+					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
+					default: break;
+				}
+			}
+
+		});
+
+
+		//primaryStage.show();
+		//primaryStage.setScene(scene);
+
+
+		gameLoop = new AnimationTimer() {
+			@Override
+			public void handle(long now) {
+				while (pausePressed) {
+					return;
+				}
+
+				int[] delta = {0,0};
+
+				try {
+				timeBar.setProgress(currentGameTime/maxTime);
+				if(currentGameTime >= maxTime) {
+					print("Time's Up!");
+					throw(new TimeOutException());}
+
+				else {
+					currentGameTime++;
+				}
+
+
+
+				try { delta = calculatePlayerMovement(); }
+				catch(LevelCompleteException e1) {
+					println("LEVEL COMPLETE!");
+					this.stop();
+					try {
+						TimeUnit.SECONDS.sleep(1);
+						currentLevel.getChildren().clear();
+						initialiseLevel(test);
+						this.start();
+						return;
+					}
+					catch(InterruptedException e2){
+						Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+					}
+				}
+
+				if (playerPowerUpTimer == 0) {
+					resetPlayerPowerUpState();
+				}
+				else {
+					if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
+						for (Enemy enemy :enemyList) {
+							enemy.setColor(Color.WHITE);
+						}
+					}
+					else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
+						for (Enemy enemy :enemyList) {
+							enemy.setColor(Color.DODGERBLUE);
+						}
+					}
+					playerPowerUpTimer--;
+				}
+
+				player.moveBy(delta[0], delta[1]);
+
+				try {
+					for (int i=0; i< enemyList.size(); i++){
+						delta = new int[] {0,0};
+						delta = calculateEnemyMovement(enemyList.get(i));
+						enemyList.get(i).moveBy(delta[0], delta[1]);
+					}
+				}
+				catch(PlayerCaughtException e1){
+					println("CAUGHT!");
+					//this.stop();
+					try {
+						TimeUnit.SECONDS.sleep(1);
+						extraLives--;
+
+						if (extraLives < 0) {
+							println("GAME OVER!");
+							player.setScore(0);
+							this.stop();
+							return;
+						}
+						else if (extraLives == 0) {
+							print("Careful! ");
+						}
+						print("You have " + extraLives + " extra lives remaining");
+						println();
+						restartLevel();
+						this.start();
+						return;
+
+					}
+					catch (InterruptedException e2){
+						Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+					}
+					}
+				} catch (TimeOutException e) {
+					e.printStackTrace();
+					gameOver();
+
+				}
+
+			}
+		};
+
+		gameLoop.start();
+
+		startCountdown();
+
+	} catch(Exception e) {
+		e.printStackTrace();
+	}
+}
+
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-			initRootLayout();
-			gameUI.getChildren().add(currentLevel);
-			scene.setRoot(gameUI);
 
-			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
+			initRootLaunchLayout();
+			primaryStage.setScene(launchScene);
+			primaryStage.show();
+
+			playButton = (Button) launchScene.lookup("#playButton");
+			playButton.setOnAction(e -> game(primaryStage));
+
+
+
+			/*
+			initRootGameLayout();
+			primaryStage.setScene(gameScene);
+			primaryStage.show();
+
 			initialiseLevel(test);
 			initialiseOverlays();
-			
-			
-			if(player != null) {
-			currentScoreText.setText(player.getScoreString());
-				//currentScoreText.setStyle("-fx-font-size: 4em;");
-				}
-					else { currentScoreText.setText("");
-				}
+
+
+			HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+			currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+
+
+
+			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
+
 
 			if(player != null && player.getScoreString() != null && currentScoreText != null) {
-				currentScoreText.setText(player.getScoreString()); }
+				currentScoreText.setText(player.getScoreString());
+				}
 			else {
 				currentScoreText.setText("--");
 				}
@@ -398,7 +644,7 @@ public class Main extends Application {
 
 			adjMatrix = new AdjacencyMatrix(levelObjectArray);
 
-			scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+			gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
@@ -424,7 +670,7 @@ public class Main extends Application {
 
 			});
 
-			scene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+			gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
 					switch (event.getCode()) {
@@ -439,8 +685,8 @@ public class Main extends Application {
 			});
 
 
-			primaryStage.show();
-			primaryStage.setScene(scene);
+			//primaryStage.show();
+			//primaryStage.setScene(scene);
 
 
 			gameLoop = new AnimationTimer() {
@@ -543,36 +789,15 @@ public class Main extends Application {
 			};
 
 			gameLoop.start();
-			
-			try{
-				showOverlay(startOverlay);
-				
-				println("3!");
-				startText.setText("3!");
-				TimeUnit.SECONDS.sleep(1);
-				
-				println("2!");
-				startText.setText("2!");
-				TimeUnit.SECONDS.sleep(1);
-				
-				println("1!");
-				startText.setText("1!");
-				TimeUnit.SECONDS.sleep(1);
-				
-				println("Start!");
-				startText.setText("Start!");
-				TimeUnit.SECONDS.sleep(1);
-				
-				hideOverlay(startOverlay);
-				
-			}catch(InterruptedException e){
-				Thread.currentThread().interrupt();
-			}
 
+			startCountdown();
+			*/
 
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
+
+
 	}
 
 
@@ -881,7 +1106,6 @@ public class Main extends Application {
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
-				initialize();
 				currentScoreText.setText(player.getScoreString());
 
 				System.out.println("Score: " + player.getScore());
@@ -1069,6 +1293,4 @@ public class Main extends Application {
 			default: {throw new UnsupportedOperationException();}
 		}
 	}
-
-
 }
