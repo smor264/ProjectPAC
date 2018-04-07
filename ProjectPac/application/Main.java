@@ -63,7 +63,7 @@ public class Main extends Application {
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
-	private double currentGameTime = 0;
+	private double currentGameTick = 0;
 	private double maxTime = 7200;
 
 	//Scenes and Panes
@@ -390,32 +390,6 @@ public class Main extends Application {
 		startText.setStyle("-fx-font: 24 arial;");
 	}
 
-	private void startCountdown() {
-		try{
-			showOverlay(startOverlay);
-
-			println("3!");
-			startText.setText("3!");
-			TimeUnit.SECONDS.sleep(1);
-
-			println("2!");
-			startText.setText("2!");
-			TimeUnit.SECONDS.sleep(1);
-
-			println("1!");
-			startText.setText("1!");
-			TimeUnit.SECONDS.sleep(1);
-
-			println("Start!");
-			startText.setText("Start!");
-			TimeUnit.SECONDS.sleep(1);
-
-			hideOverlay(startOverlay);
-
-		}catch(InterruptedException e){
-			Thread.currentThread().interrupt();
-		}
-	}
 
 	private void game(Stage primaryStage) {
 		try {
@@ -453,7 +427,7 @@ public class Main extends Application {
 					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
 					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
 					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-					case PAGE_DOWN:{ currentGameTime = maxTime; break;}
+					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
 							println("PAUSED!");
@@ -500,13 +474,26 @@ public class Main extends Application {
 				int[] delta = {0,0};
 
 				try {
-				timeBar.setProgress(currentGameTime/maxTime);
-				if(currentGameTime >= maxTime) {
+				timeBar.setProgress(currentGameTick/(maxTime + 240));
+				if(currentGameTick >= (maxTime + 240)) {
 					print("Time's Up!");
 					throw(new TimeOutException());}
 
 				else {
-					currentGameTime++;
+					currentGameTick++;
+				}
+				
+				/* Display the starting screen*/
+				if (currentGameTick - 1 <= 240) {
+					switch( (int)currentGameTick - 1 ) {
+						case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
+						case 60: {startText.setText("2!"); break;}
+						case 120: {startText.setText("1!"); break;}
+						case 180: {startText.setText("Go!"); break;}
+						case 240: {hideOverlay(startOverlay); break;}
+						default: {break;}
+					}
+					return;
 				}
 
 
@@ -590,8 +577,6 @@ public class Main extends Application {
 		};
 
 		gameLoop.start();
-
-		startCountdown();
 
 	} catch(Exception e) {
 		e.printStackTrace();
