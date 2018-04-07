@@ -426,11 +426,8 @@ public class Main extends Application {
 		initialiseLevel(test);
 		initialiseOverlays();
 
-
 		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
 		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
-
-
 
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 
@@ -490,7 +487,7 @@ public class Main extends Application {
 
 
 		//primaryStage.show();
-		//primaryStage.setScene(scene);
+		//primaryStage.setScene(gameScene);
 
 
 		gameLoop = new AnimationTimer() {
@@ -612,186 +609,6 @@ public class Main extends Application {
 			playButton = (Button) launchScene.lookup("#playButton");
 			playButton.setOnAction(e -> game(primaryStage));
 
-
-
-			/*
-			initRootGameLayout();
-			primaryStage.setScene(gameScene);
-			primaryStage.show();
-
-			initialiseLevel(test);
-			initialiseOverlays();
-
-
-			HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
-			currentScoreText = (Text) gameScene.lookup("#currentScoreText");
-
-
-
-			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
-
-
-			if(player != null && player.getScoreString() != null && currentScoreText != null) {
-				currentScoreText.setText(player.getScoreString());
-				}
-			else {
-				currentScoreText.setText("--");
-				}
-
-
-			ProgressBar timeBar = new ProgressBar();
-			currentLevel.getChildren().add(timeBar);
-
-			adjMatrix = new AdjacencyMatrix(levelObjectArray);
-
-			gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
-				@Override
-				public void handle(KeyEvent event) {
-					switch (event.getCode()) {
-						case UP: { player.getHeldButtons().append(Direction.up); break;}
-						case DOWN: { player.getHeldButtons().append(Direction.down); break;}
-						case LEFT: { player.getHeldButtons().append(Direction.left); break;}
-						case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-						case PAGE_DOWN:{ currentGameTime = maxTime; break;}
-						case P: { pausePressed = !pausePressed;
-							if (pausePressed) {
-								println("PAUSED!");
-								showOverlay(pauseOverlay);
-								}
-							else {
-								println("UNPAUSED!");
-								hideOverlay(pauseOverlay);
-							}
-							break;
-						}
-						default: break;
-					}
-				}
-
-			});
-
-			gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
-				@Override
-				public void handle(KeyEvent event) {
-					switch (event.getCode()) {
-						case UP: { player.getHeldButtons().remove(Direction.up); break; }
-						case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
-						case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
-						case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
-						default: break;
-					}
-				}
-
-			});
-
-
-			//primaryStage.show();
-			//primaryStage.setScene(scene);
-
-
-			gameLoop = new AnimationTimer() {
-				@Override
-				public void handle(long now) {
-					while (pausePressed) {
-						return;
-					}
-
-					int[] delta = {0,0};
-
-					try {
-					timeBar.setProgress(currentGameTime/maxTime);
-					if(currentGameTime >= maxTime) {
-						print("Time's Up!");
-						throw(new TimeOutException());}
-
-					else {
-						currentGameTime++;
-					}
-
-
-
-					try { delta = calculatePlayerMovement(); }
-					catch(LevelCompleteException e1) {
-						println("LEVEL COMPLETE!");
-						this.stop();
-						try {
-							TimeUnit.SECONDS.sleep(1);
-							currentLevel.getChildren().clear();
-							initialiseLevel(test);
-							this.start();
-							return;
-						}
-						catch(InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
-						}
-					}
-
-					if (playerPowerUpTimer == 0) {
-						resetPlayerPowerUpState();
-					}
-					else {
-						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
-							for (Enemy enemy :enemyList) {
-								enemy.setColor(Color.WHITE);
-							}
-						}
-						else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
-							for (Enemy enemy :enemyList) {
-								enemy.setColor(Color.DODGERBLUE);
-							}
-						}
-						playerPowerUpTimer--;
-					}
-
-					player.moveBy(delta[0], delta[1]);
-
-					try {
-						for (int i=0; i< enemyList.size(); i++){
-							delta = new int[] {0,0};
-							delta = calculateEnemyMovement(enemyList.get(i));
-							enemyList.get(i).moveBy(delta[0], delta[1]);
-						}
-					}
-					catch(PlayerCaughtException e1){
-						println("CAUGHT!");
-						//this.stop();
-						try {
-							TimeUnit.SECONDS.sleep(1);
-							extraLives--;
-
-							if (extraLives < 0) {
-								println("GAME OVER!");
-								player.setScore(0);
-								this.stop();
-								return;
-							}
-							else if (extraLives == 0) {
-								print("Careful! ");
-							}
-							print("You have " + extraLives + " extra lives remaining");
-							println();
-							restartLevel();
-							this.start();
-							return;
-
-						}
-						catch (InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
-						}
-						}
-					} catch (TimeOutException e) {
-						e.printStackTrace();
-						gameOver();
-
-					}
-
-				}
-			};
-
-			gameLoop.start();
-
-			startCountdown();
-			*/
 
 		} catch(Exception e) {
 			e.printStackTrace();
