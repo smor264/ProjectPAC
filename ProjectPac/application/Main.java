@@ -3,6 +3,7 @@ package application;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -53,9 +54,9 @@ public class Main extends Application {
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(playerCharacter.model(), 2);
+	private Player player = new Player(playerCharacter.model(), 2, playerCharacter.ability());
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
-	private AdjacencyMatrix adjMatrix;
+	private AdjacencyMatrix adjMatrix; // Pathfinding array
 
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
@@ -64,7 +65,9 @@ public class Main extends Application {
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
 	private double currentGameTick = 0;
-	private double maxTime = 7200;
+	private double maxTime = 120 * 60;
+	
+	Laser laserFactory = new Laser();
 
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
@@ -72,7 +75,7 @@ public class Main extends Application {
 	private Scene launchScene = new Scene(launchScreen, windowWidth, windowHeight);
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();                                      //  ^  This does nothing now, btw
+	private Level test = new Level();
 
 
 
@@ -95,6 +98,8 @@ public class Main extends Application {
 
     //Start Screen FXML
     public Button playButton = (Button) launchScene.lookup("#playButton");
+    public Text currentAbility = (Text) gameScene.lookup("#currentAbility");
+    public Text currentBoost = (Text) gameScene.lookup("#currentBoost");
 
 	public static PlayerCharacter playerCharacter = PlayerCharacter.Robot;
 
@@ -103,21 +108,22 @@ public class Main extends Application {
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Ability.eatGhosts),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Ability.eatGhosts),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Ability.wallJump),
-		GlitchTheGhost (null, Ability.eatSameColor),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Ability.snake),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Ability.gun);
+		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts),
+		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts),
+		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump),
+		GlitchTheGhost (null, Player.Ability.eatSameColor),
+		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun);
 
 		private final Shape model;
-		private final Ability ability;
+		private final Player.Ability ability;
 
-		PlayerCharacter(Shape model, Ability ability){
+		PlayerCharacter(Shape model, Player.Ability ability){
 			this.model = model;
 			this.ability = ability;
 		}
-		private Shape model() {return model;}
+		public Shape model() {return model;}
+		public Player.Ability ability() {return ability;}
 	}
 
 	/**
@@ -130,16 +136,7 @@ public class Main extends Application {
 		right,
 	}
 
-	/**
-	 * PlayerCharacter-specific special actions
-	 * */
-	public static enum Ability {
-		eatGhosts,
-		wallJump,
-		gun,
-		eatSameColor,
-		snake,
-	}
+	
 
 	/**
 	 * Special actions usable by any PlayerCharacter
@@ -253,8 +250,8 @@ public class Main extends Application {
 						throw new UnsupportedOperationException();
 					}
 					else {
-						player.setPrevPos(xPos,yPos);
-						player.setStartPosition(new int[] {xPos,yPos});
+						player.setPrevIndex(xPos,yPos);
+						player.setStartIndex(new int[] {xPos,yPos});
 						playerExists = true;
 
 						placeLevelObject(player, xPos, yPos);
@@ -265,8 +262,8 @@ public class Main extends Application {
 					Enemy enemy = new Enemy(2, enemyColors[enemyList.size()], (Enemy.Intelligence)characteristics[0], (Enemy.Behaviour)characteristics[1], (Enemy.Algorithm)characteristics[2]);
 					enemyList.add(enemy);
 
-					enemy.setPrevPos(xPos, yPos);
-					enemy.setStartPosition(new int[] {xPos, yPos});
+					enemy.setPrevIndex(xPos, yPos);
+					enemy.setStartIndex(new int[] {xPos, yPos});
 
 					placeLevelObject(enemy, xPos, yPos);
 				}
@@ -390,7 +387,6 @@ public class Main extends Application {
 		startText.setStyle("-fx-font: 24 arial;");
 	}
 
-
 	private void game(Stage primaryStage) {
 		try {
 		initRootGameLayout();
@@ -402,16 +398,22 @@ public class Main extends Application {
 
 		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
 		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+		currentAbility = (Text) gameScene.lookup("#currentAbility");
+		currentBoost = (Text) gameScene.lookup("#currentBoost");
 
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 
 
 		if(player != null && player.getScoreString() != null && currentScoreText != null) {
 			currentScoreText.setText(player.getScoreString());
-			}
+		}
 		else {
 			currentScoreText.setText("--");
-			}
+		}
+		if (player!= null) {
+			currentAbility.setText(playerCharacter.ability().text());
+			currentBoost.setText("--");
+		}
 
 
 		ProgressBar timeBar = new ProgressBar();
@@ -423,10 +425,20 @@ public class Main extends Application {
 			@Override
 			public void handle(KeyEvent event) {
 				switch (event.getCode()) {
+					case W: 
 					case UP: { player.getHeldButtons().append(Direction.up); break;}
+					
+					case S:
 					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+					
+					case A:
 					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+					
+					case D:
 					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+					
+					case V:{ usePlayerAbility(); break; }
+					
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
@@ -449,10 +461,18 @@ public class Main extends Application {
 			@Override
 			public void handle(KeyEvent event) {
 				switch (event.getCode()) {
+					case W:
 					case UP: { player.getHeldButtons().remove(Direction.up); break; }
+					
+					case S:
 					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+					
+					case A:
 					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+					
+					case D:
 					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
+					
 					default: break;
 				}
 			}
@@ -474,99 +494,101 @@ public class Main extends Application {
 				int[] delta = {0,0};
 
 				try {
-				timeBar.setProgress(currentGameTick/(maxTime + 240));
-				if(currentGameTick >= (maxTime + 240)) {
-					print("Time's Up!");
-					throw(new TimeOutException());}
-
-				else {
-					currentGameTick++;
-				}
-				
-				/* Display the starting screen*/
-				if (currentGameTick - 1 <= 240) {
-					switch( (int)currentGameTick - 1 ) {
-						case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
-						case 60: {startText.setText("2!"); break;}
-						case 120: {startText.setText("1!"); break;}
-						case 180: {startText.setText("Go!"); break;}
-						case 240: {hideOverlay(startOverlay); break;}
-						default: {break;}
+					timeBar.setProgress(currentGameTick/(maxTime + 240));
+					if(currentGameTick >= (maxTime + 240)) {
+						print("Time's Up!");
+						throw(new TimeOutException());}
+	
+					else {
+						currentGameTick++;
 					}
-					return;
-				}
-
-
-
-				try { delta = calculatePlayerMovement(); }
-				catch(LevelCompleteException e1) {
-					println("LEVEL COMPLETE!");
-					this.stop();
-					try {
-						TimeUnit.SECONDS.sleep(1);
-						currentLevel.getChildren().clear();
-						initialiseLevel(test);
-						this.start();
+					
+					/* Display the starting screen*/
+					if (currentGameTick - 1 <= 240) {
+						switch( (int)currentGameTick - 1 ) {
+							case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
+							case 60: {startText.setText("2!"); break;}
+							case 120: {startText.setText("1!"); break;}
+							case 180: {startText.setText("Go!"); break;}
+							case 240: {hideOverlay(startOverlay); break;}
+							default: {break;}
+						}
 						return;
 					}
-					catch(InterruptedException e2){
-						Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
-					}
-				}
-
-				if (playerPowerUpTimer == 0) {
-					resetPlayerPowerUpState();
-				}
-				else {
-					if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
-						for (Enemy enemy :enemyList) {
-							enemy.setColor(Color.WHITE);
-						}
-					}
-					else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
-						for (Enemy enemy :enemyList) {
-							enemy.setColor(Color.DODGERBLUE);
-						}
-					}
-					playerPowerUpTimer--;
-				}
-
-				player.moveBy(delta[0], delta[1]);
-
-				try {
-					for (int i=0; i< enemyList.size(); i++){
-						delta = new int[] {0,0};
-						delta = calculateEnemyMovement(enemyList.get(i));
-						enemyList.get(i).moveBy(delta[0], delta[1]);
-					}
-				}
-				catch(PlayerCaughtException e1){
-					println("CAUGHT!");
-					//this.stop();
-					try {
-						TimeUnit.SECONDS.sleep(1);
-						extraLives--;
-
-						if (extraLives < 0) {
-							println("GAME OVER!");
-							player.setScore(0);
-							this.stop();
+	
+					try { delta = calculatePlayerMovement(); }
+					catch(LevelCompleteException e1) {
+						println("LEVEL COMPLETE!");
+						this.stop();
+						try {
+							TimeUnit.SECONDS.sleep(1);
+							currentLevel.getChildren().clear();
+							initialiseLevel(test);
+							this.start();
 							return;
 						}
-						else if (extraLives == 0) {
-							print("Careful! ");
+						catch(InterruptedException e2){
+							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
-						print("You have " + extraLives + " extra lives remaining");
-						println();
-						restartLevel();
-						this.start();
-						return;
-
 					}
-					catch (InterruptedException e2){
-						Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+	
+					if (playerPowerUpTimer == 0) {
+						resetPlayerPowerUpState();
 					}
+					else {
+						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
+							for (Enemy enemy :enemyList) {
+								enemy.setColor(Color.WHITE);
+							}
+						}
+						else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
+							for (Enemy enemy :enemyList) {
+								enemy.setColor(Color.DODGERBLUE);
+							}
+						}
+						playerPowerUpTimer--;
 					}
+	
+					player.moveBy(delta[0], delta[1]);
+	
+					try {
+						for (int i=0; i< enemyList.size(); i++){
+							delta = new int[] {0,0};
+							delta = calculateEnemyMovement(enemyList.get(i));
+							enemyList.get(i).moveBy(delta[0], delta[1]);
+						}
+					}
+					catch(PlayerCaughtException e1){
+						println("CAUGHT!");
+						//this.stop();
+						try {
+							TimeUnit.SECONDS.sleep(1);
+							extraLives--;
+	
+							if (extraLives < 0) {
+								println("GAME OVER!");
+								player.setScore(0);
+								this.stop();
+								return;
+							}
+							else if (extraLives == 0) {
+								print("Careful! ");
+							}
+							print("You have " + extraLives + " extra lives remaining");
+							println();
+							restartLevel();
+							this.start();
+							return;
+	
+						}
+						catch (InterruptedException e2){
+							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+						}
+					}
+					if (laserFactory.getAnimationTick() != null) {
+						laserFactory.createNextLaserFrame();
+					}
+					
 				} catch (TimeOutException e) {
 					e.printStackTrace();
 					gameOver();
@@ -583,6 +605,106 @@ public class Main extends Application {
 	}
 }
 
+	protected void usePlayerAbility() {
+		switch (player.getAbility()) {
+			case eatGhosts:
+			case eatSameColor:
+			case snake:{return;}
+			
+			case gun:{ 
+				if (player.getAbilityCharges() == 0) {
+					return;
+				}
+				else {
+					fireLaser();
+				}
+				
+				break;
+			}
+			case wallJump:{ 
+				if (player.getAbilityCharges() == 0) {
+					return;
+				}
+				else {
+					wallJump();
+				}
+				
+				break;
+			}
+		}
+		
+		
+	}
+	private void wallJump() {
+		// TODO Auto-generated method stub
+		
+	}
+	private void fireLaser() {
+		if (player.getAbilityCharges() <= 0) {
+			// play error sound
+			return;
+		}
+		Double width;
+		Double height;
+		Double xPos;
+		Double yPos;
+		boolean isHorizontal = true;
+		
+		if (player.getHeldButtons().isEmpty()) {
+			switch (player.getPrevDirection()) {
+			case up:
+			case down: {isHorizontal = false; break;}
+				
+			case left:
+			case right: {isHorizontal = true; break;}
+			default: {break;}
+			}
+		}
+		else {
+			switch(player.getHeldButtons().getTop()) {
+				case up:
+				case down:{isHorizontal = false; break;}
+					
+				case left:
+				case right: {isHorizontal = true; break;}
+				default: {break;}
+			}
+		}
+		
+		if (isHorizontal) {
+			height = 1.5*gridSquareSize;
+			xPos = 0.0;
+			yPos = player.getPosition()[1] - height + 4;
+
+		}
+		else {
+			width = 1.5*gridSquareSize;
+			xPos = player.getPosition()[0] - width + 4;
+			yPos = 0.0;
+		}
+		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
+			currentLevel.getChildren().add(laserFactory.getLaserGroup());
+			player.decrementAbilityCharges();
+			for (Enemy enemy : enemyList) {
+				if (isHorizontal) {
+					if (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) <= gridSquareSize * 1.5) {
+						println(enemy.getPosition()[1] - player.getPosition()[1] +", " + gridSquareSize*1.5);
+						enemyKilled(enemy);
+					}
+				}
+				else {
+					if (Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) <= gridSquareSize * 1.5) {
+						enemyKilled(enemy);
+					}
+				}
+			}
+			
+		}
+		else {
+			//play error sound
+		}
+		
+	}
 	@Override
 	public void start(Stage primaryStage) {
 		try {
@@ -601,16 +723,21 @@ public class Main extends Application {
 
 
 	}
+	
 
-
+	
+	private void enemyKilled(Enemy enemy) {
+		player.modifyScore(ateGhostScore);
+		enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
+	}
+	
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
 			if (playerCanEatGhosts == true) {
-				player.modifyScore(ateGhostScore);
-				enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
+				enemyKilled(enemy);
 				println("Score: " + player.getScore());
 			}
 			else { throw new PlayerCaughtException(); }
@@ -786,7 +913,7 @@ public class Main extends Application {
 			}
 
 
-			enemy.setPrevPos(xIndex, yIndex);
+			enemy.setPrevIndex(xIndex, yIndex);
 
 			//Choose new direction to move in
 			//System.out.println("Attempting to move " + enemy.getNextMove());
@@ -912,23 +1039,38 @@ public class Main extends Application {
 
 				System.out.println("Score: " + player.getScore());
 				pelletsRemaining--;
-
+				
+				// Is the level complete?
 				if (pelletsRemaining == 0) {
 					throw new LevelCompleteException();
 				}
-
+				
+				//Is this pickup a power pellet?
 				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
-					playerCanEatGhosts = true;
-					playerPowerUpTimer = playerPowerUpDuration;
-					for (Enemy enemy : enemyList) {
-						enemy.setColor(Color.DODGERBLUE);
-						enemy.setSpeed(1);
+					//What ability does the player have?
+					switch (player.getAbility()) {
+						case eatGhosts:{
+							playerCanEatGhosts = true;
+							playerPowerUpTimer = playerPowerUpDuration;
+							for (Enemy enemy : enemyList) {
+								enemy.setColor(Color.DODGERBLUE);
+								enemy.setSpeed(1);
+							}
+						}
+						
+						case wallJump:
+						case gun: {player.incrementAbilityCharges(); break;}
+						
+						case snake:{ break;}
+						case eatSameColor:{ break;}
+						
 					}
+					
 				}
 			} // Adds to players score depending on type of pellet eaten
 
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
-			player.setPrevPos(xIndex, yIndex);
+			player.setPrevIndex(xIndex, yIndex);
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {

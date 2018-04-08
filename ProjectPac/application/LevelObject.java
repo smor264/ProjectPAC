@@ -34,7 +34,7 @@ public abstract class LevelObject {
 	}
 	
 	public double[] getPosition() {
-			return (new double[] {model.getLayoutX() + width/2, model.getLayoutY() + height/2});
+		return (new double[] {model.getLayoutX() + width/2, model.getLayoutY() + height/2});
 	}
 
 	public void moveBy(int dx, int dy) {

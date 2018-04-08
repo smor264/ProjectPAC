@@ -2,12 +2,34 @@ package application;
 
 import javafx.scene.shape.Shape;
 
+
+
 public class Player extends Character{
 	int Score = 0;
 	private SetArrayList<Main.Direction> heldButtons = new SetArrayList<Main.Direction>();
-
-	public Player(Shape model, double speed) {
+	private int abilityCharges = 0;
+	private Ability ability;
+	/**
+	 * PlayerCharacter-specific special actions
+	 * */
+	public static enum Ability {
+		eatGhosts ("Ghost Chomp"),
+		wallJump ("Wall Jump"),
+		gun ("Anti-Ghost Laser"),
+		eatSameColor ("@%t#^g&"),
+		snake ("Snake");
+		
+		private final String text;
+		
+		private Ability(String text) {
+			this.text = text;
+		}
+		public String text() {return text;}
+	}
+	
+	public Player(Shape model, double speed, Ability ability) {
 		super(model, speed);
+		this.ability = ability;
 	}
 
 	public void setScore (int score) {
@@ -42,6 +64,27 @@ public class Player extends Character{
 	
 	public void setHeldButtons(SetArrayList<Main.Direction> array){
 		heldButtons = array;
+	}
+	
+	public Ability getAbility() {
+		return ability;
+	}
+	public void setAbility(Ability ability) {
+		this.ability = ability;
+	}
+	
+	public int getAbilityCharges() {
+		return abilityCharges;
+	}
+	
+	public void setAbilityCharges(int charges) {
+		abilityCharges = charges;
+	}
+	public void incrementAbilityCharges() {
+		abilityCharges++;
+	}
+	public void decrementAbilityCharges() {
+		abilityCharges--;
 	}
 
 }

@@ -10,6 +10,12 @@ public class FXMLController {
 	@FXML
 	private Text currentScoreText;
 
+	@FXML 
+	private Text currentAbility;
+	
+	@FXML 
+	private Text currentBoost;
+	
 	@FXML
 	private AnchorPane HUDBar;
 
@@ -19,6 +25,7 @@ public class FXMLController {
 	@FXML
 	private Button playButton;
 
+	
 	@FXML
 	private void initialize() {
 		currentScoreText.setText("--");

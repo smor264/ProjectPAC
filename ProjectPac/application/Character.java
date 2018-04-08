@@ -24,7 +24,7 @@ public class Character extends LevelObject {
 		return prevPos;
 	}
 	
-	public void setPrevPos(int x, int y) {
+	public void setPrevIndex(int x, int y) {
 		prevPos = new int[] {x,y};
 	}
 	
@@ -38,7 +38,7 @@ public class Character extends LevelObject {
 	public int[] getStartPosition() {
 		return startPosition;
 	}
-	public void setStartPosition(int[] pos) {
+	public void setStartIndex(int[] pos) {
 		startPosition = pos;
 	}
 }
