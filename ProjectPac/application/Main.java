@@ -76,7 +76,8 @@ public class Main extends Application {
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level level1 = new Level("level1");
-	private Level level2 = new Level("level2");
+	private Level levelTarget = new Level("target");
+	private Level levelCastle = new Level("castle");
 
 
 
@@ -371,7 +372,7 @@ public class Main extends Application {
 		currentScoreText.setText("42");
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
-		initialiseLevel(level2);
+		initialiseLevel(levelTarget);
 		currentGameTick = 0;
 		return true;
 	}
