@@ -105,7 +105,6 @@ public class Main extends Application {
     public Button playButton = (Button) launchScene.lookup("#playButton");
     public Text currentAbility = (Text) gameScene.lookup("#currentAbility");
     public Text currentBoost = (Text) gameScene.lookup("#currentBoost");
-    public ProgressBar timeBar;
 
 	public static PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
 
@@ -465,18 +464,16 @@ public class Main extends Application {
 						if (pausePressed) {
 							println("PAUSED!");
 							showOverlay(pauseOverlay);
-								}
-							else {
-								println("UNPAUSED!");
-								hideOverlay(pauseOverlay);
-							}
-							break;
 						}
-						default: break;
+						else {
+							println("UNPAUSED!");
+							hideOverlay(pauseOverlay);
+						}
+						break;
 					}
+					default: break;
 				}
 			}
-
 		});
 
 		gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
@@ -497,6 +494,8 @@ public class Main extends Application {
 					
 					default: break;
 				}
+			}
+		});
 			gameLoop = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
@@ -552,7 +551,7 @@ public class Main extends Application {
 							try {
 								TimeUnit.SECONDS.sleep(1);
 								currentLevel.getChildren().clear();
-								initialiseLevel(test);
+								initialiseLevel(levelTarget);
 								this.start();
 								return;
 							}
@@ -574,6 +573,7 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
+		
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
 		println("You have " + extraLives + " extra lives remaining");
