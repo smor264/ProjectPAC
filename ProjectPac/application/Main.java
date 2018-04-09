@@ -91,6 +91,8 @@ public class Main extends Application {
 
 	private AnimationTimer gameLoop;
 
+	private ProgressBar timeBar = new ProgressBar();
+
 
 	//FXML
 	//Game FXML
@@ -368,12 +370,11 @@ public class Main extends Application {
 	 */
 	private boolean loadNewLevel(Stage primaryStage,Level newLevel) {
 		println("Hello from load new level");
-		restartLevel();
-		currentScoreText.setText("42");
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
-		initialiseLevel(levelTarget);
+		initialiseLevel(levelCastle);
 		currentGameTick = 0;
+		currentLevel.getChildren().add(timeBar);
 		return true;
 	}
 
@@ -441,7 +442,7 @@ public class Main extends Application {
 		}
 
 
-		ProgressBar timeBar = new ProgressBar();
+		//ProgressBar timeBar = new ProgressBar();
 		currentLevel.getChildren().add(timeBar);
 
 		adjMatrix = new AdjacencyMatrix(levelObjectArray);
@@ -465,11 +466,13 @@ public class Main extends Application {
 					case V:{ usePlayerAbility(); break; }
 
 					case N:{
-						loadNewLevel(primaryStage, level2);
+						loadNewLevel(primaryStage, levelTarget);
 						break;
 						}
 
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
+
+					case ESCAPE:{ primaryStage.close(); break;}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
 							println("PAUSED!");
@@ -745,8 +748,8 @@ public class Main extends Application {
 			primaryStage.show();
 
 			playButton = (Button) launchScene.lookup("#playButton");
+			playButton.setDefaultButton(true);
 			playButton.setOnAction(e -> game(primaryStage));
-
 
 		} catch(Exception e) {
 			e.printStackTrace();
