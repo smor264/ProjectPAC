@@ -137,8 +137,6 @@ public class Main extends Application {
 		right,
 	}
 
-
-
 	/**
 	 * Special actions usable by any PlayerCharacter
 	 * */
@@ -280,7 +278,7 @@ public class Main extends Application {
 		for (Enemy enemy: enemyList) {
 			enemy.getModel().toFront();
 		}
-
+		adjMatrix = new AdjacencyMatrix(levelObjectArray);
 	}
 
 	private void restartLevel() {
@@ -371,14 +369,9 @@ public class Main extends Application {
 		println("Hello from load new level");
 		restartLevel();
 		currentScoreText.setText("42");
-		for(int i = 0; i < levelHeight; i++) {
-			for(int j = 0 ; j < levelWidth; j++) {
-				levelObjectArray[i][j] = null;
-			}
-		}
-		//adjMatrix = null;
+		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
-		game(primaryStage, level2);
+		initialiseLevel(level2);
 		currentGameTick = 0;
 		return true;
 	}
@@ -414,10 +407,10 @@ public class Main extends Application {
 	 * Loads , displays, and runs the game itself
 	 * @param primaryStage
 	 */
-	private void game(Stage primaryStage, Level level) {
+	private void game(Stage primaryStage) {
 		try {
 		initRootGameLayout();
-		initialiseLevel(level);
+		initialiseLevel(level1);
 		initialiseOverlays();
 		primaryStage.setScene(gameScene);
 		primaryStage.show();
@@ -441,7 +434,7 @@ public class Main extends Application {
 		else {
 			currentScoreText.setText("--");
 		}
-		if (player!= null) {
+		if (player != null) {
 			currentAbility.setText(playerCharacter.ability().text());
 			currentBoost.setText("--");
 		}
@@ -751,7 +744,7 @@ public class Main extends Application {
 			primaryStage.show();
 
 			playButton = (Button) launchScene.lookup("#playButton");
-			playButton.setOnAction(e -> game(primaryStage, level1));
+			playButton.setOnAction(e -> game(primaryStage));
 
 
 		} catch(Exception e) {
@@ -1072,6 +1065,12 @@ public class Main extends Application {
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
+				if (player == null) {
+					print("Player is null");
+				}
+				if (currentScoreText == null) {
+					print("currentScoreText is null");
+				}
 				currentScoreText.setText(player.getScoreString());
 
 				System.out.println("Score: " + player.getScore());
@@ -1124,7 +1123,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
-					if ((yIndex != levelObjectArray.length - 1) && (level1.getArray()[yIndex+1][xIndex] != 1)) {
+					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
 						delta[1] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.down);
 						break;
@@ -1134,7 +1133,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
-					if ((xIndex != 0) && (level1.getArray()[yIndex][xIndex-1] != 1)) {
+					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
 						delta[0] = -(int)player.getSpeed();
 						player.setPrevDirection(Direction.left);
 						break;
@@ -1144,7 +1143,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
-					if ((xIndex != levelObjectArray[0].length - 1) && (level1.getArray()[yIndex][xIndex+1] != 1)) {
+					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
 						delta[0] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.right);
 						break;
