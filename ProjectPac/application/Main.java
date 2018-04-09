@@ -78,7 +78,9 @@ public class Main extends Application {
 	private Scene launchScene = new Scene(launchScreen, windowWidth, windowHeight);
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();
+	private Level level1 = new Level("level1");
+	private Level levelTarget = new Level("target");
+	private Level levelCastle = new Level("castle");
 
 	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
@@ -89,6 +91,8 @@ public class Main extends Application {
 	private StackPane startOverlay = new StackPane(startScreen, startText);
 
 	private AnimationTimer gameLoop;
+
+	private ProgressBar timeBar = new ProgressBar();
 
 
 	//FXML
@@ -271,7 +275,7 @@ public class Main extends Application {
 		for (Enemy enemy: enemyList) {
 			enemy.getModel().toFront();
 		}
-		println("there are " + pelletsRemaining + " pellets on this level");
+		adjMatrix = new AdjacencyMatrix(levelObjectArray);
 	}
 
 	private void restartLevel() {
@@ -357,6 +361,22 @@ public class Main extends Application {
 	}
 
 	/**
+	 * Loads the next level, clears previous level
+	 * @param primaryStage
+	 * @param newLevel
+	 * @return
+	 */
+	private boolean loadNewLevel(Stage primaryStage,Level newLevel) {
+		println("Hello from load new level");
+		levelObjectArray = new LevelObject[levelHeight][levelWidth];
+		currentLevel.getChildren().clear();
+		initialiseLevel(levelCastle);
+		currentGameTick = 0;
+		currentLevel.getChildren().add(timeBar);
+		return true;
+	}
+
+	/**
 	 * Stops the gameLoop and handles game over UI
 	 */
 	private void gameOver() {
@@ -385,62 +405,66 @@ public class Main extends Application {
 		startText.setStyle("-fx-font: 24 arial;");
 	}
 
+	/**
+	 * Loads , displays, and runs the game itself
+	 * @param primaryStage
+	 */
 	private void game(Stage primaryStage) {
 		try {
-			initRootGameLayout();
-			primaryStage.setScene(gameScene);
-			primaryStage.show();
-	
-			initialiseLevel(test);
-			initialiseOverlays();
-	
-			HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
-			currentScoreText = (Text) gameScene.lookup("#currentScoreText");
-			currentAbility = (Text) gameScene.lookup("#currentAbility");
-			currentBoost = (Text) gameScene.lookup("#currentBoost");
-	
-			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
-	
-	
-			if(player != null && player.getScoreString() != null && currentScoreText != null) {
-				currentScoreText.setText(player.getScoreString());
-			}
-			else {
-				currentScoreText.setText("--");
-			}
-			if (player!= null) {
-				currentAbility.setText(playerCharacter.ability().text());
-				currentBoost.setText("--");
-			}
-	
-			timeBar = new ProgressBar();
-			currentLevel.getChildren().add(timeBar);
-	
-			adjMatrix = new AdjacencyMatrix(levelObjectArray);
-	
-			gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
-				@Override
-				public void handle(KeyEvent event) {
-					switch (event.getCode()) {
-						case W: 
-						case UP: { player.getHeldButtons().append(Direction.up); break;}
-						
-						case S:
-						case DOWN: { player.getHeldButtons().append(Direction.down); break;}
-						
-						case A:
-						case LEFT: { player.getHeldButtons().append(Direction.left); break;}
-						
-						case D:
-						case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-						
-						case V:{ usePlayerAbility(); break; }
-						
-						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-						case P: { pausePressed = !pausePressed;
-							if (pausePressed) {
-								println("PAUSED!");
-								showOverlay(pauseOverlay);
+		initialiseLevel(level1);
+		initRootGameLayout();
+		initialiseOverlays();
+		primaryStage.show();
+		primaryStage.setScene(gameScene);
+		//Binds the variables to their FXML counter parts
+		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+		currentAbility = (Text) gameScene.lookup("#currentAbility");
+		currentBoost = (Text) gameScene.lookup("#currentBoost");
+
+		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
+
+		if(player != null && player.getScoreString() != null && currentScoreText != null) {
+			currentScoreText.setText(player.getScoreString());
+		}
+		else {
+			currentScoreText.setText("--");
+		}
+		if (player != null) {
+			currentAbility.setText(playerCharacter.ability().text());
+			currentBoost.setText("--");
+		}
+		currentLevel.getChildren().add(timeBar);
+		gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent event) {
+				switch (event.getCode()) {
+					case W:
+					case UP: { player.getHeldButtons().append(Direction.up); break;}
+
+					case S:
+					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+
+					case A:
+					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+
+					case D:
+					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+
+					case V:{ usePlayerAbility(); break; }
+
+					case N:{
+						loadNewLevel(primaryStage, levelTarget);
+						break;
+						}
+
+					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
+
+					case ESCAPE:{ primaryStage.close(); break;}
+					case P: { pausePressed = !pausePressed;
+						if (pausePressed) {
+							println("PAUSED!");
+							showOverlay(pauseOverlay);
 								}
 							else {
 								println("UNPAUSED!");
@@ -451,31 +475,28 @@ public class Main extends Application {
 						default: break;
 					}
 				}
-	
-			});
-	
-			gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
-				@Override
-				public void handle(KeyEvent event) {
-					switch (event.getCode()) {
-						case W:
-						case UP: { player.getHeldButtons().remove(Direction.up); break; }
-						
-						case S:
-						case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
-						
-						case A:
-						case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
-						
-						case D:
-						case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
-						
-						default: break;
-					}
+			}
+
+		});
+
+		gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent event) {
+				switch (event.getCode()) {
+					case W:
+					case UP: { player.getHeldButtons().remove(Direction.up); break; }
+					
+					case S:
+					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+					
+					case A:
+					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+					
+					case D:
+					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
+					
+					default: break;
 				}
-	
-			});
-	
 			gameLoop = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
@@ -553,7 +574,6 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-	
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
 		println("You have " + extraLives + " extra lives remaining");
@@ -562,7 +582,6 @@ public class Main extends Application {
 		
 		restartLevel();
 	}
-	
 	/**
 	 * Manages the timer, and time bar, timeouts, etc.
 	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
@@ -691,30 +710,30 @@ public class Main extends Application {
 			case eatGhosts:
 			case eatSameColor:
 			case snake:{return;}
-			
-			case gun:{ 
+
+			case gun:{
 				if (player.getAbilityCharges() == 0) {
 					return;
 				}
 				else {
 					fireLaser();
 				}
-				
+
 				break;
 			}
-			case wallJump:{ 
+			case wallJump:{
 				if (player.getAbilityCharges() == 0) {
 					return;
 				}
 				else {
 					wallJump();
 				}
-				
+
 				break;
 			}
 		}
-		
-		
+
+
 	}
 	
 	private void wallJump() {
@@ -763,12 +782,12 @@ public class Main extends Application {
 		Double xPos;
 		Double yPos;
 		boolean isHorizontal = true;
-		
+
 		if (player.getHeldButtons().isEmpty()) {
 			switch (player.getPrevDirection()) {
 			case up:
 			case down: {isHorizontal = false; break;}
-				
+
 			case left:
 			case right: {isHorizontal = true; break;}
 			default: {break;}
@@ -778,13 +797,13 @@ public class Main extends Application {
 			switch(player.getHeldButtons().getTop()) {
 				case up:
 				case down:{isHorizontal = false; break;}
-					
+
 				case left:
 				case right: {isHorizontal = true; break;}
 				default: {break;}
 			}
 		}
-		
+
 		if (isHorizontal) {
 			height = 1.5*gridSquareSize;
 			xPos = 0.0;
@@ -811,12 +830,12 @@ public class Main extends Application {
 					}
 				}
 			}
-			
+
 		}
 		else {
 			//play error sound
 		}
-		
+
 	}
 	
 	@Override
@@ -828,8 +847,8 @@ public class Main extends Application {
 			primaryStage.show();
 
 			playButton = (Button) launchScene.lookup("#playButton");
+			playButton.setDefaultButton(true);
 			playButton.setOnAction(e -> game(primaryStage));
-
 
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -842,7 +861,7 @@ public class Main extends Application {
 		player.modifyScore(ateGhostScore);
 		enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
 	}
-	
+
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 
@@ -1224,11 +1243,16 @@ public class Main extends Application {
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
+				if (player == null) {
+					print("Player is null");
+				}
+				if (currentScoreText == null) {
+					print("currentScoreText is null");
+				}
 				currentScoreText.setText(player.getScoreString());
 
 				println("Score: " + player.getScore());
 				pelletsRemaining--;
-				//println(pelletsRemaining +" pellets remaining");
 				
 				// Is the level complete?
 				if (pelletsRemaining == 0) {
@@ -1266,15 +1290,15 @@ public class Main extends Application {
 								enemy.setSpeed(1);
 							}
 						}
-						
+
 						case wallJump:
 						case gun: {player.incrementAbilityCharges(); break;}
-						
+
 						case snake:{ break;}
 						case eatSameColor:{ break;}
-						
+
 					}
-					
+
 				}
 			} // Adds to players score depending on type of pellet eaten
 
@@ -1297,7 +1321,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
-					if ((yIndex != levelObjectArray.length - 1) && (test.getArray()[yIndex+1][xIndex] != 1)) {
+					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
 						delta[1] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.down);
 						break;
@@ -1307,7 +1331,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
-					if ((xIndex != 0) && (test.getArray()[yIndex][xIndex-1] != 1)) {
+					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
 						delta[0] = -(int)player.getSpeed();
 						player.setPrevDirection(Direction.left);
 						break;
@@ -1317,7 +1341,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
-					if ((xIndex != levelObjectArray[0].length - 1) && (test.getArray()[yIndex][xIndex+1] != 1)) {
+					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
 						delta[0] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.right);
 						break;
