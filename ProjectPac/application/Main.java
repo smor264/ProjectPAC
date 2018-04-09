@@ -66,7 +66,7 @@ public class Main extends Application {
 	private int ateGhostScore = 200; //Score given for eating a ghost
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
-	
+
 	Laser laserFactory = new Laser();
 
 	//Scenes and Panes
@@ -75,7 +75,8 @@ public class Main extends Application {
 	private Scene launchScene = new Scene(launchScreen, windowWidth, windowHeight);
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
-	private Level test = new Level();
+	private Level level1 = new Level("level1");
+	private Level level2 = new Level("level2");
 
 
 
@@ -136,7 +137,7 @@ public class Main extends Application {
 		right,
 	}
 
-	
+
 
 	/**
 	 * Special actions usable by any PlayerCharacter
@@ -361,6 +362,28 @@ public class Main extends Application {
 	}
 
 	/**
+	 * Loads the next level, clears previous level
+	 * @param primaryStage
+	 * @param newLevel
+	 * @return
+	 */
+	private boolean loadNewLevel(Stage primaryStage,Level newLevel) {
+		println("Hello from load new level");
+		restartLevel();
+		currentScoreText.setText("42");
+		for(int i = 0; i < levelHeight; i++) {
+			for(int j = 0 ; j < levelWidth; j++) {
+				levelObjectArray[i][j] = null;
+			}
+		}
+		//adjMatrix = null;
+		currentLevel.getChildren().clear();
+		game(primaryStage, level2);
+		currentGameTick = 0;
+		return true;
+	}
+
+	/**
 	 * Stops the gameLoop and handles game over UI
 	 */
 	private void gameOver() {
@@ -387,15 +410,23 @@ public class Main extends Application {
 		startText.setStyle("-fx-font: 24 arial;");
 	}
 
-	private void game(Stage primaryStage) {
+	/**
+	 * Loads , displays, and runs the game itself
+	 * @param primaryStage
+	 */
+	private void game(Stage primaryStage, Level level) {
 		try {
 		initRootGameLayout();
+		initialiseLevel(level);
+		initialiseOverlays();
 		primaryStage.setScene(gameScene);
 		primaryStage.show();
 
-		initialiseLevel(test);
-		initialiseOverlays();
+		println("Hello from game");
+		//initialiseLevel(level);
+		//initialiseOverlays();
 
+		//Binds the variables to their FXML counter parts
 		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
 		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
@@ -425,20 +456,25 @@ public class Main extends Application {
 			@Override
 			public void handle(KeyEvent event) {
 				switch (event.getCode()) {
-					case W: 
+					case W:
 					case UP: { player.getHeldButtons().append(Direction.up); break;}
-					
+
 					case S:
 					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
-					
+
 					case A:
 					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
-					
+
 					case D:
 					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-					
+
 					case V:{ usePlayerAbility(); break; }
-					
+
+					case N:{
+						loadNewLevel(primaryStage, level2);
+						break;
+						}
+
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
@@ -463,16 +499,16 @@ public class Main extends Application {
 				switch (event.getCode()) {
 					case W:
 					case UP: { player.getHeldButtons().remove(Direction.up); break; }
-					
+
 					case S:
 					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
-					
+
 					case A:
 					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
-					
+
 					case D:
 					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
-					
+
 					default: break;
 				}
 			}
@@ -492,17 +528,18 @@ public class Main extends Application {
 				}
 
 				int[] delta = {0,0};
+				//println("Hello from game loop");
 
 				try {
 					timeBar.setProgress(currentGameTick/(maxTime + 240));
 					if(currentGameTick >= (maxTime + 240)) {
 						print("Time's Up!");
 						throw(new TimeOutException());}
-	
+
 					else {
 						currentGameTick++;
 					}
-					
+
 					/* Display the starting screen*/
 					if (currentGameTick - 1 <= 240) {
 						switch( (int)currentGameTick - 1 ) {
@@ -515,7 +552,7 @@ public class Main extends Application {
 						}
 						return;
 					}
-	
+
 					try { delta = calculatePlayerMovement(); }
 					catch(LevelCompleteException e1) {
 						println("LEVEL COMPLETE!");
@@ -523,7 +560,7 @@ public class Main extends Application {
 						try {
 							TimeUnit.SECONDS.sleep(1);
 							currentLevel.getChildren().clear();
-							initialiseLevel(test);
+							initialiseLevel(level1);
 							this.start();
 							return;
 						}
@@ -531,7 +568,7 @@ public class Main extends Application {
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
-	
+
 					if (playerPowerUpTimer == 0) {
 						resetPlayerPowerUpState();
 					}
@@ -548,9 +585,9 @@ public class Main extends Application {
 						}
 						playerPowerUpTimer--;
 					}
-	
+
 					player.moveBy(delta[0], delta[1]);
-	
+
 					try {
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
@@ -564,7 +601,7 @@ public class Main extends Application {
 						try {
 							TimeUnit.SECONDS.sleep(1);
 							extraLives--;
-	
+
 							if (extraLives < 0) {
 								println("GAME OVER!");
 								player.setScore(0);
@@ -579,7 +616,7 @@ public class Main extends Application {
 							restartLevel();
 							this.start();
 							return;
-	
+
 						}
 						catch (InterruptedException e2){
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
@@ -588,7 +625,7 @@ public class Main extends Application {
 					if (laserFactory.getAnimationTick() != null) {
 						laserFactory.createNextLaserFrame();
 					}
-					
+
 				} catch (TimeOutException e) {
 					e.printStackTrace();
 					gameOver();
@@ -610,34 +647,34 @@ public class Main extends Application {
 			case eatGhosts:
 			case eatSameColor:
 			case snake:{return;}
-			
-			case gun:{ 
+
+			case gun:{
 				if (player.getAbilityCharges() == 0) {
 					return;
 				}
 				else {
 					fireLaser();
 				}
-				
+
 				break;
 			}
-			case wallJump:{ 
+			case wallJump:{
 				if (player.getAbilityCharges() == 0) {
 					return;
 				}
 				else {
 					wallJump();
 				}
-				
+
 				break;
 			}
 		}
-		
-		
+
+
 	}
 	private void wallJump() {
 		// TODO Auto-generated method stub
-		
+
 	}
 	private void fireLaser() {
 		if (player.getAbilityCharges() <= 0) {
@@ -649,12 +686,12 @@ public class Main extends Application {
 		Double xPos;
 		Double yPos;
 		boolean isHorizontal = true;
-		
+
 		if (player.getHeldButtons().isEmpty()) {
 			switch (player.getPrevDirection()) {
 			case up:
 			case down: {isHorizontal = false; break;}
-				
+
 			case left:
 			case right: {isHorizontal = true; break;}
 			default: {break;}
@@ -664,13 +701,13 @@ public class Main extends Application {
 			switch(player.getHeldButtons().getTop()) {
 				case up:
 				case down:{isHorizontal = false; break;}
-					
+
 				case left:
 				case right: {isHorizontal = true; break;}
 				default: {break;}
 			}
 		}
-		
+
 		if (isHorizontal) {
 			height = 1.5*gridSquareSize;
 			xPos = 0.0;
@@ -698,12 +735,12 @@ public class Main extends Application {
 					}
 				}
 			}
-			
+
 		}
 		else {
 			//play error sound
 		}
-		
+
 	}
 	@Override
 	public void start(Stage primaryStage) {
@@ -714,7 +751,7 @@ public class Main extends Application {
 			primaryStage.show();
 
 			playButton = (Button) launchScene.lookup("#playButton");
-			playButton.setOnAction(e -> game(primaryStage));
+			playButton.setOnAction(e -> game(primaryStage, level1));
 
 
 		} catch(Exception e) {
@@ -723,14 +760,14 @@ public class Main extends Application {
 
 
 	}
-	
 
-	
+
+
 	private void enemyKilled(Enemy enemy) {
 		player.modifyScore(ateGhostScore);
 		enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
 	}
-	
+
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
 		int[] delta = {0,0};
 
@@ -1039,12 +1076,12 @@ public class Main extends Application {
 
 				System.out.println("Score: " + player.getScore());
 				pelletsRemaining--;
-				
+
 				// Is the level complete?
 				if (pelletsRemaining == 0) {
 					throw new LevelCompleteException();
 				}
-				
+
 				//Is this pickup a power pellet?
 				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
 					//What ability does the player have?
@@ -1057,15 +1094,15 @@ public class Main extends Application {
 								enemy.setSpeed(1);
 							}
 						}
-						
+
 						case wallJump:
 						case gun: {player.incrementAbilityCharges(); break;}
-						
+
 						case snake:{ break;}
 						case eatSameColor:{ break;}
-						
+
 					}
-					
+
 				}
 			} // Adds to players score depending on type of pellet eaten
 
@@ -1087,7 +1124,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
-					if ((yIndex != levelObjectArray.length - 1) && (test.getArray()[yIndex+1][xIndex] != 1)) {
+					if ((yIndex != levelObjectArray.length - 1) && (level1.getArray()[yIndex+1][xIndex] != 1)) {
 						delta[1] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.down);
 						break;
@@ -1097,7 +1134,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
-					if ((xIndex != 0) && (test.getArray()[yIndex][xIndex-1] != 1)) {
+					if ((xIndex != 0) && (level1.getArray()[yIndex][xIndex-1] != 1)) {
 						delta[0] = -(int)player.getSpeed();
 						player.setPrevDirection(Direction.left);
 						break;
@@ -1107,7 +1144,7 @@ public class Main extends Application {
 					}
 				}
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
-					if ((xIndex != levelObjectArray[0].length - 1) && (test.getArray()[yIndex][xIndex+1] != 1)) {
+					if ((xIndex != levelObjectArray[0].length - 1) && (level1.getArray()[yIndex][xIndex+1] != 1)) {
 						delta[0] = (int)player.getSpeed();
 						player.setPrevDirection(Direction.right);
 						break;
