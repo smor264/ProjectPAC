@@ -67,6 +67,7 @@ public class Main extends Application {
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
 	
+	private boolean playerIsWallJumping = false;
 	Laser laserFactory = new Laser();
 
 	//Scenes and Panes
@@ -101,7 +102,7 @@ public class Main extends Application {
     public Text currentAbility = (Text) gameScene.lookup("#currentAbility");
     public Text currentBoost = (Text) gameScene.lookup("#currentBoost");
 
-	public static PlayerCharacter playerCharacter = PlayerCharacter.Robot;
+	public static PlayerCharacter playerCharacter = PlayerCharacter.PacKid;
 
 	/**
 	 * A list of all characters that the player can use.
@@ -285,10 +286,10 @@ public class Main extends Application {
 	private void restartLevel() {
 		int playerStartXPos = player.getStartPosition()[0];
 		int playerStartYPos = player.getStartPosition()[1];
-
+		
 		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
 
-		levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null;
+		levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null;
 		levelObjectArray[playerStartYPos][playerStartXPos] = player;
 
 		for (Enemy enemy : enemyList) {
@@ -341,6 +342,7 @@ public class Main extends Application {
 	private void resetPlayerPowerUpState() {
 		playerCanEatGhosts = false;
 		playerPowerUpTimer = 0;
+		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
 			enemy.setSpeed(2);
@@ -585,6 +587,7 @@ public class Main extends Application {
 							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 						}
 					}
+					
 					if (laserFactory.getAnimationTick() != null) {
 						laserFactory.createNextLaserFrame();
 					}
@@ -636,7 +639,38 @@ public class Main extends Application {
 		
 	}
 	private void wallJump() {
-		// TODO Auto-generated method stub
+		if (player.getAbilityCharges() <= 0) {
+			// play error sound
+			return;
+		}
+		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
+			try {
+				int xIndex = convertToIndex(player.getPosition()[0], true);
+				int yIndex = convertToIndex(player.getPosition()[1], false);
+				int[] delta = {0,0};
+				
+				switch(player.getHeldButtons().getTop()) {
+					case up:{delta[1] = -2; break;}
+					case down:{delta[1] = 2; break;}
+					case left:{delta[0] = -2; break;}
+					case right:{delta[0] = 2; break;}
+				}
+				
+				if(levelObjectArray[yIndex + delta[1]][xIndex + delta[0]] instanceof Wall) {
+					return;
+				}
+				else {
+					playerIsWallJumping = true;
+					player.setPrevDirection(player.getHeldButtons().getTop());
+					player.decrementAbilityCharges();
+				}
+				
+			}
+			catch (ArrayIndexOutOfBoundsException e)  {
+				
+			}
+		}
+		
 		
 	}
 	private void fireLaser() {
@@ -994,43 +1028,62 @@ public class Main extends Application {
 	}
 
 	private void chooseMoveFromAlgorithm(Enemy enemy, Integer[] source, Integer[] destination) {
-
-		switch (enemy.getAlgorithm()) {
-			case bfs:{
-				// set next moves to be the directions from enemy to player
-				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
-				break;
-			}
-			case dfs:{
-				// Since DFS's paths are so windy, we actually need to let them complete before repathing
-				if (enemy.getPathLength() == 0) {
-					enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+		try {
+			switch (enemy.getAlgorithm()) {
+				case bfs:{
+					// set next moves to be the directions from enemy to player
+					enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
+					break;
 				}
-				break;
+				case dfs:{
+					// Since DFS's paths are so windy, we actually need to let them complete before repathing
+					if (enemy.getPathLength() == 0) {
+						enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+					}
+					break;
+				}
+				case dijkstra:{
+					//System.out.println(targetXIndex + ", " + targetYIndex);
+					enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
+					break;
+				}
+	
+				case euclidean:{
+					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
+					break;
+				}
+				default:{throw new IllegalArgumentException("Invalid algorithm");}
 			}
-			case dijkstra:{
-				//System.out.println(targetXIndex + ", " + targetYIndex);
-				enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
-				break;
-			}
-
-			case euclidean:{
-				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
-				break;
-			}
-			default:{throw new IllegalArgumentException("Invalid algorithm");}
+		}
+		catch(NullPointerException e) {
+			enemy.setNextMove(enemy.getPrevDirection());
 		}
 	}
 
 	private int[] calculatePlayerMovement() throws LevelCompleteException{
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-
+		
 		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
-
-			levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null; //clear old player position in collision detection array
+			
+			if (playerIsWallJumping) {
+				if (levelObjectArray[yIndex][xIndex] instanceof Wall) {
+					playerIsWallJumping = false;
+				}
+				
+				switch (player.getPrevDirection()) {
+					case up: {delta[1] = -(int)player.getSpeed(); break;}
+					case down: {delta[1] = (int)player.getSpeed(); break;}
+					case left: {delta[0] = -(int)player.getSpeed(); break;}
+					case right: {delta[0] = (int)player.getSpeed(); break;}
+					default: {break;}
+				}
+				
+			}
+			
+			levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
 
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());

@@ -20,7 +20,7 @@ public class Character extends LevelObject {
 		this.speed = speed;
 	}
 	
-	public int[] getPrevPos() {
+	public int[] getPrevIndex() {
 		return prevPos;
 	}
 	
