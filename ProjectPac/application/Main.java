@@ -54,7 +54,7 @@ public class Main extends Application {
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(playerCharacter.model(), 2, playerCharacter.ability());
+	private Player player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 	private AdjacencyMatrix adjMatrix; // Pathfinding array
 
@@ -67,8 +67,11 @@ public class Main extends Application {
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
 	
+	private boolean playerIsWallJumping = false;
 	Laser laserFactory = new Laser();
-
+	
+	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
+	
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
 	private AnchorPane launchScreen = new AnchorPane();
@@ -76,8 +79,6 @@ public class Main extends Application {
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 	private Level test = new Level();
-
-
 
 	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
@@ -100,30 +101,34 @@ public class Main extends Application {
     public Button playButton = (Button) launchScene.lookup("#playButton");
     public Text currentAbility = (Text) gameScene.lookup("#currentAbility");
     public Text currentBoost = (Text) gameScene.lookup("#currentBoost");
+    public ProgressBar timeBar;
 
-	public static PlayerCharacter playerCharacter = PlayerCharacter.Robot;
+	public static PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
 
 	/**
 	 * A list of all characters that the player can use.
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump),
-		GlitchTheGhost (null, Player.Ability.eatSameColor),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun);
+		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
+		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
+		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
+		GlitchTheGhost (null, Player.Ability.eatSameColor, 2),
+		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
 
 		private final Shape model;
 		private final Player.Ability ability;
+		private final int speed;
 
-		PlayerCharacter(Shape model, Player.Ability ability){
+		PlayerCharacter(Shape model, Player.Ability ability, int speed){
 			this.model = model;
 			this.ability = ability;
+			this.speed = speed;
 		}
 		public Shape model() {return model;}
 		public Player.Ability ability() {return ability;}
+		public int speed() {return speed;}
 	}
 
 	/**
@@ -135,8 +140,6 @@ public class Main extends Application {
 		left,
 		right,
 	}
-
-	
 
 	/**
 	 * Special actions usable by any PlayerCharacter
@@ -154,25 +157,14 @@ public class Main extends Application {
 	 * */
 	public static Color[] enemyColors = {Color.RED, Color.DARKORANGE, Color.DARKMAGENTA, Color.DARKCYAN, Color.GREENYELLOW, Color.SPRINGGREEN};
 
-	/*TEST VARIABLES*/
-	/*
-	Wall w = new Wall(Wall.WallType.full, Direction.up);
-	LevelObject[][] pathTest = {{w,	 w,		w,	 w,	  w},
-								{w, null, null, null, w},
-								{w, null, 	w,  null, w},
-								{w, null, 	w,  null, w},
-								{w, null, null, null, w},
-								{w,	 w,		w,	 w,	  w}};
-	AdjacencyMatrix testAdjMatrix = new AdjacencyMatrix(pathTest);
-	*/
-	/**/
-
 	private void println() {
 		System.out.println();
 	}
+	
 	private void println(String str) {
 		System.out.println(str); // because I'm tired of writing System.out.println
 	}
+	
 	private void print(String str) {
 		System.out.print(str); // because I'm tired of writing System.out.print
 	}
@@ -279,16 +271,16 @@ public class Main extends Application {
 		for (Enemy enemy: enemyList) {
 			enemy.getModel().toFront();
 		}
-
+		println("there are " + pelletsRemaining + " pellets on this level");
 	}
 
 	private void restartLevel() {
 		int playerStartXPos = player.getStartPosition()[0];
 		int playerStartYPos = player.getStartPosition()[1];
-
+		
 		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
 
-		levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null;
+		levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null;
 		levelObjectArray[playerStartYPos][playerStartXPos] = player;
 
 		for (Enemy enemy : enemyList) {
@@ -302,7 +294,6 @@ public class Main extends Application {
 		levelObjectArray[y][x] = obj;
 		currentLevel.getChildren().add(obj.getModel());
 	}
-
 
 	/**
 	 * Initializes the root game layout
@@ -341,6 +332,7 @@ public class Main extends Application {
 	private void resetPlayerPowerUpState() {
 		playerCanEatGhosts = false;
 		playerPowerUpTimer = 0;
+		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
 			enemy.setSpeed(2);
@@ -356,8 +348,12 @@ public class Main extends Application {
 				delta[1] = 1;
 			}
 			enemy.moveBy(delta[0], delta[1]);
-
 		}
+		for (SnakePiece snakePiece : snakePieces) {
+			currentLevel.getChildren().remove(snakePiece.getModel());
+		}
+		snakePieces.clear();
+		player.setSpeed(playerCharacter.speed());
 	}
 
 	/**
@@ -368,9 +364,11 @@ public class Main extends Application {
 		player.setScore(0);
 		gameLoop.stop();
 	}
+	
 	private boolean showOverlay(StackPane overlay) {
 		return currentLevel.getChildren().add(overlay);
 	}
+	
 	private boolean hideOverlay(StackPane overlay) {
 		return currentLevel.getChildren().removeAll(overlay);
 	}
@@ -389,223 +387,306 @@ public class Main extends Application {
 
 	private void game(Stage primaryStage) {
 		try {
-		initRootGameLayout();
-		primaryStage.setScene(gameScene);
-		primaryStage.show();
-
-		initialiseLevel(test);
-		initialiseOverlays();
-
-		HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
-		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
-		currentAbility = (Text) gameScene.lookup("#currentAbility");
-		currentBoost = (Text) gameScene.lookup("#currentBoost");
-
-		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
-
-
-		if(player != null && player.getScoreString() != null && currentScoreText != null) {
-			currentScoreText.setText(player.getScoreString());
-		}
-		else {
-			currentScoreText.setText("--");
-		}
-		if (player!= null) {
-			currentAbility.setText(playerCharacter.ability().text());
-			currentBoost.setText("--");
-		}
-
-
-		ProgressBar timeBar = new ProgressBar();
-		currentLevel.getChildren().add(timeBar);
-
-		adjMatrix = new AdjacencyMatrix(levelObjectArray);
-
-		gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent event) {
-				switch (event.getCode()) {
-					case W: 
-					case UP: { player.getHeldButtons().append(Direction.up); break;}
-					
-					case S:
-					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
-					
-					case A:
-					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
-					
-					case D:
-					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-					
-					case V:{ usePlayerAbility(); break; }
-					
-					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-					case P: { pausePressed = !pausePressed;
-						if (pausePressed) {
-							println("PAUSED!");
-							showOverlay(pauseOverlay);
-							}
-						else {
-							println("UNPAUSED!");
-							hideOverlay(pauseOverlay);
-						}
-						break;
-					}
-					default: break;
-				}
-			}
-
-		});
-
-		gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent event) {
-				switch (event.getCode()) {
-					case W:
-					case UP: { player.getHeldButtons().remove(Direction.up); break; }
-					
-					case S:
-					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
-					
-					case A:
-					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
-					
-					case D:
-					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
-					
-					default: break;
-				}
-			}
-
-		});
-
-
-		//primaryStage.show();
-		//primaryStage.setScene(gameScene);
-
-
-		gameLoop = new AnimationTimer() {
-			@Override
-			public void handle(long now) {
-				while (pausePressed) {
-					return;
-				}
-
-				int[] delta = {0,0};
-
-				try {
-					timeBar.setProgress(currentGameTick/(maxTime + 240));
-					if(currentGameTick >= (maxTime + 240)) {
-						print("Time's Up!");
-						throw(new TimeOutException());}
+			initRootGameLayout();
+			primaryStage.setScene(gameScene);
+			primaryStage.show();
 	
-					else {
-						currentGameTick++;
-					}
-					
-					/* Display the starting screen*/
-					if (currentGameTick - 1 <= 240) {
-						switch( (int)currentGameTick - 1 ) {
-							case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
-							case 60: {startText.setText("2!"); break;}
-							case 120: {startText.setText("1!"); break;}
-							case 180: {startText.setText("Go!"); break;}
-							case 240: {hideOverlay(startOverlay); break;}
-							default: {break;}
+			initialiseLevel(test);
+			initialiseOverlays();
+	
+			HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+			currentScoreText = (Text) gameScene.lookup("#currentScoreText");
+			currentAbility = (Text) gameScene.lookup("#currentAbility");
+			currentBoost = (Text) gameScene.lookup("#currentBoost");
+	
+			if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
+	
+	
+			if(player != null && player.getScoreString() != null && currentScoreText != null) {
+				currentScoreText.setText(player.getScoreString());
+			}
+			else {
+				currentScoreText.setText("--");
+			}
+			if (player!= null) {
+				currentAbility.setText(playerCharacter.ability().text());
+				currentBoost.setText("--");
+			}
+	
+			timeBar = new ProgressBar();
+			currentLevel.getChildren().add(timeBar);
+	
+			adjMatrix = new AdjacencyMatrix(levelObjectArray);
+	
+			gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+				@Override
+				public void handle(KeyEvent event) {
+					switch (event.getCode()) {
+						case W: 
+						case UP: { player.getHeldButtons().append(Direction.up); break;}
+						
+						case S:
+						case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+						
+						case A:
+						case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+						
+						case D:
+						case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+						
+						case V:{ usePlayerAbility(); break; }
+						
+						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
+						case P: { pausePressed = !pausePressed;
+							if (pausePressed) {
+								println("PAUSED!");
+								showOverlay(pauseOverlay);
+								}
+							else {
+								println("UNPAUSED!");
+								hideOverlay(pauseOverlay);
+							}
+							break;
 						}
+						default: break;
+					}
+				}
+	
+			});
+	
+			gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+				@Override
+				public void handle(KeyEvent event) {
+					switch (event.getCode()) {
+						case W:
+						case UP: { player.getHeldButtons().remove(Direction.up); break; }
+						
+						case S:
+						case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+						
+						case A:
+						case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+						
+						case D:
+						case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
+						
+						default: break;
+					}
+				}
+	
+			});
+	
+			gameLoop = new AnimationTimer() {
+				@Override
+				public void handle(long now) {
+					while (pausePressed) {
 						return;
 					}
 	
-					try { delta = calculatePlayerMovement(); }
-					catch(LevelCompleteException e1) {
-						println("LEVEL COMPLETE!");
-						this.stop();
-						try {
-							TimeUnit.SECONDS.sleep(1);
-							currentLevel.getChildren().clear();
-							initialiseLevel(test);
-							this.start();
+					try {
+						if ( !manageTime() ) {
 							return;
 						}
-						catch(InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
-						}
-					}
 	
-					if (playerPowerUpTimer == 0) {
-						resetPlayerPowerUpState();
-					}
-					else {
-						if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
-							for (Enemy enemy :enemyList) {
-								enemy.setColor(Color.WHITE);
-							}
-						}
-						else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
-							for (Enemy enemy :enemyList) {
-								enemy.setColor(Color.DODGERBLUE);
-							}
-						}
-						playerPowerUpTimer--;
-					}
+						int[] delta = {0,0};
 	
-					player.moveBy(delta[0], delta[1]);
-	
-					try {
+						delta = calculatePlayerMovement();
+						
+						player.moveBy(delta[0], delta[1]);
+						
+						if (player.getAbility() == Player.Ability.snake) {
+							manageSnake();
+						}
+						else if (player.getAbility() == Player.Ability.eatGhosts) {
+							manageEatGhosts();
+						}
+						
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
 							delta = calculateEnemyMovement(enemyList.get(i));
 							enemyList.get(i).moveBy(delta[0], delta[1]);
 						}
-					}
-					catch(PlayerCaughtException e1){
-						println("CAUGHT!");
-						//this.stop();
-						try {
-							TimeUnit.SECONDS.sleep(1);
-							extraLives--;
-	
-							if (extraLives < 0) {
-								println("GAME OVER!");
-								player.setScore(0);
-								this.stop();
+						
+						if (laserFactory.getAnimationTick() != null) {
+							laserFactory.createNextLaserFrame();
+						}				
+					} 
+					catch (GameFinishedException exception) {
+						if (exception instanceof LossException) {
+							try {
+								if (extraLives < 0) {
+									gameOver();
+								}
+								else {
+									playerCaught();
+								}
+							}
+							catch (InterruptedException e2){
+								Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+							}
+						}
+						else if (exception instanceof WinException) {
+							println("LEVEL COMPLETE!");
+							this.stop();
+							try {
+								TimeUnit.SECONDS.sleep(1);
+								currentLevel.getChildren().clear();
+								initialiseLevel(test);
+								this.start();
 								return;
 							}
-							else if (extraLives == 0) {
-								print("Careful! ");
+							catch(InterruptedException e2){
+								Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 							}
-							print("You have " + extraLives + " extra lives remaining");
-							println();
-							restartLevel();
-							this.start();
-							return;
-	
 						}
-						catch (InterruptedException e2){
-							Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
+						else {
+							exception.printStackTrace();
 						}
 					}
-					if (laserFactory.getAnimationTick() != null) {
-						laserFactory.createNextLaserFrame();
-					}
-					
-				} catch (TimeOutException e) {
-					e.printStackTrace();
-					gameOver();
-
 				}
+			};
+	
+			gameLoop.start();
 
-			}
-		};
-
-		gameLoop.start();
-
-	} catch(Exception e) {
-		e.printStackTrace();
+		} 
+		catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
-}
-
-	protected void usePlayerAbility() {
+	
+	private void playerCaught() throws InterruptedException {
+		println("CAUGHT!");
+		println("You have " + extraLives + " extra lives remaining");
+		TimeUnit.SECONDS.sleep(1);
+		extraLives--;
+		
+		restartLevel();
+	}
+	
+	/**
+	 * Manages the timer, and time bar, timeouts, etc.
+	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
+	 * */
+	private boolean manageTime() throws TimeOutException {
+		timeBar.setProgress(currentGameTick/(maxTime + 240));
+		if(currentGameTick >= (maxTime + 240)) {
+			print("Time's Up!");
+			throw new TimeOutException();
+		}
+		else {
+			currentGameTick++;
+		}
+		
+		/* Display the starting screen*/
+		if (currentGameTick - 1 <= 240) {
+			switch( (int)currentGameTick - 1 ) {
+				case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
+				case 60: {startText.setText("2!"); break;}
+				case 120: {startText.setText("1!"); break;}
+				case 180: {startText.setText("Go!"); break;}
+				case 240: {hideOverlay(startOverlay); break;}
+				default: {break;}
+			}
+			return false;
+		}
+		return true;
+	}
+	
+	private void manageEatGhosts() {
+		if (playerPowerUpTimer == 0) {
+			resetPlayerPowerUpState();
+		}
+		else {
+			if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
+				for (Enemy enemy :enemyList) {
+					enemy.setColor(Color.WHITE);
+				}
+			}
+			else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
+				for (Enemy enemy :enemyList) {
+					enemy.setColor(Color.DODGERBLUE);
+				}
+			}
+			playerPowerUpTimer--;
+		}
+	}
+	
+	private void manageSnake() throws PlayerCaughtException {
+		for (int i = 0; i < snakePieces.size(); i++) {
+			SnakePiece snakePiece = snakePieces.get(i);
+			
+			if (i == 0) {
+				snakePiece.enqueueMove(player.getPrevDirection());
+			}
+			else {
+				snakePiece.enqueueMove(snakePieces.get(i-1).getPrevDirection());
+			}
+			
+			Direction move = snakePiece.dequeueMove();
+			if (move != null) {
+				switch(move) {
+					case up:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[1] == 0) {
+								//Wrap around
+								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(levelObjectArray.length-1, false));
+							}
+						}
+						snakePiece.moveBy(0, (int)-snakePiece.getSpeed()); 
+						break;
+					}
+					case down:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[1] == levelObjectArray.length - 1) {
+								//Wrap around
+								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(0, false) );
+							}
+						}
+						snakePiece.moveBy(0, (int)snakePiece.getSpeed()); 
+						break;
+					}
+					case left:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[0] == 0) {
+								//Wrap around
+								snakePiece.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), snakePiece.getPosition()[1]);
+							}
+						}
+						snakePiece.moveBy((int)-snakePiece.getSpeed(), 0);
+						break;
+					}
+					case right:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[0] == levelObjectArray[0].length - 1) {
+								//Wrap around
+								snakePiece.moveTo(convertToPosition(0, true), snakePiece.getPosition()[1]);
+							}
+						}
+						snakePiece.moveBy((int)snakePiece.getSpeed(), 0); 
+						break;
+					}
+				}
+			}
+			snakePiece.setPrevDirection(move);
+			snakePiece.setPrevIndex(convertToIndex(snakePiece.getPosition()[0], true), convertToIndex(snakePiece.getPosition()[1], false));
+			if (snakePieces.size() > 3) {
+				if (Math.abs(snakePiece.getPosition()[0] - player.getPosition()[0]) < 10 && Math.abs(snakePiece.getPosition()[1] - player.getPosition()[1]) < 10) {
+					throw new PlayerCaughtException();
+				}
+			}
+		}
+	}
+	
+	private boolean isGridAligned(Character character) {
+		if ( ((character.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((character.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	private void usePlayerAbility() {
 		switch (player.getAbility()) {
 			case eatGhosts:
 			case eatSameColor:
@@ -635,10 +716,43 @@ public class Main extends Application {
 		
 		
 	}
+	
 	private void wallJump() {
-		// TODO Auto-generated method stub
+		if (player.getAbilityCharges() <= 0) {
+			// play error sound
+			return;
+		}
+		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
+			try {
+				int xIndex = convertToIndex(player.getPosition()[0], true);
+				int yIndex = convertToIndex(player.getPosition()[1], false);
+				int[] delta = {0,0};
+				
+				switch(player.getHeldButtons().getTop()) {
+					case up:{delta[1] = -2; break;}
+					case down:{delta[1] = 2; break;}
+					case left:{delta[0] = -2; break;}
+					case right:{delta[0] = 2; break;}
+				}
+				
+				if(levelObjectArray[yIndex + delta[1]][xIndex + delta[0]] instanceof Wall) {
+					return;
+				}
+				else {
+					playerIsWallJumping = true;
+					player.setPrevDirection(player.getHeldButtons().getTop());
+					player.decrementAbilityCharges();
+				}
+				
+			}
+			catch (ArrayIndexOutOfBoundsException e)  {
+				
+			}
+		}
+		
 		
 	}
+	
 	private void fireLaser() {
 		if (player.getAbilityCharges() <= 0) {
 			// play error sound
@@ -688,7 +802,6 @@ public class Main extends Application {
 			for (Enemy enemy : enemyList) {
 				if (isHorizontal) {
 					if (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) <= gridSquareSize * 1.5) {
-						println(enemy.getPosition()[1] - player.getPosition()[1] +", " + gridSquareSize*1.5);
 						enemyKilled(enemy);
 					}
 				}
@@ -705,6 +818,7 @@ public class Main extends Application {
 		}
 		
 	}
+	
 	@Override
 	public void start(Stage primaryStage) {
 		try {
@@ -723,9 +837,7 @@ public class Main extends Application {
 
 
 	}
-	
 
-	
 	private void enemyKilled(Enemy enemy) {
 		player.modifyScore(ateGhostScore);
 		enemy.moveTo(convertToPosition(enemy.getStartPosition()[0],true), convertToPosition(enemy.getStartPosition()[1],false));
@@ -742,9 +854,16 @@ public class Main extends Application {
 			}
 			else { throw new PlayerCaughtException(); }
 		}
+		if (player.getAbility() == Player.Ability.snake) {
+			for (SnakePiece snakePiece : snakePieces) {
+				if ((Math.abs(enemy.getPosition()[0] - snakePiece.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - snakePiece.getPosition()[1]) < gridSquareSize/2)) {
+					throw new PlayerCaughtException();
+				}
+			}
+		}
 
 		// If enemy is aligned with grid, update the grid position
-		if ( ((enemy.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((enemy.getPosition()[1]- levelOffsetY) % gridSquareSize == 0) ) {
+		if ( isGridAligned(enemy) ) {
 			int xIndex = convertToIndex(enemy.getPosition()[0], true); //(int)(enemy.getPosition()[0] - levelOffsetX) / gridSquareSize;
 			int yIndex = convertToIndex(enemy.getPosition()[1], false);//(int)(enemy.getPosition()[1] - levelOffsetY) / gridSquareSize;
 
@@ -752,7 +871,6 @@ public class Main extends Application {
 			int playerYIndex = convertToIndex(player.getPosition()[1], false);// (int)((player.getPosition()[1] - levelOffsetY) / gridSquareSize);
 
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
-
 
 			//The beginning of more AI decisions goes here
 			if (playerCanEatGhosts) {
@@ -994,57 +1112,148 @@ public class Main extends Application {
 	}
 
 	private void chooseMoveFromAlgorithm(Enemy enemy, Integer[] source, Integer[] destination) {
-
-		switch (enemy.getAlgorithm()) {
-			case bfs:{
-				// set next moves to be the directions from enemy to player
-				enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
-				break;
-			}
-			case dfs:{
-				// Since DFS's paths are so windy, we actually need to let them complete before repathing
-				if (enemy.getPathLength() == 0) {
-					enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+		try {
+			switch (enemy.getAlgorithm()) {
+				case bfs:{
+					// set next moves to be the directions from enemy to player
+					enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
+					break;
 				}
-				break;
+				case dfs:{
+					// Since DFS's paths are so windy, we actually need to let them complete before repathing
+					if (enemy.getPathLength() == 0) {
+						enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+					}
+					break;
+				}
+				case dijkstra:{
+					//System.out.println(targetXIndex + ", " + targetYIndex);
+					enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
+					break;
+				}
+	
+				case euclidean:{
+					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
+					break;
+				}
+				default:{throw new IllegalArgumentException("Invalid algorithm");}
 			}
-			case dijkstra:{
-				//System.out.println(targetXIndex + ", " + targetYIndex);
-				enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
-				break;
-			}
-
-			case euclidean:{
-				enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
-				break;
-			}
-			default:{throw new IllegalArgumentException("Invalid algorithm");}
+		}
+		catch(NullPointerException e) {
+			enemy.setNextMove(enemy.getPrevDirection());
 		}
 	}
 
 	private int[] calculatePlayerMovement() throws LevelCompleteException{
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-
-		if ( ((player.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((player.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
+		
+		if ( isGridAligned(player) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
-
-			levelObjectArray[player.getPrevPos()[1]][player.getPrevPos()[0]] = null; //clear old player position in collision detection array
-
+			
+			if (playerIsWallJumping) {
+				if (levelObjectArray[yIndex][xIndex] instanceof Wall) {
+					playerIsWallJumping = false;
+				}
+				
+				switch (player.getPrevDirection()) {
+					case up: {delta[1] = -(int)player.getSpeed(); break;}
+					case down: {delta[1] = (int)player.getSpeed(); break;}
+					case left: {delta[0] = -(int)player.getSpeed(); break;}
+					case right: {delta[0] = (int)player.getSpeed(); break;}
+					default: {break;}
+				}
+				
+			}
+			
+			levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
+			
+			//This bit is for the snake player, who needs to stop all his other pieces to stop moving if he stops
+			if (player.getHeldButtons().isEmpty()) {
+				player.setPrevDirection(null);
+			}
+			else {
+				boolean validMoveExists = false;
+				for (int i = 0; i < player.getHeldButtons().size(); i++) {
+					boolean valid = true;
+					switch(player.getHeldButtons().getNFromTop(i)) {
+						case up:{
+							try {
+								if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {
+									valid = false;
+									break;
+								}
+							}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+						}
+						case down:{
+							try {
+								if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {
+									valid = false;
+									break;
+								}
+							}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+						}
+						case left:{
+							try {
+								if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {
+									valid = false;
+									break;
+								}
+							}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+						}
+						case right:{
+							try {
+								if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {
+									valid = false;
+									break;
+								}
+							}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+						}
+						if (valid == true) {
+							validMoveExists = true;
+						}
+					}
+				}
+				if (!validMoveExists) {
+					player.setPrevDirection(null);
+				}
+			}
+			
+			
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 				currentScoreText.setText(player.getScoreString());
 
-				System.out.println("Score: " + player.getScore());
+				println("Score: " + player.getScore());
 				pelletsRemaining--;
+				//println(pelletsRemaining +" pellets remaining");
 				
 				// Is the level complete?
 				if (pelletsRemaining == 0) {
 					throw new LevelCompleteException();
 				}
-				
+				if (player.getAbility() == Player.Ability.snake) {
+					if (player.incrementPelletCounter()) {
+						//println("Spawning new snake bit");
+						SnakePiece newPiece;
+						Random rand = new Random();
+						double rand1 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
+						double rand2 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
+						if (snakePieces.isEmpty()) {
+							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), player);
+							newPiece.moveTo(player.getPosition()[0] + rand1 , player.getPosition()[1] + rand2);
+						}
+						else {
+							SnakePiece lastPiece = snakePieces.get(snakePieces.size() - 1);
+							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
+							newPiece.moveTo(lastPiece.getPosition()[0] + rand1, lastPiece.getPosition()[1] + rand2);
+						}
+						snakePieces.add(newPiece);
+						currentLevel.getChildren().add(newPiece.getModel());
+					}
+				}
 				//Is this pickup a power pellet?
 				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
 					//What ability does the player have?
@@ -1071,10 +1280,11 @@ public class Main extends Application {
 
 			levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			player.setPrevIndex(xIndex, yIndex);
-
+			
+			
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
-				// If movement key held, and not in corner of map
+				
 				if((player.getHeldButtons().getNFromTop(n) == Direction.up) ) {
 					// If regular move...
 					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {

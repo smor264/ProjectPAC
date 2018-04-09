@@ -9,6 +9,7 @@ public class Player extends Character{
 	private SetArrayList<Main.Direction> heldButtons = new SetArrayList<Main.Direction>();
 	private int abilityCharges = 0;
 	private Ability ability;
+	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
@@ -85,6 +86,16 @@ public class Player extends Character{
 	}
 	public void decrementAbilityCharges() {
 		abilityCharges--;
+	}
+	
+	public boolean incrementPelletCounter() {
+		pelletsEaten++;
+		if (pelletsEaten % 10 == 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 }
