@@ -1,6 +1,6 @@
 package application;
 
-public class PlayerCaughtException extends Exception {
+public class PlayerCaughtException extends LossException {
 
 	/**
 	 * Thrown when the player is caught by an enemy
