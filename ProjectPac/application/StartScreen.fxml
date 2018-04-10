@@ -62,7 +62,7 @@
                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
               </rowConstraints>
                <children>
-                  <StackPane fx:id="pacmanSelect"  prefHeight="150.0" prefWidth="200.0" />
+                  <StackPane fx:id="pacmanSelect"  prefHeight="150.0" prefWidth="200.0"  />
                   <StackPane fx:id="packidSelect"  prefHeight="150.0" prefWidth="200.0" GridPane.rowIndex="1" />
                   <StackPane fx:id="msPacmanSelect"  prefHeight="150.0" prefWidth="200.0" GridPane.columnIndex="1" />
                   <StackPane fx:id="robotSelect"  prefHeight="150.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />

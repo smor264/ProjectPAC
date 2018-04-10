@@ -865,12 +865,23 @@ public class Main extends Application {
 			StackPane snacSelect = (StackPane) launchScene.lookup("#snacSelect");
 			StackPane glitchSelect = (StackPane) launchScene.lookup("#glitchSelect");
 
+			pacmanSelect.setStyle("-fx-border-color: black");
 			pacmanSelect.getChildren().add(PlayerCharacter.PacMan.model());
+
 			msPacmanSelect.getChildren().add(PlayerCharacter.MsPacMan.model());
+			msPacmanSelect.setStyle("-fx-border-color: black");
+
 			packidSelect.getChildren().add(PlayerCharacter.PacKid.model());
+			packidSelect.setStyle("-fx-border-color: black");
+
 			robotSelect.getChildren().add(PlayerCharacter.Robot.model());
+			robotSelect.setStyle("-fx-border-color: black");
+
 			snacSelect.getChildren().add(PlayerCharacter.SnacTheSnake.model());
+			snacSelect.setStyle("-fx-border-color: black");
+
 			glitchSelect.getChildren().add(PlayerCharacter.GlitchTheGhost.model());
+			glitchSelect.setStyle("-fx-border-color: black");
 
 			currentCharacter.setText("Pacman");
 			playerCharacter = PlayerCharacter.PacMan;
@@ -902,6 +913,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					currentCharacter.setText("Robot");
 					playerCharacter = PlayerCharacter.Robot;
+
 				}
 			});
 			snacSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
@@ -916,6 +928,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					currentCharacter.setText("Glitch");
 					playerCharacter = PlayerCharacter.PacMan;
+					pacmanSelect.setStyle("-fx-border-color: black");
 				}
 			});
 
