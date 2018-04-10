@@ -3,6 +3,7 @@ package application;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
 public class FXMLController {
@@ -10,12 +11,12 @@ public class FXMLController {
 	@FXML
 	private Text currentScoreText;
 
-	@FXML 
+	@FXML
 	private Text currentAbility;
-	
-	@FXML 
+
+	@FXML
 	private Text currentBoost;
-	
+
 	@FXML
 	private AnchorPane HUDBar;
 
@@ -25,7 +26,7 @@ public class FXMLController {
 	@FXML
 	private Button playButton;
 
-	
+
 	@FXML
 	private void initialize() {
 		currentScoreText.setText("--");

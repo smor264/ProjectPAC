@@ -1,7 +1,12 @@
 package application;
 
+import javafx.scene.paint.Color;
+
 public class Level {
 	private int[][] positionArray = new int[Main.levelWidth][Main.levelHeight];
+
+	private Color background;
+	private Color wall;
 
 	public enum Difficulty {
 		easy, // 56% chance of dumb AI, 35% moderate, 7% chance smart, 1% chance perfect
@@ -14,6 +19,8 @@ public class Level {
 
 		if (levelName == "level1") {
 		difficulty = Difficulty.medium;
+		background = Color.color(0.0, 0.0, 0.2);
+		wall = Color.BLUE;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,4,4,4,1,4,4,4,4,4,4,4,4,4,4,4,4,1},
@@ -42,7 +49,9 @@ public class Level {
 									 {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
 	}
 		else if(levelName == "target") {
-			difficulty = Difficulty.easy;
+		difficulty = Difficulty.easy;
+		background = Color.color(0.0, 0.0, 0.2);
+		wall = Color.BLUE;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -73,7 +82,9 @@ public class Level {
 		}
 
 		else if(levelName == "castle") {
-			difficulty = Difficulty.easy;
+		difficulty = Difficulty.easy;
+		background = Color.rgb(62, 50, 36);//Brown
+		wall = Color.GREY;
 
 		positionArray = new int [][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,1,1,1,2,1,1,1,4,4,4,4,4,4,4,4,4,1},
@@ -108,5 +119,12 @@ public class Level {
 	}
 	public int [][] getArray() {
 		return positionArray;
+	}
+
+	public Color getBackground() {
+		return background;
+	}
+	public Color getWallColor() {
+		return wall;
 	}
 }
