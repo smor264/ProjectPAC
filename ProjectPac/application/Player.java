@@ -10,6 +10,9 @@ public class Player extends Character{
 	private int abilityCharges = 0;
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
+	private Boost currentBoost = Boost.superPelletMagnet;
+	private int boostCharges = 1;
+	
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
@@ -26,6 +29,29 @@ public class Player extends Character{
 			this.text = text;
 		}
 		public String text() {return text;}
+	}
+	
+	/**
+	 * Special actions usable by any PlayerCharacter
+	 * */
+	public static enum Boost {
+		timeSlow (6, "Time Slow"), 
+		superTimeSlow (5, "Super Time Slow"),
+		dash (6, "Dash"), 
+		superDash (6, "Super Dash"),
+		pelletMagnet (6, "Pellet Magnet"), 
+		superPelletMagnet (6, "Super Pellet Magnet"),
+		invertControls (6, "Inverted Controls!"),
+		randomTeleport (6, "Randomly Teleported!");
+		
+		private Integer duration;
+		private String name;
+		Boost(Integer duration, String name){
+			this.duration = duration; // time in seconds
+			this.name = name;
+		}
+		public int duration(){ return duration;}
+		public String text(){ return name;}
 	}
 	
 	public Player(Shape model, double speed, Ability ability) {
@@ -96,6 +122,13 @@ public class Player extends Character{
 		else {
 			return false;
 		}
+	}
+	public int getBoostCharges(){
+		return boostCharges;
+	}
+	
+	public Boost getBoost(){
+		return currentBoost;
 	}
 
 }
