@@ -21,10 +21,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
@@ -54,7 +56,7 @@ public class Main extends Application {
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
-	private Player player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
+	private Player player; //= new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
 	private AdjacencyMatrix adjMatrix; // Pathfinding array
 
@@ -106,7 +108,10 @@ public class Main extends Application {
     public Text currentAbility = (Text) gameScene.lookup("#currentAbility");
     public Text currentBoost = (Text) gameScene.lookup("#currentBoost");
 
-	public static PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
+
+	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
+
+	public  PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
 
 	/**
 	 * A list of all characters that the player can use.
@@ -116,7 +121,7 @@ public class Main extends Application {
 		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
 		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
 		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
-		GlitchTheGhost (null, Player.Ability.eatSameColor, 2),
+		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2),
 		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
 		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
 
@@ -850,9 +855,77 @@ public class Main extends Application {
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
 
+			glitchTheGhostModel.setRotate(180);
+
+			Text currentCharacter = (Text) launchScene.lookup("#currentCharacter");
+			StackPane pacmanSelect = (StackPane) launchScene.lookup("#pacmanSelect");
+			StackPane msPacmanSelect = (StackPane) launchScene.lookup("#msPacmanSelect");
+			StackPane packidSelect = (StackPane) launchScene.lookup("#packidSelect");
+			StackPane robotSelect = (StackPane) launchScene.lookup("#robotSelect");
+			StackPane snacSelect = (StackPane) launchScene.lookup("#snacSelect");
+			StackPane glitchSelect = (StackPane) launchScene.lookup("#glitchSelect");
+
+			pacmanSelect.getChildren().add(PlayerCharacter.PacMan.model());
+			msPacmanSelect.getChildren().add(PlayerCharacter.MsPacMan.model());
+			packidSelect.getChildren().add(PlayerCharacter.PacKid.model());
+			robotSelect.getChildren().add(PlayerCharacter.Robot.model());
+			snacSelect.getChildren().add(PlayerCharacter.SnacTheSnake.model());
+			glitchSelect.getChildren().add(PlayerCharacter.GlitchTheGhost.model());
+
+			currentCharacter.setText("Pacman");
+			playerCharacter = PlayerCharacter.PacMan;
+
+			pacmanSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("Pacman");
+					playerCharacter = PlayerCharacter.PacMan;
+				}
+			});
+
+			msPacmanSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("msPacman");
+					playerCharacter = PlayerCharacter.MsPacMan;
+				}
+			});
+			packidSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("Packid");
+					playerCharacter = PlayerCharacter.PacKid;
+				}
+			});
+			robotSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("Robot");
+					playerCharacter = PlayerCharacter.Robot;
+				}
+			});
+			snacSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("snak");
+					playerCharacter = PlayerCharacter.SnacTheSnake;
+				}
+			});
+			glitchSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					currentCharacter.setText("Glitch");
+					playerCharacter = PlayerCharacter.PacMan;
+				}
+			});
+
+
 			playButton = (Button) launchScene.lookup("#playButton");
 			playButton.setDefaultButton(true);
-			playButton.setOnAction(e -> game(primaryStage));
+			playButton.setOnAction(e -> {
+				player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
+				game(primaryStage);
+				});
 
 		} catch(Exception e) {
 			e.printStackTrace();
