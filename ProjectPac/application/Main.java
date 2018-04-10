@@ -233,7 +233,7 @@ public class Main extends Application {
 		currentLevel.getChildren().add(background);
 		background.toBack();
 		background.setTranslateY(60);
-
+		pelletsRemaining = 0;
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
@@ -295,6 +295,7 @@ public class Main extends Application {
 			enemy.moveTo(convertToPosition(enemy.getStartPosition()[0], true), convertToPosition(enemy.getStartPosition()[1], false));
 		}
 		resetPlayerPowerUpState();
+		disableBoost();
 	}
 
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
@@ -341,7 +342,7 @@ public class Main extends Application {
 		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
-			enemy.setSpeed(2);
+			enemy.resetSpeed();
 
 			int[] delta = {0,0};
 			if (((int)enemy.getPosition()[0] & 1) != 0) {
@@ -359,7 +360,7 @@ public class Main extends Application {
 			currentLevel.getChildren().remove(snakePiece.getModel());
 		}
 		snakePieces.clear();
-		player.setSpeed(playerCharacter.speed());
+		player.resetSpeed();
 	}
 
 	/**
@@ -370,6 +371,8 @@ public class Main extends Application {
 	 */
 	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
 		println("Hello from load new level");
+		disableBoost();
+		resetPlayerPowerUpState();
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
 		initialiseLevel(newLevel);
@@ -512,7 +515,9 @@ public class Main extends Application {
 						if ( !manageTime() ) {
 							return;
 						}
-
+						if (pelletsRemaining == 0) {
+							throw new LevelCompleteException();
+						}
 						int[] delta = {0,0};
 
 						delta = calculatePlayerMovement();
@@ -563,6 +568,7 @@ public class Main extends Application {
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
+								
 								loadNewLevel(primaryStage, levelTarget);
 								this.start();
 								return;
@@ -600,7 +606,7 @@ public class Main extends Application {
 			case superDash:{player.resetSpeed(); break;}
 			
 			case pelletMagnet:
-			case superPelletMagnet:{pelletPickupSize = 1; break;}
+			case superPelletMagnet:{pelletPickupSize = 0; break;}
 			
 			case randomTeleport:{break;}
 			case invertControls:{break;}			
@@ -1295,7 +1301,6 @@ public class Main extends Application {
 	private int[] calculatePlayerMovement() throws LevelCompleteException{
 		int[] delta = {0,0};
 		// If player has aligned with the grid
-
 		if ( isGridAligned(player) ) {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
@@ -1371,6 +1376,8 @@ public class Main extends Application {
 			}
 			
 			
+			
+			
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
@@ -1409,7 +1416,12 @@ public class Main extends Application {
 					//What ability does the player have?
 					usePlayerAbility(true);
 				}
-			} // Adds to players score depending on type of pellet eaten
+			} 
+			if (!playerIsWallJumping){
+				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
+			}
+			player.setPrevIndex(xIndex, yIndex);
+
 			if (isBoostActive && ( player.getBoost() == Player.Boost.superPelletMagnet ||  player.getBoost() == Player.Boost.pelletMagnet)){
 				 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
 					 for (int j = -pelletPickupSize ; j <= pelletPickupSize; j++){
@@ -1424,7 +1436,6 @@ public class Main extends Application {
 									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getModel()));
 									 levelObjectArray[yIndex + j][xIndex + i] = null;
 									 pelletsRemaining--;
-									 println("Pellets Remaining:" + pelletsRemaining);
 								 }
 							 }
 						 }
@@ -1434,14 +1445,10 @@ public class Main extends Application {
 			}
 			
 			// Is the level complete?
-			if (pelletsRemaining == 0) {
-				throw new LevelCompleteException();
-			}
+			println("Pellets Remaining:" + pelletsRemaining);
 			
-			if (!playerIsWallJumping){
-				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
-			}
-			player.setPrevIndex(xIndex, yIndex);
+			
+			
 
 
 			//Loop through the held movement keys in order of preference
@@ -1520,6 +1527,7 @@ public class Main extends Application {
 			}
 			boostDuration = 60 * player.getBoost().duration();
 			isBoostActive = true;
+			player.decrementAbilityCharges();
 		}
 	}
 	
