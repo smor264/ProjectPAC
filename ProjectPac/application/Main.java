@@ -62,7 +62,7 @@ public class Main extends Application {
 
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
-	private boolean playerCanEatGhosts = false;
+	//private boolean playerCanEatGhosts = false;
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
@@ -72,6 +72,7 @@ public class Main extends Application {
 	private boolean playerIsWallJumping = false; // This should go in player eventually
 	boolean isBoostActive = false;
 	int boostDuration;
+	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
 	
 	int pelletPickupSize = 0; // goes in player eventually
 	
@@ -337,12 +338,14 @@ public class Main extends Application {
 	}
 
 	private void resetPlayerPowerUpState() {
-		playerCanEatGhosts = false;
 		playerPowerUpTimer = 0;
 		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
-			enemy.resetSpeed();
+			//println(Boolean.toString(isBoostActive));
+			if (!isBoostActive) {
+				enemy.resetSpeed();
+			}
 
 			int[] delta = {0,0};
 			if (((int)enemy.getPosition()[0] & 1) != 0) {
@@ -457,7 +460,7 @@ public class Main extends Application {
 					case D:
 					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
 					
-					case C :{usePlayerBoost(); break;}
+					case C :{ usePlayerBoost(); break;}
 					case V:{ usePlayerAbility(false); break; }
 
 					case N:{
@@ -527,7 +530,7 @@ public class Main extends Application {
 						if (player.getAbility() == Player.Ability.snake) {
 							manageSnake();
 						}
-						else if (player.getAbility() == Player.Ability.eatGhosts) {
+						else if (player.getAbility() == Player.Ability.eatGhosts && player.isAbilityActive()) {
 							manageEatGhosts();
 						}
 
@@ -538,10 +541,21 @@ public class Main extends Application {
 						}
 						
 						if (isBoostActive){
-							boostDuration--;
-							if (boostDuration == 0) {
-								isBoostActive = false;
-								disableBoost();
+							if (waitingForGridAlignment && isGridAligned(player)) {
+								if (player.getBoost() == Player.Boost.dash) {
+									player.setTempSpeed(4);
+								}
+								else if (player.getBoost() == Player.Boost.superDash) {
+									player.setTempSpeed(6);
+								}
+								waitingForGridAlignment = false;
+							}
+							else {
+								boostDuration--;
+								if (boostDuration == 0) {
+									isBoostActive = false;
+									disableBoost();
+								}
 							}
 						}
 						
@@ -591,14 +605,55 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-		
+	
+	
+	private void usePlayerBoost(){
+		if (player.getBoostCharges() <= 0){
+			return;
+		}
+		else {
+			switch (player.getBoost()){
+				case timeSlow:{slowTime(false); break;}
+				
+				case superTimeSlow:{slowTime(true); break;}
+				
+				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
+				case dash:
+				case superDash:{ waitingForGridAlignment = true; break;}
+				
+				case pelletMagnet:{ pelletPickupSize = 2; break;}
+				
+				case superPelletMagnet:{ pelletPickupSize = 3; break;}
+				
+				case invertControls:{ break;}
+				
+				case randomTeleport:{ break;}
+			}
+			boostDuration = 60 * player.getBoost().duration();
+			isBoostActive = true;
+			player.decrementBoostCharges();
+		}
+	}
+	
 	private void disableBoost(){
 		switch(player.getBoost()){
 			case timeSlow:
 			case superTimeSlow:{
 				for (Enemy enemy : enemyList){
 					enemy.resetSpeed();
+					int[] delta = {0,0};
+					if (((int)enemy.getPosition()[0] & 1) != 0) {
+						// If horizontal position is odd
+						delta[0] = 1;
+
+					}
+					if (((int)enemy.getPosition()[1] & 1) != 0) {
+						// If position is odd
+						delta[1] = 1;
+					}
+					enemy.moveBy(delta[0], delta[1]);
 				}
+				
 				break;
 			}
 			
@@ -613,6 +668,16 @@ public class Main extends Application {
 			default: {break;}
 		}
 	}
+	
+	private void slowTime(boolean isSuper) {
+		for (Enemy enemy: enemyList){
+			enemy.setTempSpeed(1);
+		}
+		isBoostActive = true;
+		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
+	}
+	
+	
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
 		println("You have " + extraLives + " extra lives remaining");
@@ -622,6 +687,7 @@ public class Main extends Application {
 
 		restartLevel();
 	}
+	
 	/**
 	 * Manages the timer, and time bar, timeouts, etc.
 	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
@@ -652,8 +718,9 @@ public class Main extends Application {
 	}
 
 	private void manageEatGhosts() {
-		if (playerPowerUpTimer == 0) {
+		if (playerPowerUpTimer == 0 && player.isAbilityActive()) {
 			resetPlayerPowerUpState();
+			player.setAbilityActive(false);
 		}
 		else {
 			if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
@@ -773,7 +840,7 @@ public class Main extends Application {
 		else {
 			switch (player.getAbility()) {
 				case eatGhosts: {
-					playerCanEatGhosts = true;
+					player.setAbilityActive(true);
 					playerPowerUpTimer = playerPowerUpDuration;
 					for (Enemy enemy : enemyList) {
 						enemy.setColor(Color.DODGERBLUE);
@@ -1002,9 +1069,8 @@ public class Main extends Application {
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
-			if (playerCanEatGhosts == true) {
+			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
 				enemyKilled(enemy);
-				println("Score: " + player.getScore());
 			}
 			else { throw new PlayerCaughtException(); }
 		}
@@ -1027,7 +1093,7 @@ public class Main extends Application {
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 
 			//The beginning of more AI decisions goes here
-			if (playerCanEatGhosts) {
+			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
 				//Take the direction that maximises euclidean distance to the player
 				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 			}
@@ -1320,8 +1386,6 @@ public class Main extends Application {
 
 			}
 
-			levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
-
 			//This bit is for the snake player, who needs to stop all his other pieces to stop moving if he stops
 			if (player.getAbility() == Player.Ability.snake) {
 				if (player.getHeldButtons().isEmpty()) {
@@ -1375,9 +1439,6 @@ public class Main extends Application {
 				}
 			}
 			
-			
-			
-			
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
@@ -1388,7 +1449,7 @@ public class Main extends Application {
 					print("currentScoreText is null");
 				}
 				currentScoreText.setText(player.getScoreString());
-
+				
 				pelletsRemaining--;
 				
 				if (player.getAbility() == Player.Ability.snake) {
@@ -1417,11 +1478,21 @@ public class Main extends Application {
 					usePlayerAbility(true);
 				}
 			} 
-			if (!playerIsWallJumping){
+			
+			//Set and clear the player's position in the object array, unless the player is doing something weird like using the wall jump ability
+			if ( !(levelObjectArray[yIndex][xIndex] instanceof Wall) ){
+				//println("setting " + xIndex + ", " + yIndex + " to be player");
 				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			}
+			
+			if (levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] instanceof Player) {
+				//println("clearing " + xIndex + ", " + yIndex);
+				levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
+			}
+			
 			player.setPrevIndex(xIndex, yIndex);
 
+			
 			if (isBoostActive && ( player.getBoost() == Player.Boost.superPelletMagnet ||  player.getBoost() == Player.Boost.pelletMagnet)){
 				 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
 					 for (int j = -pelletPickupSize ; j <= pelletPickupSize; j++){
@@ -1443,13 +1514,6 @@ public class Main extends Application {
 					 }
 				 }
 			}
-			
-			// Is the level complete?
-			println("Pellets Remaining:" + pelletsRemaining);
-			
-			
-			
-
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
@@ -1496,7 +1560,6 @@ public class Main extends Application {
 					}
 				}
 			}
-
 		}
 		else { // If player not aligned with grid, continue in same direction.
 			switch (player.getPrevDirection()) {
@@ -1509,36 +1572,11 @@ public class Main extends Application {
 		}
 		return delta;
 	}
+
 	
-	private void usePlayerBoost(){
-		if (player.getBoostCharges() <= 0){
-			return;
-		}
-		else {
-			switch (player.getBoost()){
-				case timeSlow:{slowTime(false); break;}
-				case superTimeSlow:{slowTime(true); break;}
-				case dash:{ break;}
-				case superDash:{ break;}
-				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				case superPelletMagnet:{pelletPickupSize = 3; break;}
-				case invertControls:{ break;}
-				case randomTeleport:{ break;}
-			}
-			boostDuration = 60 * player.getBoost().duration();
-			isBoostActive = true;
-			player.decrementAbilityCharges();
-		}
-	}
+
 	
-	private void slowTime(boolean isSuper) {
-		for (Enemy enemy: enemyList){
-			enemy.setTempSpeed(1);
-		}
-		isBoostActive = true;
-		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
-		
-	}
+	
 	public static void main(String[] args) {
 		launch(args);
 	}

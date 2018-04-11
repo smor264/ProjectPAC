@@ -10,8 +10,9 @@ public class Player extends Character{
 	private int abilityCharges = 0;
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
-	private Boost currentBoost = Boost.superPelletMagnet;
+	private Boost currentBoost = Boost.dash;
 	private int boostCharges = 1;
+	private boolean isAbilityActive = false;
 	
 	/**
 	 * PlayerCharacter-specific special actions
@@ -36,9 +37,9 @@ public class Player extends Character{
 	 * */
 	public static enum Boost {
 		timeSlow (6, "Time Slow"), 
-		superTimeSlow (5, "Super Time Slow"),
-		dash (6, "Dash"), 
-		superDash (6, "Super Dash"),
+		superTimeSlow (10, "Super Time Slow"),
+		dash (2, "Dash"), 
+		superDash (2, "Super Dash"),
 		pelletMagnet (6, "Pellet Magnet"), 
 		superPelletMagnet (6, "Super Pellet Magnet"),
 		invertControls (6, "Inverted Controls!"),
@@ -107,6 +108,7 @@ public class Player extends Character{
 	public void setAbilityCharges(int charges) {
 		abilityCharges = charges;
 	}
+	
 	public void incrementAbilityCharges() {
 		abilityCharges++;
 	}
@@ -114,21 +116,37 @@ public class Player extends Character{
 		abilityCharges--;
 	}
 	
+	public void setBoostCharges(int charges){
+		boostCharges = charges;
+	}
+	public int getBoostCharges(){
+		return boostCharges;
+	}
+	public void incrementBoostCharges(){
+		boostCharges++;
+	}
+	public void decrementBoostCharges(){
+		boostCharges--;
+	}
+	
 	public boolean incrementPelletCounter() {
 		pelletsEaten++;
-		if (pelletsEaten % 10 == 0) {
+		if (pelletsEaten % 20 == 0) {
 			return true;
 		}
 		else {
 			return false;
 		}
 	}
-	public int getBoostCharges(){
-		return boostCharges;
-	}
+
 	
 	public Boost getBoost(){
 		return currentBoost;
 	}
-
+	public boolean isAbilityActive() {
+		return isAbilityActive;
+	}
+	public void setAbilityActive(boolean value) {
+		isAbilityActive = value;
+	}
 }
