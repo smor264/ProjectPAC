@@ -114,6 +114,9 @@ public class Main extends Application {
     public Text currentAbility;
     public Text currentBoost;
 
+    public Button testButton1 = new Button("Castle");
+    public Button testButton2 = new Button("Target");
+    private StackPane selectOverlay = new StackPane(testButton1, testButton2);
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 
@@ -464,7 +467,8 @@ public class Main extends Application {
 					case V:{ usePlayerAbility(false); break; }
 
 					case N:{
-						loadNewLevel(primaryStage, levelTarget);
+						showOverlay(selectOverlay);
+						gameLoop.stop();
 						break;
 						}
 
@@ -583,8 +587,9 @@ public class Main extends Application {
 							try {
 								TimeUnit.SECONDS.sleep(1);
 								
-								loadNewLevel(primaryStage, levelTarget);
-								this.start();
+								//loadNewLevel(primaryStage, levelTarget);
+								//this.start();
+								showOverlay(selectOverlay);
 								return;
 							}
 							catch(InterruptedException e2){
@@ -1051,6 +1056,10 @@ public class Main extends Application {
 				player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 				game(primaryStage);
 				});
+			
+			testButton1.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
+			testButton2.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
+			testButton1.setTranslateX(100);
 
 		} catch(Exception e) {
 			e.printStackTrace();
