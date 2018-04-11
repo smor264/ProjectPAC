@@ -36,23 +36,38 @@ public class Player extends Character{
 	 * Special actions usable by any PlayerCharacter
 	 * */
 	public static enum Boost {
-		timeSlow (6, "Time Slow"),
-		superTimeSlow (10, "Super Time Slow"),
-		dash (2, "Dash"),
-		superDash (2, "Super Dash"),
-		pelletMagnet (6, "Pellet Magnet"),
-		superPelletMagnet (6, "Super Pellet Magnet"),
-		invertControls (6, "Inverted Controls!"),
-		randomTeleport (6, "Randomly Teleported!");
+		timeSlow (6, "Time Slow", 1),
+		superTimeSlow (10, "Super Time Slow", 2),
+		dash (2, "Dash", 3),
+		superDash (2, "Super Dash", 4),
+		pelletMagnet (6, "Pellet Magnet",5),
+		superPelletMagnet (6, "Super Pellet Magnet",6),
+		invertControls (6, "Inverted Controls!",7),
+		randomTeleport (6, "Randomly Teleported!",8);
 
 		private Integer duration;
 		private String name;
-		Boost(Integer duration, String name){
+		private Integer number;
+		Boost(Integer duration, String name, int number){
 			this.duration = duration; // time in seconds
 			this.name = name;
+			this.number = number;
 		}
 		public int duration(){ return duration;}
 		public String text(){ return name;}
+		public int getNumber(){ return number;}
+		public Boost getBoostFromNumber(int number) {
+			switch(number) {
+			case 1: return timeSlow;
+			case 2: return superTimeSlow;
+			case 3: return superDash;
+			case 4: return pelletMagnet;
+			case 5: return superPelletMagnet;
+			case 6: return invertControls;
+			case 7: return randomTeleport;
+			default: throw new IllegalArgumentException("Invalid boost number, please enter number between 1 and 7");
+			}
+		}
 	}
 
 	public Player(Shape model, double speed, Ability ability) {
@@ -144,6 +159,7 @@ public class Player extends Character{
 		return currentBoost;
 	}
 	public void setBoost(Boost boost){
+		this.currentBoost = boost;
 	}
 
 	public boolean isAbilityActive() {

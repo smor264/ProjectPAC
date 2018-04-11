@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import application.Player.Boost;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
@@ -404,6 +405,7 @@ public class Main extends Application {
 		initialiseLevel(newLevel);
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
+		currentBoost.setText(player.getBoost().toString());
 		return true;
 	}
 
@@ -1018,7 +1020,13 @@ public class Main extends Application {
 
 		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
 		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
+
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.pelletMagnet);} );
+		randomBoostButton.setOnAction(e -> {
+			Random randGen = new Random();
+			Integer n = randGen.nextInt(7)+1;
+			player.setBoost(player.getBoost().getBoostFromNumber(n));
+			});
 
 		postLevelOverlay.relocate((windowWidth/2)-400, (windowHeight/2)-200);
 		postLevelBackground.setArcHeight(100);
