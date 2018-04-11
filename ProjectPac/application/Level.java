@@ -7,6 +7,7 @@ public class Level {
 
 	private Color background;
 	private Color wall;
+	private String levelName;
 
 	public enum Difficulty {
 		easy, // 56% chance of dumb AI, 35% moderate, 7% chance smart, 1% chance perfect
@@ -21,6 +22,7 @@ public class Level {
 		difficulty = Difficulty.medium;
 		background = Color.color(0.0, 0.0, 0.2);
 		wall = Color.BLUE;
+		this.levelName = levelName;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,4,4,4,1,4,4,4,4,4,4,4,4,4,4,4,4,1},
@@ -52,6 +54,7 @@ public class Level {
 		difficulty = Difficulty.easy;
 		background = Color.color(0.0, 0.0, 0.2);
 		wall = Color.BLUE;
+		this.levelName = levelName;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -126,5 +129,8 @@ public class Level {
 	}
 	public Color getWallColor() {
 		return wall;
+	}
+	public String getLevelName() {
+		return levelName;
 	}
 }

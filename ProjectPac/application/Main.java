@@ -93,6 +93,7 @@ public class Main extends Application {
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 
 	//Levels
+	private String loadedLevelName;
 	private Level level1 = new Level("level1");
 	private Level levelTarget = new Level("target");
 	private Level levelCastle = new Level("castle");
@@ -109,6 +110,20 @@ public class Main extends Application {
 
 	private ProgressBar timeBar = new ProgressBar();
 
+    //Post level elements
+    public Text postLevelTitle = new Text();
+
+    public Button castleSelect = new Button("Castle");
+    public Button targetSelect = new Button("Target");
+    public Button givenBoostButton = new Button();
+    public Button randomBoostButton = new Button("Random Boost");
+
+	private HBox postLevelTitles = new HBox(25);
+	private HBox postLevelElements = new HBox(25);
+	private VBox postLevelScreen = new VBox(25);
+	private Rectangle postLevelBackground = new Rectangle(800, 400);
+    private StackPane postLevelOverlay = new StackPane(postLevelBackground, postLevelScreen);
+    private GridPane worldMap = new GridPane();
 
 	//FXML
 	//Game FXML
@@ -120,19 +135,6 @@ public class Main extends Application {
     public Button playButton;
     public Text currentAbility;
     public Text currentBoost;
-
-    //Post level elements
-    public Text postLevelTitle = new Text();
-    public Button castleSelect = new Button("Castle");
-    public Button targetSelect = new Button("Target");
-    public Button givenBoostButton = new Button();
-    public Button randomBoostButton = new Button("Random Boost");
-	private HBox postLevelTitles = new HBox(25);
-	private HBox postLevelElements = new HBox(25);
-	private VBox postLevelScreen = new VBox(25);
-	private Rectangle postLevelBackground = new Rectangle(800, 400);
-    private StackPane postLevelOverlay = new StackPane(postLevelBackground, postLevelScreen);
-    private GridPane worldMap = new GridPane();
 
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
@@ -255,6 +257,7 @@ public class Main extends Application {
 		background.toBack();
 		background.setTranslateY(60);
 		pelletsRemaining = 0;
+		loadedLevelName = level.getLevelName();
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
@@ -394,7 +397,6 @@ public class Main extends Application {
 	 */
 	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
 		hidePostLevelScreen();
-		println("Hello from load new level");
 		disableBoost();
 		resetPlayerPowerUpState();
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
@@ -494,6 +496,12 @@ public class Main extends Application {
 
 					case N:{
 						showPostLevelScreen();
+						switch(loadedLevelName){
+						case "level1": { targetSelect.setDisable(false); break;}
+						case "target" : {castleSelect.setDisable(false); break;}
+						default: throw new IllegalArgumentException("invalid level name");
+						}
+
 						gameLoop.stop();
 						break;
 						}
@@ -612,6 +620,12 @@ public class Main extends Application {
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
+
+								switch(loadedLevelName){
+									case "level1": { targetSelect.setDisable(false); break;}
+									case "Target" : {castleSelect.setDisable(false); break;}
+									default: throw new IllegalArgumentException("invalid level name");
+								}
 
 								//loadNewLevel(primaryStage, levelTarget);
 								//this.start();
@@ -998,6 +1012,9 @@ public class Main extends Application {
 			game(primaryStage);
 			});
 
+		castleSelect.setDisable(true);
+		targetSelect.setDisable(true);
+
 
 		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
 		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
@@ -1017,9 +1034,9 @@ public class Main extends Application {
 		postLevelElements.setTranslateX(50);
 		postLevelElements.setTranslateY(50);
 
-		worldMap.setTranslateX(200);
-		worldMap.getColumnConstraints().add(new ColumnConstraints(25));
-		worldMap.getRowConstraints().add(new RowConstraints(25));
+		worldMap.setTranslateX(100);
+		worldMap.getColumnConstraints().add(new ColumnConstraints(75));
+		worldMap.getRowConstraints().add(new RowConstraints(75));
 		worldMap.add(targetSelect, 0, 1);
 		worldMap.add(castleSelect, 1, 1);
 
@@ -1042,6 +1059,9 @@ public class Main extends Application {
 			primaryStage.show();
 
 			glitchTheGhostModel.setRotate(180);
+			timeBar.setLayoutY(50);
+			timeBar.setLayoutX(588);
+			timeBar.setScaleX(10);
 
 			Text currentCharacter = (Text) launchScene.lookup("#currentCharacter");
 			StackPane pacmanSelect = (StackPane) launchScene.lookup("#pacmanSelect");
