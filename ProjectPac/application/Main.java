@@ -1,6 +1,7 @@
 package application;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +20,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -143,13 +144,20 @@ public class Main extends Application {
 
     //Start Screen FXML
     public Button playButton;
+    public Button exitButton;
+    public Button loadSaveButton;
     public Text currentAbility;
     public Text currentBoost;
+    public Text currentSaveFileName;
+
+    private File saveFile;
+
 
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 
 	public  PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
+
 
 	/**
 	 * A list of all characters that the player can use.
@@ -361,16 +369,42 @@ public class Main extends Application {
 	 * Initializes the root launch layout
 	 * @throws IOException
 	 */
-	private void initRootLaunchLayout() {
+	private void initRootLaunchLayout(Stage primaryStage) {
 		try {
 		AnchorPane launchScreen = (AnchorPane) FXMLLoader.load(getClass().getResource("StartScreen.fxml"));
 		launchScene.setRoot(launchScreen);
+		playButton = (Button) launchScene.lookup("#playButton");
+		exitButton = (Button) launchScene.lookup("#exitButton");
+		loadSaveButton = (Button) launchScene.lookup("#loadSaveFile");
+		currentSaveFileName = (Text) launchScene.lookup("#currentSaveFileName");
+
+		FileChooser fileChooser = new FileChooser();
+
+		loadSaveButton.setOnAction(e -> {
+			configureFileChooser(fileChooser);
+			saveFile = fileChooser.showOpenDialog(primaryStage);
+			currentSaveFileName.setText(saveFile.getName());
+		});
+
+		exitButton.setOnAction(e -> {primaryStage.close();});
+		playButton.setDefaultButton(true);
+		playButton.setOnAction(e -> {
+			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
+			game(primaryStage);
+			});
 
 
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 
+	}
+
+
+	private void configureFileChooser(FileChooser fileChooser) {
+		fileChooser.setTitle("Choose your save file");
+		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
 	}
 
 	private void resetPlayerPowerUpState() {
@@ -1138,12 +1172,6 @@ public class Main extends Application {
 	}
 
 	private void initPostLevel(Stage primaryStage) {
-		playButton = (Button) launchScene.lookup("#playButton");
-		playButton.setDefaultButton(true);
-		playButton.setOnAction(e -> {
-			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
-			game(primaryStage);
-			});
 
 		castleSelect.setDisable(true);
 		targetSelect.setDisable(true);
@@ -1192,7 +1220,7 @@ public class Main extends Application {
 	public void start(Stage primaryStage) {
 		try {
 
-			initRootLaunchLayout();
+			initRootLaunchLayout(primaryStage);
 			initPostLevel(primaryStage);
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
@@ -1266,7 +1294,7 @@ public class Main extends Application {
 			snacSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
-					currentCharacter.setText("snak");
+					currentCharacter.setText("Snac The Snake");
 					playerCharacter = PlayerCharacter.SnacTheSnake;
 				}
 			});
