@@ -1,5 +1,6 @@
 package application;
 
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 
 
@@ -10,10 +11,12 @@ public class Player extends Character{
 	private int abilityCharges = 0;
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
-	private Boost currentBoost = Boost.dash;
-	private int boostCharges = 1;
+	private Boost currentBoost = Boost.random;
+	private int boostCharges = 800;
 	private boolean isAbilityActive = false;
-	
+	private boolean isInvisible = false;
+	private Circle shield = null;
+	private boolean controlsInverted = false;
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
@@ -37,13 +40,23 @@ public class Player extends Character{
 	 * */
 	public static enum Boost {
 		timeSlow (6, "Time Slow"), 
-		superTimeSlow (10, "Super Time Slow"),
+		superTimeSlow (10, "Super Time Slow!"),
+		
 		dash (2, "Dash"), 
-		superDash (2, "Super Dash"),
+		superDash (2, "Super Dash!"),
+		
 		pelletMagnet (6, "Pellet Magnet"), 
-		superPelletMagnet (6, "Super Pellet Magnet"),
+		superPelletMagnet (6, "Super Pellet Magnet!"),
+		
+		invisibility (6, "Invisibility"),
+		superInvisibility (8, "Super Invisibility!"),
+		
+		shield (20, "Shield"),
+		superShield(40, "Super Shield!"),
+		
 		invertControls (6, "Inverted Controls!"),
-		randomTeleport (6, "Randomly Teleported!");
+		randomTeleport (6, "Randomly Teleported!"),
+		random (null, "Random?!");
 		
 		private Integer duration;
 		private String name;
@@ -51,7 +64,7 @@ public class Player extends Character{
 			this.duration = duration; // time in seconds
 			this.name = name;
 		}
-		public int duration(){ return duration;}
+		public Integer duration(){ return duration;}
 		public String text(){ return name;}
 	}
 	
@@ -139,10 +152,38 @@ public class Player extends Character{
 		}
 	}
 
+	public void setInvisible(boolean value){
+		isInvisible = value;
+		model.setOpacity( (value ? 0.35 : 1) );
+	}
+	public boolean getInvisible(){
+		return isInvisible;
+	}
+	
+	public Circle getShield(){
+		return shield;
+	}
+	public void setShield(Circle shield){
+		this.shield = shield;
+	}
+	public void clearShield(){
+		this.shield = null;
+	}
 	
 	public Boost getBoost(){
 		return currentBoost;
 	}
+	public void setBoost(Boost boost){
+		currentBoost = boost;
+	}
+	
+	public boolean getControlsInverted(){
+		return controlsInverted;
+	}
+	public void setControlsInverted(boolean value){
+		controlsInverted = value;
+	}
+	
 	public boolean isAbilityActive() {
 		return isAbilityActive;
 	}

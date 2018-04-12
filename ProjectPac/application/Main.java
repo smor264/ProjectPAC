@@ -4,11 +4,17 @@ package application;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Observable;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import application.Player.Boost;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.Property;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -160,6 +166,9 @@ public class Main extends Application {
 	 * */
 	public static Color[] enemyColors = {Color.RED, Color.DARKORANGE, Color.DARKMAGENTA, Color.DARKCYAN, Color.GREENYELLOW, Color.SPRINGGREEN};
 
+	/*A Note about Positions and Indexes. Positions are in terms of onscreen pixel position, e.g (500px, 750px)
+	 * Whereas Indexes are in terms of the level grid e.g (12, 23)*/
+	
 	private void println() {
 		System.out.println();
 	}
@@ -447,21 +456,24 @@ public class Main extends Application {
 		gameScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent event) {
+				boolean inverted = player.getControlsInverted();
 				switch (event.getCode()) {
 					case W:
-					case UP: { player.getHeldButtons().append(Direction.up); break;}
+					case UP: { 
+						player.getHeldButtons().append( (inverted ? Direction.down: Direction.up) ); break;
+						}
 
 					case S:
-					case DOWN: { player.getHeldButtons().append(Direction.down); break;}
+					case DOWN: { player.getHeldButtons().append( (inverted ? Direction.up: Direction.down) ); break;}
 
 					case A:
-					case LEFT: { player.getHeldButtons().append(Direction.left); break;}
+					case LEFT: { player.getHeldButtons().append(inverted ? Direction.right : Direction.left); break;}
 
 					case D:
-					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
+					case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
 					
-					case C :{ usePlayerBoost(); break;}
-					case V:{ usePlayerAbility(false); break; }
+					case C :{  if (currentGameTick >= 240) {usePlayerBoost();} break;}
+					case V:{ if (currentGameTick >= 240) {usePlayerAbility(false);} break; }
 
 					case N:{
 						loadNewLevel(primaryStage, levelTarget);
@@ -490,18 +502,19 @@ public class Main extends Application {
 		gameScene.setOnKeyReleased(new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent event) {
+				boolean inverted = player.getControlsInverted();
 				switch (event.getCode()) {
 					case W:
-					case UP: { player.getHeldButtons().remove(Direction.up); break; }
+					case UP: { player.getHeldButtons().remove((inverted ? Direction.down: Direction.up)); break; }
 
 					case S:
-					case DOWN: { player.getHeldButtons().remove(Direction.down); break; }
+					case DOWN: { player.getHeldButtons().remove((inverted ? Direction.up: Direction.down)); break; }
 
 					case A:
-					case LEFT: { player.getHeldButtons().remove(Direction.left); break; }
+					case LEFT: { player.getHeldButtons().remove((inverted ? Direction.right: Direction.left)); break; }
 
 					case D:
-					case RIGHT: { player.getHeldButtons().remove(Direction.right); break; }
+					case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.left: Direction.right)); break; }
 
 					default: break;
 				}
@@ -606,6 +619,40 @@ public class Main extends Application {
 		}
 	}
 	
+	private Circle createShield(Color color) {
+		Circle shield = new Circle(gridSquareSize/1.5, color);
+		shield.relocate(player.getPosition()[0] - shield.getRadius() - gridSquareSize/2, player.getPosition()[1] - shield.getRadius() - gridSquareSize/2 );
+		shield.setOpacity(0.5);
+		
+		shield.layoutXProperty().bind(player.getModel().layoutXProperty());
+		shield.layoutYProperty().bind(player.getModel().layoutYProperty());
+		shield.translateXProperty().bind(player.getModel().translateXProperty());
+		shield.translateYProperty().bind(player.getModel().translateYProperty());
+		currentLevel.getChildren().add(shield);
+		return shield;
+	}
+	private void deleteShield(){
+		currentLevel.getChildren().remove(player.getShield());
+		player.clearShield();
+	}
+	
+	private void invertHeldKeys(){
+		SetArrayList<Direction> heldKeys = player.getHeldButtons();
+		SetArrayList<Direction> newHeldKeys = new SetArrayList<Direction>();
+		for (int i = 0; i < heldKeys.size(); i++){
+			Direction direction = heldKeys.getNFromTop(heldKeys.size() - (i + 1));
+			Direction newDirection;
+			switch (direction){
+				case up:{newDirection = Direction.down; break;}
+				case down:{newDirection = Direction.up; break;}
+				case left:{newDirection = Direction.right; break;}
+				case right:{newDirection = Direction.left; break;}
+				default:{newDirection = Direction.up; break;}
+			}
+			newHeldKeys.append(newDirection);
+		}
+		player.setHeldButtons(newHeldKeys);
+	}
 	
 	private void usePlayerBoost(){
 		if (player.getBoostCharges() <= 0){
@@ -614,7 +661,6 @@ public class Main extends Application {
 		else {
 			switch (player.getBoost()){
 				case timeSlow:{slowTime(false); break;}
-				
 				case superTimeSlow:{slowTime(true); break;}
 				
 				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
@@ -622,17 +668,80 @@ public class Main extends Application {
 				case superDash:{ waitingForGridAlignment = true; break;}
 				
 				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				
 				case superPelletMagnet:{ pelletPickupSize = 3; break;}
 				
-				case invertControls:{ break;}
+				case invisibility:
+				case superInvisibility: {player.setInvisible(true); break;}
 				
-				case randomTeleport:{ break;}
+				case shield: {player.setShield(createShield(Color.BLUE)); break;}
+				case superShield: {player.setShield(createShield(Color.BLUE)); break;}
+				
+				case invertControls:{ 
+					player.setControlsInverted(true);
+					invertHeldKeys();
+					break;
+				}
+				case randomTeleport:{ 
+					Integer[] pos;
+					double minDist;
+					double dist;
+					
+					do {
+						minDist = Double.POSITIVE_INFINITY;
+						pos = findRandomValidIndexes();
+						for (Enemy enemy : enemyList){
+							Integer[] enemyIndex = {convertToIndex(enemy.getPosition()[0], true), convertToIndex(enemy.getPosition()[1], false)};
+							dist = AdjacencyMatrix.calcDistance(enemyIndex, pos);
+							if (dist < minDist) {
+								minDist = dist;
+							}
+						}
+					} while (minDist < 4);
+					player.moveTo(convertToPosition(pos[0], true), convertToPosition(pos[1], false));
+					break;
+				}
+				case random: {
+					Random rand = new Random();
+					int val = rand.nextInt(Player.Boost.values().length - 1);
+					player.setBoost(Player.Boost.values()[val]);
+					currentBoost.setText(Player.Boost.values()[val].text());
+					println("You got... " + Player.Boost.values()[val].text() + "!");
+					
+					//If it is a debuff, use it immediately
+					if (val == 10 || val == 11){
+						println("Bad Luck!");
+						usePlayerBoost();
+					}
+					player.incrementBoostCharges();
+					break;
+				}
 			}
-			boostDuration = 60 * player.getBoost().duration();
-			isBoostActive = true;
+			if (player.getBoost().duration() != null){
+				boostDuration = 60 * player.getBoost().duration();
+				isBoostActive = true;
+			}
 			player.decrementBoostCharges();
 		}
+	}
+	
+	private Integer[] findRandomValidIndexes(){
+		Random rand = new Random();
+		int randYIndex;
+		int randXIndex;
+		boolean validMove;
+		
+		do {
+			validMove = true;
+			randYIndex = rand.nextInt(levelHeight);
+			randXIndex = rand.nextInt(levelWidth);
+			try {
+				if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) {
+					validMove = false;
+				}
+			}
+			catch (ArrayIndexOutOfBoundsException e) {validMove = false;}
+		} while ( validMove == false );
+		return new Integer[] {randXIndex, randYIndex};
 	}
 	
 	private void disableBoost(){
@@ -663,8 +772,18 @@ public class Main extends Application {
 			case pelletMagnet:
 			case superPelletMagnet:{pelletPickupSize = 0; break;}
 			
-			case randomTeleport:{break;}
-			case invertControls:{break;}			
+			case invisibility:
+			case superInvisibility: {player.setInvisible(false); break;}
+			
+			case shield:
+			case superShield:  {deleteShield(); break;}
+			
+			case randomTeleport:{ break; }
+			case invertControls:{
+				invertHeldKeys(); 
+				player.setControlsInverted(false); 
+				break;
+			}			
 			default: {break;}
 		}
 	}
@@ -676,7 +795,6 @@ public class Main extends Application {
 		isBoostActive = true;
 		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
 	}
-	
 	
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
@@ -1072,6 +1190,10 @@ public class Main extends Application {
 			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
 				enemyKilled(enemy);
 			}
+			else if (player.getShield() != null){
+				enemyKilled(enemy);
+				deleteShield();
+			}
 			else { throw new PlayerCaughtException(); }
 		}
 		if (player.getAbility() == Player.Ability.snake) {
@@ -1093,9 +1215,36 @@ public class Main extends Application {
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 
 			//The beginning of more AI decisions goes here
-			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
+			if (player.getAbility() == Player.Ability.eatGhosts && player.isAbilityActive() ) {
 				//Take the direction that maximises euclidean distance to the player
 				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
+			}
+			else if (player.getInvisible()){
+				if (enemy.getPathLength() == 0){
+					Random rand = new Random();
+					int searchRadius = 5;
+					println("I can't see anything!");
+					int randYIndex = rand.nextInt(searchRadius) - searchRadius / 2;
+					int randXIndex = rand.nextInt(searchRadius) - searchRadius / 2;
+					boolean validMove = false;
+					
+					while ( validMove == false ){
+						validMove = true;
+						randYIndex = rand.nextInt(searchRadius) - searchRadius / 2;
+						randXIndex = rand.nextInt(searchRadius) - searchRadius / 2;
+						try {
+							if (levelObjectArray[yIndex + randYIndex][xIndex + randXIndex] instanceof Wall) {
+								validMove = false;
+							}
+						}
+						catch (ArrayIndexOutOfBoundsException e) {validMove = false;}
+					}
+					
+					println("I guess I'll move to " + (xIndex + randXIndex) + ", " + (yIndex + randYIndex));
+					
+					chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {yIndex + randYIndex, xIndex + randXIndex});
+					println("My path is now " + enemy.getPathLength() + " long.");
+				}
 			}
 			else {
 				switch(enemy.getBehaviour()) {
@@ -1349,11 +1498,13 @@ public class Main extends Application {
 				case dijkstra:{
 					//System.out.println(targetXIndex + ", " + targetYIndex);
 					enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
+					println("gee");
 					break;
 				}
 
 				case euclidean:{
 					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
+					println("euc");
 					break;
 				}
 				default:{throw new IllegalArgumentException("Invalid algorithm");}
@@ -1361,6 +1512,7 @@ public class Main extends Application {
 		}
 		catch(NullPointerException e) {
 			enemy.setNextMove(enemy.getPrevDirection());
+			e.printStackTrace();
 		}
 	}
 
@@ -1572,10 +1724,6 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-
-	
-
-	
 	
 	public static void main(String[] args) {
 		launch(args);
