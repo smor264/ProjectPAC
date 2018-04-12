@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import application.Player.Ability;
 import application.Player.Boost;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -31,6 +32,7 @@ import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
@@ -79,12 +81,14 @@ public class Main extends Application {
 	boolean isBoostActive = false;
 	int boostDuration;
 	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
+	public int changeColor = 0;
 
 	int pelletPickupSize = 0; // goes in player eventually
 
 	Laser laserFactory = new Laser();
 
 	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
+
 
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
@@ -463,6 +467,7 @@ public class Main extends Application {
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
 
+
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
 
 		if(player != null && player.getScoreString() != null && currentScoreText != null) {
@@ -562,6 +567,15 @@ public class Main extends Application {
 							throw new LevelCompleteException();
 						}
 						int[] delta = {0,0};
+
+						if (player.getAbility() == Player.Ability.eatSameColor) {
+							if(currentGameTick%(2*60) == 0) {
+								println("Time to change!");
+								if(changeColor < enemyColors.length-1) { changeColor++; println("Colour Change!" + Integer.toString(changeColor));}
+								else {changeColor = 0;}
+								player.model.setFill(enemyColors[changeColor]);
+							}
+						}
 
 						delta = calculatePlayerMovement();
 
@@ -1067,6 +1081,8 @@ public class Main extends Application {
 			primaryStage.show();
 
 			glitchTheGhostModel.setRotate(180);
+			glitchTheGhostModel.setFill(Color.RED);
+
 			timeBar.setLayoutY(50);
 			timeBar.setLayoutX(588);
 			timeBar.setScaleX(10);
@@ -1141,8 +1157,7 @@ public class Main extends Application {
 				@Override
 				public void handle(MouseEvent event) {
 					currentCharacter.setText("Glitch");
-					playerCharacter = PlayerCharacter.PacMan;
-					pacmanSelect.setStyle("-fx-border-color: black");
+					playerCharacter = PlayerCharacter.GlitchTheGhost;
 				}
 			});
 
@@ -1163,7 +1178,7 @@ public class Main extends Application {
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
-			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
+			if ((player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) || (player.getAbility() == Player.Ability.eatSameColor && enemy.model.getFill() == player.model.getFill()) ) {
 				enemyKilled(enemy);
 			}
 			else { throw new PlayerCaughtException(); }
