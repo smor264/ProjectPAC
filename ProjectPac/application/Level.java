@@ -88,7 +88,7 @@ public class Level {
 		difficulty = Difficulty.easy;
 		background = Color.rgb(62, 50, 36);//Brown
 		wall = Color.GREY;
-
+		this.levelName = levelName;
 		positionArray = new int [][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,1,1,1,2,1,1,1,4,4,4,4,4,4,4,4,4,1},
 									 {1,4,1,1,1,1,4,1,1,4,1,1,1,4,1,1,1,4,1,1,4,1,1,1,4,1,1},

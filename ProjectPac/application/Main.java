@@ -94,7 +94,7 @@ public class Main extends Application {
 	Laser laserFactory = new Laser();
 
 	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
-
+	Random rand = new Random();
 
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
@@ -473,6 +473,10 @@ public class Main extends Application {
 	}
 
 	private boolean showPostLevelScreen() {
+		int randBoostIndex = rand.nextInt(5) * 2;
+		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
+		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
+		
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
@@ -549,9 +553,10 @@ public class Main extends Application {
 					case N:{
 						showPostLevelScreen();
 						switch(loadedLevelName){
-						case "level1": { targetSelect.setDisable(false); break;}
-						case "target" : {castleSelect.setDisable(false); break;}
-						default: throw new IllegalArgumentException("invalid level name");
+							case "level1": { targetSelect.setDisable(false); break;}
+							case "target": {castleSelect.setDisable(false); break;}
+							case "castle": {break;}
+							default: throw new IllegalArgumentException("invalid level name");
 						}
 
 						gameLoop.stop();
@@ -686,6 +691,7 @@ public class Main extends Application {
 								switch(loadedLevelName){
 									case "level1": { targetSelect.setDisable(false); break;}
 									case "Target" : {castleSelect.setDisable(false); break;}
+									case "Castle": {break;}
 									default: throw new IllegalArgumentException("invalid level name");
 								}
 
@@ -1179,13 +1185,8 @@ public class Main extends Application {
 
 		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
 		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
-
-		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.pelletMagnet);} );
-		randomBoostButton.setOnAction(e -> {
-			Random randGen = new Random();
-			Integer n = randGen.nextInt(7)+1;
-			player.setBoost(player.getBoost().getBoostFromNumber(n));
-			});
+		
+		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
 		postLevelOverlay.relocate((windowWidth/2)-400, (windowHeight/2)-200);
 		postLevelBackground.setArcHeight(100);

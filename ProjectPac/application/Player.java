@@ -12,7 +12,7 @@ public class Player extends Character{
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
 	private Boost currentBoost = Boost.random;
-	private int boostCharges = 800;
+	private int boostCharges = 2;
 	private boolean isAbilityActive = false;
 	private boolean isInvisible = false;
 	private Circle shield = null;
@@ -39,48 +39,35 @@ public class Player extends Character{
 	 * Special actions usable by any PlayerCharacter
 	 * */
 	public static enum Boost {
-		timeSlow (6, "Time Slow", 1), 
-		superTimeSlow (10, "Super Time Slow!", 2),
+		timeSlow (6, "Time Slow"), 
+		superTimeSlow (10, "Super Time Slow!"),
 		
-		dash (2, "Dash", 3), 
-		superDash (2, "Super Dash!", 4),
+		dash (2, "Dash"), 
+		superDash (2, "Super Dash!"),
 		
-		pelletMagnet (6, "Pellet Magnet", 5), 
-		superPelletMagnet (6, "Super Pellet Magnet!", 6),
+		pelletMagnet (6, "Pellet Magnet"), 
+		superPelletMagnet (6, "Super Pellet Magnet!"),
 		
-		invisibility (6, "Invisibility", 7),
-		superInvisibility (8, "Super Invisibility!", 8),
+		invisibility (6, "Invisibility"),
+		superInvisibility (8, "Super Invisibility!"),
 		
-		shield (20, "Shield", 9),
-		superShield(40, "Super Shield!", 10),
+		shield (20, "Shield"),
+		superShield(40, "Super Shield!"),
 		
-		invertControls (6, "Inverted Controls!", 11),
-		randomTeleport (6, "Randomly Teleported!", 12),
-		random (null, "Random?!", 13);
+		invertControls (6, "Inverted Controls!"),
+		randomTeleport (6, "Randomly Teleported!"),
+		random (null, "Random?!");
 		
 		private Integer duration;
 		private String name;
-		private Integer number;
-		Boost(Integer duration, String name, int number){
+		
+		Boost(Integer duration, String name){
 			this.duration = duration; // time in seconds
 			this.name = name;
-			this.number = number;
 		}
+		
 		public Integer duration(){ return duration;}
 		public String text(){ return name;}
-		public int getNumber(){ return number;}
-		public Boost getBoostFromNumber(int number) {
-			switch(number) {
-			case 1: return timeSlow;
-			case 2: return superTimeSlow;
-			case 3: return superDash;
-			case 4: return pelletMagnet;
-			case 5: return superPelletMagnet;
-			case 6: return invertControls;
-			case 7: return randomTeleport;
-			default: throw new IllegalArgumentException("Invalid boost number, please enter number between 1 and 7");
-			}
-		}
 	}
 
 	public Player(Shape model, double speed, Ability ability) {
