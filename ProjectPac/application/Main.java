@@ -714,26 +714,6 @@ public class Main extends Application {
 		player.setHeldButtons(newHeldKeys);
 	}
 	
-	  private Integer[] findRandomValidIndexes(){ 
-		    Random rand = new Random(); 
-		    int randYIndex; 
-		    int randXIndex; 
-		    boolean validMove; 
-		     
-		    do { 
-		      validMove = true; 
-		      randYIndex = rand.nextInt(levelHeight); 
-		      randXIndex = rand.nextInt(levelWidth); 
-		      try { 
-		        if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) { 
-		          validMove = false; 
-		        } 
-		      } 
-		      catch (ArrayIndexOutOfBoundsException e) {validMove = false;} 
-		    } while ( validMove == false ); 
-		    return new Integer[] {randXIndex, randYIndex}; 
-		  }
-	
 	private void usePlayerBoost(){
 		if (player.getBoostCharges() <= 0){
 			return;
@@ -741,7 +721,6 @@ public class Main extends Application {
 		else {
 			switch (player.getBoost()){
 				case timeSlow:{slowTime(false); break;}
-				
 				case superTimeSlow:{slowTime(true); break;}
 
 				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
@@ -749,7 +728,6 @@ public class Main extends Application {
 				case superDash:{ waitingForGridAlignment = true; break;}
 
 				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				
 				case superPelletMagnet:{ pelletPickupSize = 3; break;}
 				
 				case invisibility:
@@ -806,6 +784,26 @@ public class Main extends Application {
 		}
 	}
 	
+	private Integer[] findRandomValidIndexes(){
+		Random rand = new Random();
+		int randYIndex;
+		int randXIndex;
+		boolean validMove;
+		
+		do {
+			validMove = true;
+			randYIndex = rand.nextInt(levelHeight);
+			randXIndex = rand.nextInt(levelWidth);
+			try {
+				if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) {
+					validMove = false;
+				}
+			}
+			catch (ArrayIndexOutOfBoundsException e) {validMove = false;}
+		} while ( validMove == false );
+		return new Integer[] {randXIndex, randYIndex};
+	}
+	
 	private void disableBoost(){
 		switch(player.getBoost()){
 			case timeSlow:
@@ -857,7 +855,6 @@ public class Main extends Application {
 		isBoostActive = true;
 		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
 	}
-	
 	
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
