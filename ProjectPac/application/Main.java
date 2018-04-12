@@ -1177,7 +1177,7 @@ public class Main extends Application {
 			snacSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
-					currentCharacter.setText("snak");
+					currentCharacter.setText("Snac The Snake");
 					playerCharacter = PlayerCharacter.SnacTheSnake;
 				}
 			});
