@@ -1,27 +1,27 @@
 package application;
 
-public class TimeOutException extends LossException {
+public class WinException extends GameFinishedException  {
 
-	public TimeOutException() {
+	public WinException() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public TimeOutException(String arg0) {
+	public WinException(String arg0) {
 		super(arg0);
 		// TODO Auto-generated constructor stub
 	}
 
-	public TimeOutException(Throwable cause) {
+	public WinException(Throwable cause) {
 		super(cause);
 		// TODO Auto-generated constructor stub
 	}
 
-	public TimeOutException(String message, Throwable cause) {
+	public WinException(String message, Throwable cause) {
 		super(message, cause);
 		// TODO Auto-generated constructor stub
 	}
 
-	public TimeOutException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+	public WinException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
 		super(message, cause, enableSuppression, writableStackTrace);
 		// TODO Auto-generated constructor stub
 	}

@@ -1,6 +1,6 @@
 package application;
 
-public class LevelCompleteException extends Exception {
+public class LevelCompleteException extends WinException {
 
 	/*
 	 * Throw when all pellets are collected in a level

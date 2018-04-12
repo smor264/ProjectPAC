@@ -50,4 +50,8 @@ public class SetArrayList<T> {
 	public int size() {
 		return array.size();
 	}
+
+	public boolean isEmpty() {
+		return array.isEmpty();
+	}
 }
