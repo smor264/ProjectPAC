@@ -1,5 +1,6 @@
 package application;
 
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 
 
@@ -10,10 +11,12 @@ public class Player extends Character{
 	private int abilityCharges = 0;
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
-	private Boost currentBoost = Boost.dash;
-	private int boostCharges = 1;
+	private Boost currentBoost = Boost.random;
+	private int boostCharges = 800;
 	private boolean isAbilityActive = false;
-
+	private boolean isInvisible = false;
+	private Circle shield = null;
+	private boolean controlsInverted = false;
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
@@ -36,15 +39,25 @@ public class Player extends Character{
 	 * Special actions usable by any PlayerCharacter
 	 * */
 	public static enum Boost {
-		timeSlow (6, "Time Slow", 1),
-		superTimeSlow (10, "Super Time Slow", 2),
-		dash (2, "Dash", 3),
-		superDash (2, "Super Dash", 4),
-		pelletMagnet (6, "Pellet Magnet",5),
-		superPelletMagnet (6, "Super Pellet Magnet",6),
-		invertControls (6, "Inverted Controls!",7),
-		randomTeleport (6, "Randomly Teleported!",8);
-
+		timeSlow (6, "Time Slow", 1), 
+		superTimeSlow (10, "Super Time Slow!", 2),
+		
+		dash (2, "Dash", 3), 
+		superDash (2, "Super Dash!", 4),
+		
+		pelletMagnet (6, "Pellet Magnet", 5), 
+		superPelletMagnet (6, "Super Pellet Magnet!", 6),
+		
+		invisibility (6, "Invisibility", 7),
+		superInvisibility (8, "Super Invisibility!", 8),
+		
+		shield (20, "Shield", 9),
+		superShield(40, "Super Shield!", 10),
+		
+		invertControls (6, "Inverted Controls!", 11),
+		randomTeleport (6, "Randomly Teleported!", 12),
+		random (null, "Random?!", 13);
+		
 		private Integer duration;
 		private String name;
 		private Integer number;
@@ -53,7 +66,7 @@ public class Player extends Character{
 			this.name = name;
 			this.number = number;
 		}
-		public int duration(){ return duration;}
+		public Integer duration(){ return duration;}
 		public String text(){ return name;}
 		public int getNumber(){ return number;}
 		public Boost getBoostFromNumber(int number) {
@@ -154,14 +167,38 @@ public class Player extends Character{
 		}
 	}
 
-
+	public void setInvisible(boolean value){
+		isInvisible = value;
+		model.setOpacity( (value ? 0.35 : 1) );
+	}
+	public boolean getInvisible(){
+		return isInvisible;
+	}
+	
+	public Circle getShield(){
+		return shield;
+	}
+	public void setShield(Circle shield){
+		this.shield = shield;
+	}
+	public void clearShield(){
+		this.shield = null;
+	}
+	
 	public Boost getBoost(){
 		return currentBoost;
 	}
 	public void setBoost(Boost boost){
-		this.currentBoost = boost;
+		currentBoost = boost;
 	}
-
+	
+	public boolean getControlsInverted(){
+		return controlsInverted;
+	}
+	public void setControlsInverted(boolean value){
+		controlsInverted = value;
+	}
+	
 	public boolean isAbilityActive() {
 		return isAbilityActive;
 	}

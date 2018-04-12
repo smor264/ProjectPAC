@@ -6,7 +6,7 @@ import javafx.scene.shape.Shape;
 public abstract class LevelObject {
 	protected double width = Main.gridSquareSize;
 	protected double height = Main.gridSquareSize;
-
+	protected Shape regularModel;
 	protected Shape model;
 
 	public LevelObject() {
@@ -15,7 +15,7 @@ public abstract class LevelObject {
 
 	public LevelObject(Shape model) {
 		this.model = model;
-		
+		regularModel = model;
 		int mult = 1;
 		if (model instanceof Rectangle) {
 			//God only knows why, but Rectangles behave weirdly. This band-aid fixes it
@@ -31,6 +31,12 @@ public abstract class LevelObject {
 
 	public Shape getModel() {
 		return model;
+	}
+	public void setModel(Shape model){
+		this.model = model;
+	}
+	public void resetModel(){
+		model = regularModel;
 	}
 	
 	public double[] getPosition() {
