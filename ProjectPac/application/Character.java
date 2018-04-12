@@ -9,6 +9,7 @@ public class Character extends LevelObject {
 	protected Main.Direction prevDirection; // Previous direction the character was moving
 	private int[] startPosition = new int[2];
 	private double defaultSpeed;
+	
 	public Character(Shape model, double speed) {
 		super(model);
 		this.speed  = speed;

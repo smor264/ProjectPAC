@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import application.Player.Boost;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
@@ -23,7 +24,12 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
@@ -62,29 +68,33 @@ public class Main extends Application {
 
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
-	private boolean playerCanEatGhosts = false;
+	//private boolean playerCanEatGhosts = false;
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	private int ateGhostScore = 200; //Score given for eating a ghost
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
-	
+
 	private boolean playerIsWallJumping = false; // This should go in player eventually
 	boolean isBoostActive = false;
 	int boostDuration;
-	
+	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
+
 	int pelletPickupSize = 0; // goes in player eventually
-	
+
 	Laser laserFactory = new Laser();
 
 	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
-	
+
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
 	private AnchorPane launchScreen = new AnchorPane();
 	private Scene launchScene = new Scene(launchScreen, windowWidth, windowHeight);
 	private Group currentLevel = new Group();
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
+
+	//Levels
+	private String loadedLevelName;
 	private Level level1 = new Level("level1");
 	private Level levelTarget = new Level("target");
 	private Level levelCastle = new Level("castle");
@@ -101,6 +111,20 @@ public class Main extends Application {
 
 	private ProgressBar timeBar = new ProgressBar();
 
+    //Post level elements
+    public Text postLevelTitle = new Text();
+
+    public Button castleSelect = new Button("Castle");
+    public Button targetSelect = new Button("Target");
+    public Button givenBoostButton = new Button();
+    public Button randomBoostButton = new Button("Random Boost");
+
+	private HBox postLevelTitles = new HBox(25);
+	private HBox postLevelElements = new HBox(25);
+	private VBox postLevelScreen = new VBox(25);
+	private Rectangle postLevelBackground = new Rectangle(800, 400);
+    private StackPane postLevelOverlay = new StackPane(postLevelBackground, postLevelScreen);
+    private GridPane worldMap = new GridPane();
 
 	//FXML
 	//Game FXML
@@ -234,6 +258,7 @@ public class Main extends Application {
 		background.toBack();
 		background.setTranslateY(60);
 		pelletsRemaining = 0;
+		loadedLevelName = level.getLevelName();
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
@@ -337,12 +362,14 @@ public class Main extends Application {
 	}
 
 	private void resetPlayerPowerUpState() {
-		playerCanEatGhosts = false;
 		playerPowerUpTimer = 0;
 		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
-			enemy.resetSpeed();
+			//println(Boolean.toString(isBoostActive));
+			if (!isBoostActive) {
+				enemy.resetSpeed();
+			}
 
 			int[] delta = {0,0};
 			if (((int)enemy.getPosition()[0] & 1) != 0) {
@@ -370,7 +397,7 @@ public class Main extends Application {
 	 * @return
 	 */
 	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
-		println("Hello from load new level");
+		hidePostLevelScreen();
 		disableBoost();
 		resetPlayerPowerUpState();
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
@@ -378,6 +405,7 @@ public class Main extends Application {
 		initialiseLevel(newLevel);
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
+		currentBoost.setText(player.getBoost().toString());
 		return true;
 	}
 
@@ -396,6 +424,14 @@ public class Main extends Application {
 
 	private boolean hideOverlay(StackPane overlay) {
 		return currentLevel.getChildren().removeAll(overlay);
+	}
+
+	private boolean showPostLevelScreen() {
+		return currentLevel.getChildren().add(postLevelOverlay);
+	}
+
+	private boolean hidePostLevelScreen() {
+		return currentLevel.getChildren().removeAll(postLevelOverlay);
 	}
 
 	private void initialiseOverlays(){
@@ -456,12 +492,19 @@ public class Main extends Application {
 
 					case D:
 					case RIGHT: { player.getHeldButtons().append(Direction.right); break;}
-					
-					case C :{usePlayerBoost(); break;}
+
+					case C :{ usePlayerBoost(); break;}
 					case V:{ usePlayerAbility(false); break; }
 
 					case N:{
-						loadNewLevel(primaryStage, levelTarget);
+						showPostLevelScreen();
+						switch(loadedLevelName){
+						case "level1": { targetSelect.setDisable(false); break;}
+						case "target" : {castleSelect.setDisable(false); break;}
+						default: throw new IllegalArgumentException("invalid level name");
+						}
+
+						gameLoop.stop();
 						break;
 						}
 
@@ -527,7 +570,7 @@ public class Main extends Application {
 						if (player.getAbility() == Player.Ability.snake) {
 							manageSnake();
 						}
-						else if (player.getAbility() == Player.Ability.eatGhosts) {
+						else if (player.getAbility() == Player.Ability.eatGhosts && player.isAbilityActive()) {
 							manageEatGhosts();
 						}
 
@@ -536,15 +579,26 @@ public class Main extends Application {
 							delta = calculateEnemyMovement(enemyList.get(i));
 							enemyList.get(i).moveBy(delta[0], delta[1]);
 						}
-						
+
 						if (isBoostActive){
-							boostDuration--;
-							if (boostDuration == 0) {
-								isBoostActive = false;
-								disableBoost();
+							if (waitingForGridAlignment && isGridAligned(player)) {
+								if (player.getBoost() == Player.Boost.dash) {
+									player.setTempSpeed(4);
+								}
+								else if (player.getBoost() == Player.Boost.superDash) {
+									player.setTempSpeed(6);
+								}
+								waitingForGridAlignment = false;
+							}
+							else {
+								boostDuration--;
+								if (boostDuration == 0) {
+									isBoostActive = false;
+									disableBoost();
+								}
 							}
 						}
-						
+
 						if (laserFactory.getAnimationTick() != null) {
 							laserFactory.createNextLaserFrame();
 						}
@@ -568,9 +622,16 @@ public class Main extends Application {
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
-								
-								loadNewLevel(primaryStage, levelTarget);
-								this.start();
+
+								switch(loadedLevelName){
+									case "level1": { targetSelect.setDisable(false); break;}
+									case "Target" : {castleSelect.setDisable(false); break;}
+									default: throw new IllegalArgumentException("invalid level name");
+								}
+
+								//loadNewLevel(primaryStage, levelTarget);
+								//this.start();
+								showPostLevelScreen();
 								return;
 							}
 							catch(InterruptedException e2){
@@ -591,28 +652,79 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-		
+
+
+	private void usePlayerBoost(){
+		if (player.getBoostCharges() <= 0){
+			return;
+		}
+		else {
+			switch (player.getBoost()){
+				case timeSlow:{slowTime(false); break;}
+
+				case superTimeSlow:{slowTime(true); break;}
+
+				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
+				case dash:
+				case superDash:{ waitingForGridAlignment = true; break;}
+
+				case pelletMagnet:{ pelletPickupSize = 2; break;}
+
+				case superPelletMagnet:{ pelletPickupSize = 3; break;}
+
+				case invertControls:{ break;}
+
+				case randomTeleport:{ break;}
+			}
+			boostDuration = 60 * player.getBoost().duration();
+			isBoostActive = true;
+			player.decrementBoostCharges();
+		}
+	}
+
 	private void disableBoost(){
 		switch(player.getBoost()){
 			case timeSlow:
 			case superTimeSlow:{
 				for (Enemy enemy : enemyList){
 					enemy.resetSpeed();
+					int[] delta = {0,0};
+					if (((int)enemy.getPosition()[0] & 1) != 0) {
+						// If horizontal position is odd
+						delta[0] = 1;
+
+					}
+					if (((int)enemy.getPosition()[1] & 1) != 0) {
+						// If position is odd
+						delta[1] = 1;
+					}
+					enemy.moveBy(delta[0], delta[1]);
 				}
+
 				break;
 			}
-			
+
 			case dash:
 			case superDash:{player.resetSpeed(); break;}
-			
+
 			case pelletMagnet:
 			case superPelletMagnet:{pelletPickupSize = 0; break;}
-			
+
 			case randomTeleport:{break;}
-			case invertControls:{break;}			
+			case invertControls:{break;}
 			default: {break;}
 		}
 	}
+
+	private void slowTime(boolean isSuper) {
+		for (Enemy enemy: enemyList){
+			enemy.setTempSpeed(1);
+		}
+		isBoostActive = true;
+		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
+	}
+
+
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
 		println("You have " + extraLives + " extra lives remaining");
@@ -622,6 +734,7 @@ public class Main extends Application {
 
 		restartLevel();
 	}
+
 	/**
 	 * Manages the timer, and time bar, timeouts, etc.
 	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
@@ -652,8 +765,9 @@ public class Main extends Application {
 	}
 
 	private void manageEatGhosts() {
-		if (playerPowerUpTimer == 0) {
+		if (playerPowerUpTimer == 0 && player.isAbilityActive()) {
 			resetPlayerPowerUpState();
+			player.setAbilityActive(false);
 		}
 		else {
 			if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
@@ -744,7 +858,7 @@ public class Main extends Application {
 			return false;
 		}
 	}
-	
+
 	private void usePlayerAbility(boolean fromPickup) {
 		if (fromPickup == false) {
 			switch (player.getAbility()) {
@@ -773,17 +887,17 @@ public class Main extends Application {
 		else {
 			switch (player.getAbility()) {
 				case eatGhosts: {
-					playerCanEatGhosts = true;
+					player.setAbilityActive(true);
 					playerPowerUpTimer = playerPowerUpDuration;
 					for (Enemy enemy : enemyList) {
 						enemy.setColor(Color.DODGERBLUE);
 						enemy.setSpeed(1);
 					}
 				}
-				case gun: 
+				case gun:
 				case wallJump: {player.incrementAbilityCharges(); break;}
-				
-				default: {break;}				
+
+				default: {break;}
 			}
 		}
 
@@ -892,15 +1006,70 @@ public class Main extends Application {
 
 	}
 
+	private void initPostLevel(Stage primaryStage) {
+		playButton = (Button) launchScene.lookup("#playButton");
+		playButton.setDefaultButton(true);
+		playButton.setOnAction(e -> {
+			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
+			game(primaryStage);
+			});
+
+		castleSelect.setDisable(true);
+		targetSelect.setDisable(true);
+
+
+		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
+		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
+
+		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.pelletMagnet);} );
+		randomBoostButton.setOnAction(e -> {
+			Random randGen = new Random();
+			Integer n = randGen.nextInt(7)+1;
+			player.setBoost(player.getBoost().getBoostFromNumber(n));
+			});
+
+		postLevelOverlay.relocate((windowWidth/2)-400, (windowHeight/2)-200);
+		postLevelBackground.setArcHeight(100);
+		postLevelBackground.setArcWidth(100);
+		postLevelBackground.setFill(Color.AQUA);
+		postLevelBackground.setOpacity(0.5);
+
+		postLevelTitle.setTranslateX(50);
+		postLevelTitle.setTranslateY(50);
+		postLevelTitle.setText("Pick a boost!");
+		postLevelTitle.setStyle("-fx-font-size: 24; -fx-font-family: System;");
+
+		postLevelElements.setTranslateX(50);
+		postLevelElements.setTranslateY(50);
+
+		worldMap.setTranslateX(100);
+		worldMap.getColumnConstraints().add(new ColumnConstraints(75));
+		worldMap.getRowConstraints().add(new RowConstraints(75));
+		worldMap.add(targetSelect, 0, 1);
+		worldMap.add(castleSelect, 1, 1);
+
+		givenBoostButton.setText("Pellet Magnet");
+
+		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
+		postLevelTitles.getChildren().addAll(postLevelTitle);
+		postLevelElements.getChildren().addAll(givenBoostButton,randomBoostButton,worldMap);
+
+
+	}
+
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 
 			initRootLaunchLayout();
+			initPostLevel(primaryStage);
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
 
 			glitchTheGhostModel.setRotate(180);
+			timeBar.setLayoutY(50);
+			timeBar.setLayoutX(588);
+			timeBar.setScaleX(10);
 
 			Text currentCharacter = (Text) launchScene.lookup("#currentCharacter");
 			StackPane pacmanSelect = (StackPane) launchScene.lookup("#pacmanSelect");
@@ -977,14 +1146,6 @@ public class Main extends Application {
 				}
 			});
 
-
-			playButton = (Button) launchScene.lookup("#playButton");
-			playButton.setDefaultButton(true);
-			playButton.setOnAction(e -> {
-				player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
-				game(primaryStage);
-				});
-
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -1002,9 +1163,8 @@ public class Main extends Application {
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
-			if (playerCanEatGhosts == true) {
+			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
 				enemyKilled(enemy);
-				println("Score: " + player.getScore());
 			}
 			else { throw new PlayerCaughtException(); }
 		}
@@ -1027,7 +1187,7 @@ public class Main extends Application {
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 
 			//The beginning of more AI decisions goes here
-			if (playerCanEatGhosts) {
+			if (player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) {
 				//Take the direction that maximises euclidean distance to the player
 				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 			}
@@ -1320,8 +1480,6 @@ public class Main extends Application {
 
 			}
 
-			levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
-
 			//This bit is for the snake player, who needs to stop all his other pieces to stop moving if he stops
 			if (player.getAbility() == Player.Ability.snake) {
 				if (player.getHeldButtons().isEmpty()) {
@@ -1374,10 +1532,7 @@ public class Main extends Application {
 					}
 				}
 			}
-			
-			
-			
-			
+
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp) {
 				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
@@ -1390,7 +1545,7 @@ public class Main extends Application {
 				currentScoreText.setText(player.getScoreString());
 
 				pelletsRemaining--;
-				
+
 				if (player.getAbility() == Player.Ability.snake) {
 					if (player.incrementPelletCounter()) {
 						//println("Spawning new snake bit");
@@ -1416,11 +1571,21 @@ public class Main extends Application {
 					//What ability does the player have?
 					usePlayerAbility(true);
 				}
-			} 
-			if (!playerIsWallJumping){
+			}
+
+			//Set and clear the player's position in the object array, unless the player is doing something weird like using the wall jump ability
+			if ( !(levelObjectArray[yIndex][xIndex] instanceof Wall) ){
+				//println("setting " + xIndex + ", " + yIndex + " to be player");
 				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			}
+
+			if (levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] instanceof Player) {
+				//println("clearing " + xIndex + ", " + yIndex);
+				levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
+			}
+
 			player.setPrevIndex(xIndex, yIndex);
+
 
 			if (isBoostActive && ( player.getBoost() == Player.Boost.superPelletMagnet ||  player.getBoost() == Player.Boost.pelletMagnet)){
 				 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
@@ -1443,13 +1608,6 @@ public class Main extends Application {
 					 }
 				 }
 			}
-			
-			// Is the level complete?
-			println("Pellets Remaining:" + pelletsRemaining);
-			
-			
-			
-
 
 			//Loop through the held movement keys in order of preference
 			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
@@ -1496,7 +1654,6 @@ public class Main extends Application {
 					}
 				}
 			}
-
 		}
 		else { // If player not aligned with grid, continue in same direction.
 			switch (player.getPrevDirection()) {
@@ -1509,36 +1666,11 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-	
-	private void usePlayerBoost(){
-		if (player.getBoostCharges() <= 0){
-			return;
-		}
-		else {
-			switch (player.getBoost()){
-				case timeSlow:{slowTime(false); break;}
-				case superTimeSlow:{slowTime(true); break;}
-				case dash:{ break;}
-				case superDash:{ break;}
-				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				case superPelletMagnet:{pelletPickupSize = 3; break;}
-				case invertControls:{ break;}
-				case randomTeleport:{ break;}
-			}
-			boostDuration = 60 * player.getBoost().duration();
-			isBoostActive = true;
-			player.decrementAbilityCharges();
-		}
-	}
-	
-	private void slowTime(boolean isSuper) {
-		for (Enemy enemy: enemyList){
-			enemy.setTempSpeed(1);
-		}
-		isBoostActive = true;
-		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
-		
-	}
+
+
+
+
+
 	public static void main(String[] args) {
 		launch(args);
 	}
