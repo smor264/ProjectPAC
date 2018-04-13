@@ -62,6 +62,16 @@
                         <Insets left="75.0" />
                      </VBox.margin>
                   </Text>
+                  <Button fx:id="twoPlayerButton" mnemonicParsing="false" text="Two-Player">
+                     <VBox.margin>
+                        <Insets left="50.0" top="10.0" />
+                     </VBox.margin>
+                  </Button>
+                  <Button fx:id="threePlayerButton" mnemonicParsing="false" text="Three-Player">
+                     <VBox.margin>
+                        <Insets left="50.0" />
+                     </VBox.margin>
+                  </Button>
                   <Button fx:id="exitButton" cancelButton="true" mnemonicParsing="false" text="Exit">
                      <VBox.margin>
                         <Insets left="50.0" top="50.0" />
