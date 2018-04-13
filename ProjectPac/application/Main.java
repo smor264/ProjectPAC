@@ -283,6 +283,7 @@ public class Main extends Application {
 	private void initialiseLevel(Level level) {
 		int[][] array = level.getArray();
 		enemyList.clear();
+		playerList.clear();
 		boolean playerExists = false;
 		Rectangle background = new Rectangle(windowWidth, windowHeight);
 		background.setFill(level.getBackground());
@@ -340,6 +341,7 @@ public class Main extends Application {
 		adjMatrix = new AdjacencyMatrix(levelObjectArray);
 
 
+		//For multiplayer, replaces AI with playable ghosts
 		if(currentGameMode != GameMode.SinglePlayer) {
 			for(int i = 0; i < currentGameMode.ordinal(); i++) {
 				Player playerGhost = new Player(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), playerCharacter.speed(), true,enemyColors[i]);
@@ -436,6 +438,7 @@ public class Main extends Application {
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
+			currentGameMode = GameMode.SinglePlayer;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 			game(primaryStage);
 			});
@@ -877,8 +880,8 @@ public class Main extends Application {
 
 								switch(loadedLevelName){
 									case "level1": { targetSelect.setDisable(false); break;}
-									case "Target" : {castleSelect.setDisable(false); break;}
-									case "Castle": {break;}
+									case "target" : {castleSelect.setDisable(false); break;}
+									case "castle": {break;}
 									default: throw new IllegalArgumentException("invalid level name");
 								}
 
