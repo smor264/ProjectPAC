@@ -436,6 +436,7 @@ public class Main extends Application {
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
+			currentGameMode = GameMode.SinglePlayer;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 			game(primaryStage);
 			});
@@ -877,8 +878,8 @@ public class Main extends Application {
 
 								switch(loadedLevelName){
 									case "level1": { targetSelect.setDisable(false); break;}
-									case "Target" : {castleSelect.setDisable(false); break;}
-									case "Castle": {break;}
+									case "target" : {castleSelect.setDisable(false); break;}
+									case "castle": {break;}
 									default: throw new IllegalArgumentException("invalid level name");
 								}
 
