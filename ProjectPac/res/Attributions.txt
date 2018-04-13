@@ -1,0 +1,9 @@
+Pellet Pickup: https://freesound.org/people/starpause/sounds/3048/
+Power Pellet Pickup: https://freesound.org/people/freezefast65/sounds/422090/
+Laser: https://freesound.org/people/EcoDTR/sounds/36846/
+Player Eaten: https://freesound.org/people/LorenzoTheGreat/sounds/417795/
+Game Over: https://freesound.org/people/myfox14/sounds/382310/
+Ghost Eaten: https://freesound.org/people/lulyc/sounds/346116/
+Wall Collide: https://freesound.org/people/zenobic/sounds/56788/
+Wall Jump: https://freesound.org/people/OwlStorm/sounds/404793/
+Level Complete: https://freesound.org/people/rhodesmas/sounds/320887/

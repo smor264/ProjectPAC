@@ -90,6 +90,7 @@ public class Main extends Application {
 	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
 	public int changeColor = 0;
 
+	SoundController sound = new SoundController();
 	int pelletPickupSize = 0; // goes in player eventually
 
 	Laser laserFactory = new Laser();
@@ -97,6 +98,8 @@ public class Main extends Application {
 	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
 	Random rand = new Random();
 
+	private AnimationTimer gameLoop;
+	
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
 	private AnchorPane launchScreen = new AnchorPane();
@@ -117,8 +120,6 @@ public class Main extends Application {
 	private Rectangle startScreen = new Rectangle(0,0, (double) windowWidth, (double) windowHeight);
 	private Text startText = new Text();
 	private StackPane startOverlay = new StackPane(startScreen, startText);
-
-	private AnimationTimer gameLoop;
 
 	private ProgressBar timeBar = new ProgressBar();
 
@@ -154,8 +155,6 @@ public class Main extends Application {
     public Text currentSaveFileName;
 
     private File saveFile;
-
-
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
@@ -449,7 +448,6 @@ public class Main extends Application {
 		}
 
 	}
-
 
 	private void configureFileChooser(FileChooser fileChooser) {
 		fileChooser.setTitle("Choose your save file");
@@ -802,6 +800,7 @@ public class Main extends Application {
 							return;
 						}
 						if (pelletsRemaining == 0) {
+							sound.levelComplete();
 							throw new LevelCompleteException();
 						}
 						int[] delta = {0,0};
@@ -914,15 +913,28 @@ public class Main extends Application {
 		shield.relocate(player.getPosition()[0] - shield.getRadius() - gridSquareSize/2, player.getPosition()[1] - shield.getRadius() - gridSquareSize/2 );
 		shield.setOpacity(0.5);
 
-		shield.layoutXProperty().bind(player.getModel().layoutXProperty());
-		shield.layoutYProperty().bind(player.getModel().layoutYProperty());
-		shield.translateXProperty().bind(player.getModel().translateXProperty());
-		shield.translateYProperty().bind(player.getModel().translateYProperty());
+		if (player.getModel() instanceof Circle){
+			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
+			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
+			shield.translateXProperty().bind(player.getModel().translateXProperty());
+			shield.translateYProperty().bind(player.getModel().translateYProperty());
+		}
+		else {
+			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
+			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
+		}
+		
+		
 		currentLevel.getChildren().add(shield);
+		sound.activateShield();
+		
 		return shield;
 	}
 	private void deleteShield(){
 		currentLevel.getChildren().remove(player.getShield());
+		if (player.getShield() != null){
+			sound.shieldHit();
+		}
 		player.clearShield();
 	}
 
@@ -1301,6 +1313,7 @@ public class Main extends Application {
 					playerIsWallJumping = true;
 					player.setPrevDirection(player.getHeldButtons().getTop());
 					player.decrementAbilityCharges();
+					sound.wallJump();
 				}
 
 			}
@@ -1358,6 +1371,7 @@ public class Main extends Application {
 		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
 			currentLevel.getChildren().add(laserFactory.getLaserGroup());
 			player.decrementAbilityCharges();
+			sound.laser();
 			for (Enemy enemy : enemyList) {
 				if (isHorizontal) {
 					if (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) <= gridSquareSize * 1.5) {
@@ -1528,16 +1542,21 @@ public class Main extends Application {
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
 			if ((player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) || (player.getAbility() == Player.Ability.eatSameColor && enemy.model.getFill() == player.model.getFill()) ) {
 				enemyKilled(enemy);
+				sound.ghostEaten();
 			}
 			else if (player.getShield() != null){
 				enemyKilled(enemy);
 				deleteShield();
+				sound.shieldHit();
 			}
-			else { throw new PlayerCaughtException(); }
+			else { 
+				sound.playerEaten();
+				throw new PlayerCaughtException(); }
 		}
 		if (player.getAbility() == Player.Ability.snake) {
 			for (SnakePiece snakePiece : snakePieces) {
 				if ((Math.abs(enemy.getPosition()[0] - snakePiece.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - snakePiece.getPosition()[1]) < gridSquareSize/2)) {
+					sound.playerEaten();
 					throw new PlayerCaughtException();
 				}
 			}
@@ -1979,8 +1998,11 @@ public class Main extends Application {
 				}
 				//Is this pickup a power pellet?
 				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
-					//What ability does the player have?
+					sound.powerPelletPickup();
 					usePlayerAbility(true);
+				}
+				else{
+					sound.pelletPickup();
 				}
 			}
 
