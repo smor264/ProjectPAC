@@ -186,12 +186,12 @@ public class Main extends Application {
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2, Color.YELLOW),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2, Color.LIGHTPINK),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2, Color.GREENYELLOW),
-		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2, Color.SKYBLUE),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3, Color.SEAGREEN),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2, Color.DARKGRAY);
+		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
+		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
+		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
+		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2),
+		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
 
 		private final Shape model;
 		private final Player.Ability ability;
@@ -199,12 +199,12 @@ public class Main extends Application {
 		private boolean isUnlocked;
 		private final Color originalColor;
 
-		PlayerCharacter(Shape model, Player.Ability ability, int speed, Color color){
+		PlayerCharacter(Shape model, Player.Ability ability, int speed){
 			this.model = model;
 			this.ability = ability;
 			this.speed = speed;
 			this.isUnlocked = true;
-			this.originalColor = color;
+			this.originalColor = (Color) model.getFill();
 		}
 		public Shape model() {return model;}
 		public Player.Ability ability() {return ability;}
@@ -484,7 +484,6 @@ public class Main extends Application {
 
 			for(int i = 0; i < charsUnlocked.length(); i++) {
 				if(charsUnlocked.charAt(i) == '0') {
-					charList.get(i).model().setFill(Color.BLACK);
 					charList.get(i).setUnlockedState(false);
 				}
 				else if(charsUnlocked.charAt(i) == '1') {
@@ -1549,7 +1548,7 @@ public class Main extends Application {
 					charList.get(i).setUnlockedState(true);
 				}
 				else {
-					charList.get(i).model().setFill(Color.BLACK);
+					charList.get(i).model().setFill(Color.WHITESMOKE);
 					charList.get(i).setUnlockedState(false);
 				}
 			}
