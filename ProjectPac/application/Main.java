@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Observable;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 import application.Player.Ability;
@@ -97,9 +98,10 @@ public class Main extends Application {
 
 	ArrayList<SnakePiece> snakePieces = new ArrayList<SnakePiece>(); // stores snake pieces if the player is snake
 	Random rand = new Random();
+	private Scanner scanFile;
 
 	private AnimationTimer gameLoop;
-	
+
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
 	private AnchorPane launchScreen = new AnchorPane();
@@ -154,7 +156,13 @@ public class Main extends Application {
     public Text currentBoost;
     public Text currentSaveFileName;
 
+    //Save/Load
     private File saveFile;
+    private String playerName;
+    private String charsUnlocked;
+    private String levsUnlocked;
+    private String saveFilePath;
+    private ArrayList<PlayerCharacter> charList = new ArrayList<PlayerCharacter>();
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
@@ -175,25 +183,31 @@ public class Main extends Application {
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
-		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
+		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2, Color.YELLOW),
+		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2, Color.LIGHTPINK),
+		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2, Color.GREENYELLOW),
+		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2, Color.SKYBLUE),
+		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3, Color.SEAGREEN),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2, Color.DARKGRAY);
 
 		private final Shape model;
 		private final Player.Ability ability;
 		private final int speed;
+		private boolean isUnlocked;
+		private final Color originalColor;
 
-		PlayerCharacter(Shape model, Player.Ability ability, int speed){
+		PlayerCharacter(Shape model, Player.Ability ability, int speed, Color color){
 			this.model = model;
 			this.ability = ability;
 			this.speed = speed;
+			this.isUnlocked = true;
+			this.originalColor = color;
 		}
 		public Shape model() {return model;}
 		public Player.Ability ability() {return ability;}
 		public int speed() {return speed;}
+		public void setUnlockedState(Boolean state) {isUnlocked = state;}
+		public void resetColor() { this.model().setFill(originalColor);}
 	}
 
 	/**
@@ -432,6 +446,8 @@ public class Main extends Application {
 			configureFileChooser(fileChooser);
 			saveFile = fileChooser.showOpenDialog(primaryStage);
 			currentSaveFileName.setText(saveFile.getName());
+			readFromSaveFile(saveFile);
+			saveFilePath = saveFile.getName();
 		});
 
 		exitButton.setOnAction(e -> {primaryStage.close();});
@@ -447,6 +463,43 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 
+	}
+
+	private void readFromSaveFile(File saveFile) {
+		try {
+			scanFile = new Scanner(saveFile);
+
+			while(scanFile.hasNext()){
+				playerName = scanFile.next();
+				charsUnlocked = scanFile.next();
+				levsUnlocked = scanFile.next();
+			}
+
+			closeFile(scanFile);
+
+			for(int i = 0; i < charsUnlocked.length(); i++) {
+				if(charsUnlocked.charAt(i) == '0') {
+					charList.get(i).model().setFill(Color.BLACK);
+					charList.get(i).setUnlockedState(false);
+				}
+				else if(charsUnlocked.charAt(i) == '1') {
+					charList.get(i).resetColor();
+					charList.get(i).setUnlockedState(true);
+				}
+				else {
+					println("Corrupted/Incompatible save file");
+				}
+
+			}
+
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void closeFile(Scanner scanFile) {
+		scanFile.close();
 	}
 
 	private void configureFileChooser(FileChooser fileChooser) {
@@ -625,7 +678,7 @@ public class Main extends Application {
 						showPostLevelScreen();
 						switch(loadedLevelName){
 						case "level1": { targetSelect.setDisable(false); break;}
-						case "target": {castleSelect.setDisable(false); break;}
+						case "target": { castleSelect.setDisable(false); break;}
 						case "castle": {break;}
 						default: throw new IllegalArgumentException("invalid level name");
 						}
@@ -923,11 +976,11 @@ public class Main extends Application {
 			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
 			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
 		}
-		
-		
+
+
 		currentLevel.getChildren().add(shield);
 		sound.activateShield();
-		
+
 		return shield;
 	}
 	private void deleteShield(){
@@ -1444,6 +1497,23 @@ public class Main extends Application {
 			glitchTheGhostModel.setRotate(180);
 			glitchTheGhostModel.setFill(Color.RED);
 
+			charList.add(PlayerCharacter.PacMan);
+			charList.add(PlayerCharacter.MsPacMan);
+			charList.add(PlayerCharacter.PacKid);
+			charList.add(PlayerCharacter.Robot);
+			charList.add(PlayerCharacter.SnacTheSnake);
+			charList.add(PlayerCharacter.GlitchTheGhost);
+
+			for(int i = 0; i < charList.size(); i++) {
+				if (i < 2) {
+					charList.get(i).setUnlockedState(true);
+				}
+				else {
+					charList.get(i).model().setFill(Color.BLACK);
+					charList.get(i).setUnlockedState(false);
+				}
+			}
+
 			timeBar.setLayoutY(50);
 			timeBar.setLayoutX(588);
 			timeBar.setScaleX(10);
@@ -1481,45 +1551,56 @@ public class Main extends Application {
 			pacmanSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
+					if (charList.get(0).isUnlocked) {
 					currentCharacter.setText("Pacman");
 					playerCharacter = PlayerCharacter.PacMan;
+					}
 				}
 			});
 
 			msPacmanSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
+					if (charList.get(1).isUnlocked) {
 					currentCharacter.setText("msPacman");
 					playerCharacter = PlayerCharacter.MsPacMan;
+					}
 				}
 			});
 			packidSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
-					currentCharacter.setText("Packid");
-					playerCharacter = PlayerCharacter.PacKid;
+					if (charList.get(2).isUnlocked) {
+						currentCharacter.setText("Packid");
+						playerCharacter = PlayerCharacter.PacKid;
+					}
 				}
 			});
 			robotSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
+					if (charList.get(3).isUnlocked) {
 					currentCharacter.setText("Robot");
 					playerCharacter = PlayerCharacter.Robot;
-
+					}
 				}
 			});
 			snacSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
+					if (charList.get(4).isUnlocked) {
 					currentCharacter.setText("Snac The Snake");
 					playerCharacter = PlayerCharacter.SnacTheSnake;
+					}
 				}
 			});
 			glitchSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
+					if (charList.get(5).isUnlocked) {
 					currentCharacter.setText("Glitch");
 					playerCharacter = PlayerCharacter.GlitchTheGhost;
+					}
 				}
 			});
 
@@ -1549,7 +1630,7 @@ public class Main extends Application {
 				deleteShield();
 				sound.shieldHit();
 			}
-			else { 
+			else {
 				sound.playerEaten();
 				throw new PlayerCaughtException(); }
 		}
