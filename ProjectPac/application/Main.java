@@ -63,10 +63,14 @@ public class Main extends Application {
 	public final static int[] centre = {windowWidth/2, windowHeight/2};
 	public final static int levelWidth = 27;
 	public final static int levelHeight = 25;
-	public final static int gridSquareSize = 36; // ONLY WORKS FOR EVEN NUMBERS
+	public final static int gridSquareSize = 36; // ONLY WORKS FOR EVEN NUMBERS (multiples of four?)
 	public final static int levelOffsetX = 154+36;
 	public final static int levelOffsetY = 100;
+	
 
+	private LevelTree levelTree = new LevelTree();
+	private Level loadedLevel;
+	
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
@@ -109,9 +113,7 @@ public class Main extends Application {
 
 	//Levels
 	private String loadedLevelName;
-	private Level level1 = new Level("level1");
-	private Level levelTarget = new Level("target");
-	private Level levelCastle = new Level("castle");
+
 
 	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
@@ -126,8 +128,8 @@ public class Main extends Application {
     //Post level elements
     public Text postLevelTitle = new Text();
 
-    public Button castleSelect = new Button("Castle");
-    public Button targetSelect = new Button("Target");
+    public LevelButton castleSelect = new LevelButton("Castle", LevelTree.medieval1);
+    public LevelButton targetSelect = new LevelButton("Target", LevelTree.future1);
     public Button givenBoostButton = new Button();
     public Button randomBoostButton = new Button("Random Boost");
 
@@ -158,7 +160,6 @@ public class Main extends Application {
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
-
 	public  PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
 
 	public static enum GameMode {
@@ -291,6 +292,7 @@ public class Main extends Application {
 		background.setTranslateY(60);
 		pelletsRemaining = 0;
 		loadedLevelName = level.getLevelName();
+		loadedLevel = level;
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
@@ -565,13 +567,31 @@ public class Main extends Application {
 		startText.setStyle("-fx-font: 24 arial;");
 	}
 
+	private LevelButton[] levelSelectButtons = {targetSelect, castleSelect};
+	private void unlockNewLevels() throws Exception{
+		levelTree.addCompletedLevel(loadedLevel);
+		for (LevelButton button : levelSelectButtons) {
+			button.setDisable(true);
+			if ( levelTree.isUnlocked(button.getConnectedLevel()) ) {
+				println(button.getConnectedLevel().getLevelName() + " is unlocked!");
+				button.setDisable(false);
+			}
+		}
+		/*
+		switch(loadedLevelName){
+			case "level1": { targetSelect.setDisable(false); break; }
+			case "target" : { castleSelect.setDisable(false); break; }
+			case "castle": { break; }
+			default: throw new IllegalArgumentException("invalid level name");
+		}*/
+	}
 	/**
 	 * Loads , displays, and runs the game itself
 	 * @param primaryStage
 	 */
 	private void game(Stage primaryStage) {
 		try {
-		initialiseLevel(level1);
+		initialiseLevel(LevelTree.level1);
 		initRootGameLayout();
 		initialiseOverlays();
 		primaryStage.show();
@@ -618,18 +638,16 @@ public class Main extends Application {
 					case D:
 					case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
 
-					case C :{  if (currentGameTick >= 240) {usePlayerBoost();} break;}
+					case C :{ if (currentGameTick >= 240) {usePlayerBoost();} break; }
 					case V:{ if (currentGameTick >= 240) {usePlayerAbility(false);} break; }
 
 					case N:{
-						showPostLevelScreen();
-						switch(loadedLevelName){
-						case "level1": { targetSelect.setDisable(false); break;}
-						case "target": {castleSelect.setDisable(false); break;}
-						case "castle": {break;}
-						default: throw new IllegalArgumentException("invalid level name");
+						try {
+							unlockNewLevels();
+						} catch (Exception e) {
+							e.printStackTrace();
 						}
-
+						showPostLevelScreen();
 						gameLoop.stop();
 						break;
 					}
@@ -877,12 +895,7 @@ public class Main extends Application {
 							try {
 								TimeUnit.SECONDS.sleep(1);
 
-								switch(loadedLevelName){
-									case "level1": { targetSelect.setDisable(false); break;}
-									case "target" : {castleSelect.setDisable(false); break;}
-									case "castle": {break;}
-									default: throw new IllegalArgumentException("invalid level name");
-								}
+								
 
 								//loadNewLevel(primaryStage, levelTarget);
 								//this.start();
@@ -1398,8 +1411,8 @@ public class Main extends Application {
 		targetSelect.setDisable(true);
 
 
-		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
-		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
+		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, LevelTree.medieval1); gameLoop.start();} );
+		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTree.future1); gameLoop.start();} );
 
 		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
