@@ -111,11 +111,6 @@ public class Main extends Application {
 
 	//Levels
 	private String loadedLevelName;
-	private Level level1 = new Level("level1");
-	private Level levelTarget = new Level("target");
-	private Level levelCastle = new Level("castle");
-	private ArrayList<Level> levelList = new ArrayList<Level>();
-	private ArrayList<Button> levelButtonList = new ArrayList<Button>();
 
 	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
@@ -130,9 +125,6 @@ public class Main extends Application {
     //Post level elements
     public Text postLevelTitle = new Text();
 
-    public Button level1Select = new Button("Level 1");
-    public Button castleSelect = new Button("Castle");
-    public Button targetSelect = new Button("Target");
     public Button givenBoostButton = new Button();
     public Button randomBoostButton = new Button("Random Boost");
 
@@ -495,9 +487,9 @@ public class Main extends Application {
 				}
 			}
 
-			for(int i = 0; i < levelList.size(); i++) {
+			for(/*TODO*/) {
 				if(levsUnlocked.charAt(i) == '1') {
-					levelList.get(i).unlockLevel();
+					//TODO
 				}
 			}
 
@@ -694,13 +686,6 @@ public class Main extends Application {
 
 					case N:{
 						showPostLevelScreen();
-						switch(loadedLevelName){
-						case "level1": { targetSelect.setDisable(false); levelTarget.unlockLevel(); break;}
-						case "target": { castleSelect.setDisable(false); levelCastle.unlockLevel(); break;}
-						case "castle": {break;}
-						default: throw new IllegalArgumentException("invalid level name");
-						}
-
 						gameLoop.stop();
 						break;
 					}
@@ -950,15 +935,6 @@ public class Main extends Application {
 							try {
 								TimeUnit.SECONDS.sleep(1);
 
-								switch(loadedLevelName){
-									case "level1": {targetSelect.setDisable(false); levelTarget.unlockLevel(); break;}
-									case "target" : {castleSelect.setDisable(false); levelCastle.unlockLevel(); break;}
-									case "castle": {break;}
-									default: throw new IllegalArgumentException("invalid level name");
-								}
-
-								//loadNewLevel(primaryStage, levelTarget);
-								//this.start();
 								showPostLevelScreen();
 								return;
 							}
@@ -1534,14 +1510,6 @@ public class Main extends Application {
 			charList.add(PlayerCharacter.Robot);
 			charList.add(PlayerCharacter.SnacTheSnake);
 			charList.add(PlayerCharacter.GlitchTheGhost);
-
-			levelList.add(level1);
-			levelList.add(levelTarget);
-			levelList.add(levelCastle);
-
-			levelButtonList.add(level1Select);
-			levelButtonList.add(targetSelect);
-			levelButtonList.add(castleSelect);
 
 			for(int i = 0; i < charList.size(); i++) {
 				if (i < 2) {
