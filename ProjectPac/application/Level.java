@@ -8,6 +8,7 @@ public class Level {
 	private Color background;
 	private Color wall;
 	private String levelName;
+	private Boolean unlocked;
 
 	public enum Difficulty {
 		easy, // 56% chance of dumb AI, 35% moderate, 7% chance smart, 1% chance perfect
@@ -23,6 +24,7 @@ public class Level {
 		background = Color.color(0.0, 0.0, 0.2);
 		wall = Color.BLUE;
 		this.levelName = levelName;
+		this.unlocked = true;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,4,4,4,1,4,4,4,4,4,4,4,4,4,4,4,4,1},
@@ -55,6 +57,7 @@ public class Level {
 		background = Color.color(0.0, 0.0, 0.2);
 		wall = Color.BLUE;
 		this.levelName = levelName;
+		this.unlocked = false;
 
 		positionArray = new int[][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -89,6 +92,8 @@ public class Level {
 		background = Color.rgb(62, 50, 36);//Brown
 		wall = Color.GREY;
 		this.levelName = levelName;
+		this.unlocked = false;
+
 		positionArray = new int [][] {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 									 {1,4,4,4,4,4,4,4,4,4,1,1,1,2,1,1,1,4,4,4,4,4,4,4,4,4,1},
 									 {1,4,1,1,1,1,4,1,1,4,1,1,1,4,1,1,1,4,1,1,4,1,1,1,4,1,1},
@@ -132,5 +137,11 @@ public class Level {
 	}
 	public String getLevelName() {
 		return levelName;
+	}
+	public boolean isUnlocked() {
+		return unlocked;
+	}
+	public void unlockLevel() {
+		this.unlocked = true;
 	}
 }

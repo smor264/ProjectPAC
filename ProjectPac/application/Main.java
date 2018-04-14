@@ -114,6 +114,8 @@ public class Main extends Application {
 	private Level level1 = new Level("level1");
 	private Level levelTarget = new Level("target");
 	private Level levelCastle = new Level("castle");
+	private ArrayList<Level> levelList = new ArrayList<Level>();
+	private ArrayList<Button> levelButtonList = new ArrayList<Button>();
 
 	//Overlays
 	private Rectangle pauseScreen = new Rectangle(0,0, (double) windowWidth,(double) windowHeight); //Pause Overlay
@@ -128,6 +130,7 @@ public class Main extends Application {
     //Post level elements
     public Text postLevelTitle = new Text();
 
+    public Button level1Select = new Button("Level 1");
     public Button castleSelect = new Button("Castle");
     public Button targetSelect = new Button("Target");
     public Button givenBoostButton = new Button();
@@ -475,6 +478,8 @@ public class Main extends Application {
 				levsUnlocked = scanFile.next();
 			}
 
+			saveFilePath = saveFile.getName();
+
 			closeFile(scanFile);
 
 			for(int i = 0; i < charsUnlocked.length(); i++) {
@@ -489,7 +494,12 @@ public class Main extends Application {
 				else {
 					println("Corrupted/Incompatible save file");
 				}
+			}
 
+			for(int i = 0; i < levelList.size(); i++) {
+				if(levsUnlocked.charAt(i) == '1') {
+					levelList.get(i).unlockLevel();
+				}
 			}
 
 		}
@@ -599,8 +609,15 @@ public class Main extends Application {
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 
+		for(int i = 0; i < levelList.size(); i++) {
+			if(levelList.get(i).isUnlocked()) {
+				levelButtonList.get(i).setDisable(false);
+			}
+		}
+
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
+
 
 	private boolean hidePostLevelScreen() {
 		return currentLevel.getChildren().removeAll(postLevelOverlay);
@@ -634,6 +651,8 @@ public class Main extends Application {
 		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
+
+		showPostLevelScreen();
 
 
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
@@ -677,8 +696,8 @@ public class Main extends Application {
 					case N:{
 						showPostLevelScreen();
 						switch(loadedLevelName){
-						case "level1": { targetSelect.setDisable(false); break;}
-						case "target": { castleSelect.setDisable(false); break;}
+						case "level1": { targetSelect.setDisable(false); levelTarget.unlockLevel(); break;}
+						case "target": { castleSelect.setDisable(false); levelCastle.unlockLevel(); break;}
 						case "castle": {break;}
 						default: throw new IllegalArgumentException("invalid level name");
 						}
@@ -841,7 +860,8 @@ public class Main extends Application {
 			}
 
 			}});
-			gameLoop = new AnimationTimer() {
+
+		gameLoop = new AnimationTimer() {
 				@Override
 				public void handle(long now) {
 					while (pausePressed) {
@@ -849,6 +869,7 @@ public class Main extends Application {
 					}
 
 					try {
+
 						if ( !manageTime() ) {
 							return;
 						}
@@ -931,8 +952,8 @@ public class Main extends Application {
 								TimeUnit.SECONDS.sleep(1);
 
 								switch(loadedLevelName){
-									case "level1": { targetSelect.setDisable(false); break;}
-									case "target" : {castleSelect.setDisable(false); break;}
+									case "level1": {targetSelect.setDisable(false); levelTarget.unlockLevel(); break;}
+									case "target" : {castleSelect.setDisable(false); levelCastle.unlockLevel(); break;}
 									case "castle": {break;}
 									default: throw new IllegalArgumentException("invalid level name");
 								}
@@ -953,7 +974,7 @@ public class Main extends Application {
 				}
 			};
 
-			gameLoop.start();
+			//gameLoop.start();
 
 		}
 		catch(Exception e) {
@@ -1450,9 +1471,20 @@ public class Main extends Application {
 		castleSelect.setDisable(true);
 		targetSelect.setDisable(true);
 
-
-		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelCastle); gameLoop.start();} );
-		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTarget); gameLoop.start();} );
+		castleSelect.setOnAction( e -> {
+			if(levelCastle.isUnlocked()) {
+				loadNewLevel(primaryStage, levelCastle);
+				gameLoop.start();
+			}});
+		targetSelect.setOnAction( e -> {
+			if(levelTarget.isUnlocked()) {
+				loadNewLevel(primaryStage, levelTarget);
+				gameLoop.start();
+			}});
+		level1Select.setOnAction(e -> {
+			gameLoop.start();
+			hidePostLevelScreen();
+		});
 
 		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
@@ -1473,10 +1505,10 @@ public class Main extends Application {
 		worldMap.setTranslateX(100);
 		worldMap.getColumnConstraints().add(new ColumnConstraints(75));
 		worldMap.getRowConstraints().add(new RowConstraints(75));
-		worldMap.add(targetSelect, 0, 1);
-		worldMap.add(castleSelect, 1, 1);
+		worldMap.add(level1Select, 0, 1);
+		worldMap.add(targetSelect, 1, 1);
+		worldMap.add(castleSelect, 2, 1);
 
-		givenBoostButton.setText("Pellet Magnet");
 
 		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
 		postLevelTitles.getChildren().addAll(postLevelTitle);
@@ -1503,6 +1535,14 @@ public class Main extends Application {
 			charList.add(PlayerCharacter.Robot);
 			charList.add(PlayerCharacter.SnacTheSnake);
 			charList.add(PlayerCharacter.GlitchTheGhost);
+
+			levelList.add(level1);
+			levelList.add(levelTarget);
+			levelList.add(levelCastle);
+
+			levelButtonList.add(level1Select);
+			levelButtonList.add(targetSelect);
+			levelButtonList.add(castleSelect);
 
 			for(int i = 0; i < charList.size(); i++) {
 				if (i < 2) {
