@@ -361,11 +361,14 @@ public class Main extends Application {
 				levsUnlocked = "10000000000";
 			}
 
+			println(charsUnlocked);
 			println(levsUnlocked);
 
 			saveFilePath = saveFile.getAbsolutePath();
 
 			scanFile.close();
+
+			currentSaveFileName.setText(saveFile.getName());
 
 			//writeSave(saveFile);
 
@@ -393,7 +396,6 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-
 
 	private void writeSave(File saveFile) throws FileNotFoundException {
 		PrintWriter writer = new PrintWriter(saveFile);
@@ -618,11 +620,11 @@ public class Main extends Application {
 			currentSaveFileName.setText(saveFile.getName());
 			readFromSaveFile(saveFile);
 		});
-		
+
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
-			if(saveFile == null) {
+		/*	if(saveFile == null) {
 				try {
 					Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
 					saveFile = new File(System.getProperty("user.home")+"\\auto-save.txt");
@@ -631,7 +633,7 @@ public class Main extends Application {
 					e1.printStackTrace();
 				}
 			}
-
+	*/
 			readFromSaveFile(saveFile);
 			currentGameMode = GameMode.SinglePlayer;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
@@ -1080,21 +1082,32 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-
-			initRootLaunchLayout(primaryStage);
-			initPostLevel(primaryStage);
-			primaryStage.setScene(launchScene);
-			primaryStage.show();
-
-			glitchTheGhostModel.setRotate(180);
-			glitchTheGhostModel.setFill(Color.RED);
-
 			charList.add(PlayerCharacter.PacMan);
 			charList.add(PlayerCharacter.MsPacMan);
 			charList.add(PlayerCharacter.PacKid);
 			charList.add(PlayerCharacter.Robot);
 			charList.add(PlayerCharacter.SnacTheSnake);
 			charList.add(PlayerCharacter.GlitchTheGhost);
+			initRootLaunchLayout(primaryStage);
+
+			try {
+				Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
+				saveFile = new File(System.getProperty("user.home")+"\\auto-save.txt");
+				readFromSaveFile(saveFile);
+
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+
+			//initRootLaunchLayout(primaryStage);
+			initPostLevel(primaryStage);
+			primaryStage.setScene(launchScene);
+			primaryStage.show();
+
+
+			glitchTheGhostModel.setRotate(180);
+			glitchTheGhostModel.setFill(Color.RED);
+
 
 			for(int i = 0; i < charList.size(); i++) {
 				if (i < 2) {
