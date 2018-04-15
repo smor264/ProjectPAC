@@ -67,11 +67,11 @@ public class Main extends Application {
 	public final static int gridSquareSize = 36; // ONLY WORKS FOR EVEN NUMBERS (multiples of four?)
 	public final static int levelOffsetX = 154+36;
 	public final static int levelOffsetY = 100;
-	
+
 
 	private LevelTree levelTree = new LevelTree();
 	private Level loadedLevel;
-	
+
 	//Managed Variables and Objects
 	private int extraLives = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
@@ -129,7 +129,7 @@ public class Main extends Application {
 
     //Post level elements
     public Text postLevelTitle = new Text();
-    
+
     public LevelButton level1Select = new LevelButton("Home", LevelTree.level1);
     public LevelButton medieval1Select = new LevelButton("Medieval1", LevelTree.medieval1);
     public LevelButton future1Select = new LevelButton("Future1", LevelTree.future1);
@@ -141,17 +141,17 @@ public class Main extends Application {
     public LevelButton ice2Select = new LevelButton("Ice2", LevelTree.ice2);
     public LevelButton rock2Select = new LevelButton("Rock2", LevelTree.rock2);
     public LevelButton garden2Select = new LevelButton("Garden2", LevelTree.garden2);
-    
+
     public Button givenBoostButton = new Button();
     public Button randomBoostButton = new Button("Random Boost");
-	private LevelButton[] levelSelectButtons = {level1Select, 
+	private LevelButton[] levelSelectButtons = {level1Select,
 												future1Select, future2Select,
-												medieval1Select, medieval2Select, 
-												rock1Select, rock2Select, 
+												medieval1Select, medieval2Select,
+												rock1Select, rock2Select,
 												ice1Select, ice2Select,
 												garden1Select, garden2Select};
-    
-    
+
+
 	private HBox postLevelTitles = new HBox(25);
 	private HBox postLevelElements = new HBox(25);
 	private VBox postLevelScreen = new VBox(25);
@@ -266,49 +266,155 @@ public class Main extends Application {
 		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
 	}
 
-	private Object[] determineEnemyCharacteristics(int num) {
-		// Enemies have their characteristics encoded using prime factorisation.
-		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
-		Object[] array = new Object[3];
-
-		int twoExponent = 0;
-		while(num%2 == 0) {
-			twoExponent++;
-			num = num/2;
+	/**
+	 * Manages the timer, and time bar, timeouts, etc.
+	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
+	 * */
+	private boolean manageTime() throws TimeOutException {
+		timeBar.setProgress(currentGameTick/(maxTime + 240));
+		if(currentGameTick >= (maxTime + 240)) {
+			print("Time's Up!");
+			throw new TimeOutException();
 		}
-		switch (twoExponent) {
-			case 0: {array[0] = Enemy.Intelligence.dumb; break;}
-			case 1: {array[0] = Enemy.Intelligence.moderate; break;}
-			case 2: {array[0] = Enemy.Intelligence.smart; break;}
-			case 3: {array[0] = Enemy.Intelligence.perfect; break;}
+		else {
+			currentGameTick++;
 		}
 
-		int threeExponent = 0;
-		while (num%3 == 0) {
-			threeExponent++;
-			num = num/3;
+		/* Display the starting screen*/
+		if (currentGameTick - 1 <= 240) {
+			switch( (int)currentGameTick - 1 ) {
+				case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
+				case 60: {startText.setText("2!"); break;}
+				case 120: {startText.setText("1!"); break;}
+				case 180: {startText.setText("Go!"); break;}
+				case 240: {hideOverlay(startOverlay); break;}
+				default: {break;}
+			}
+			return false;
 		}
-		switch (threeExponent) {
-			case 0: {array[1] = Enemy.Behaviour.hunter; break;}
-			case 1: {array[1] = Enemy.Behaviour.ambusher; break;}
-			case 2: {array[1] = Enemy.Behaviour.guard; break;}
-			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
-			case 4: {array[1] = Enemy.Behaviour.scared; break;}
-		}
+		return true;
+	}
 
-		int fiveExponent = 0;
-		while (num%5 == 0) {
-			fiveExponent++;
-			num = num/5;
-		}
-		switch (fiveExponent) {
-			case 0: {array[2] = Enemy.Algorithm.dijkstra; break;}
-			case 1: {array[2] = Enemy.Algorithm.euclidean; break;}
-			case 2: {array[2] = Enemy.Algorithm.bfs; break;}
-			case 3: {array[2] = Enemy.Algorithm.dfs; break;}
-		}
+	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
+		obj.moveTo(gridSquareSize*x + levelOffsetX, gridSquareSize*y + levelOffsetY);
+		levelObjectArray[y][x] = obj;
+		currentLevel.getChildren().add(obj.getModel());
+	}
 
-		return array;
+	private void restartLevel() {
+		int playerStartXPos = player.getStartIndex()[0];
+		int playerStartYPos = player.getStartIndex()[1];
+
+		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
+
+		levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null;
+		levelObjectArray[playerStartYPos][playerStartXPos] = player;
+
+		for (Enemy enemy : enemyList) {
+			enemy.moveTo(convertToPosition(enemy.getStartIndex()[0], true), convertToPosition(enemy.getStartIndex()[1], false));
+		}
+		for (Player player : playerList) {
+			player.moveTo(convertToPosition(player.getStartIndex()[0], true), convertToPosition(player.getStartIndex()[1], false));
+		}
+		resetPlayerPowerUpState();
+		disableBoost();
+	}
+
+	private void configureFileChooser(FileChooser fileChooser) {
+		fileChooser.setTitle("Choose your save file");
+		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
+	}
+
+	private void readFromSaveFile(File saveFile) {
+		try {
+			scanFile = new Scanner(saveFile);
+
+			while(scanFile.hasNext()){
+				playerName = scanFile.next();
+				charsUnlocked = scanFile.next();
+				levsUnlocked = scanFile.next();
+			}
+
+			saveFilePath = saveFile.getName();
+
+			closeFile(scanFile);
+
+			for(int i = 0; i < charsUnlocked.length(); i++) {
+				if(charsUnlocked.charAt(i) == '0') {
+					charList.get(i).setUnlockedState(false);
+				}
+				else if(charsUnlocked.charAt(i) == '1') {
+					charList.get(i).resetColor();
+					charList.get(i).setUnlockedState(true);
+				}
+				else {
+					println("Corrupted/Incompatible save file");
+				}
+			}
+
+			for(int i = 0; i < LevelTree.levelList.size(); i++) {
+				if(levsUnlocked.charAt(i) == '1') {
+					levelTree.addCompletedLevel(LevelTree.levelList.get(i));
+				}
+			}
+
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void closeFile(Scanner scanFile) {
+		scanFile.close();
+	}
+
+	/**
+	 * Loads the next level, clears previous level
+	 * @param primaryStage
+	 * @param newLevel
+	 * @return
+	 */
+	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
+		hidePostLevelScreen();
+		disableBoost();
+		resetPlayerPowerUpState();
+		levelObjectArray = new LevelObject[levelHeight][levelWidth];
+		currentLevel.getChildren().clear();
+		initialiseLevel(newLevel);
+		currentGameTick = 0;
+		currentLevel.getChildren().add(timeBar);
+		currentBoost.setText(player.getBoost().toString());
+		return true;
+	}
+
+	/**
+	 * Stops the gameLoop and handles game over UI
+	 */
+	private void gameOver() {
+		println("GAME OVER!");
+		player.setScore(0);
+		gameLoop.stop();
+	}
+
+	private boolean showOverlay(StackPane overlay) {
+		return currentLevel.getChildren().add(overlay);
+	}
+
+	private boolean hideOverlay(StackPane overlay) {
+		return currentLevel.getChildren().removeAll(overlay);
+	}
+
+	private boolean showPostLevelScreen() {
+		int randBoostIndex = rand.nextInt(5) * 2;
+		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
+		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
+		checkUnlockedLevels();
+		return currentLevel.getChildren().add(postLevelOverlay);
+	}
+
+	private boolean hidePostLevelScreen() {
+		return currentLevel.getChildren().removeAll(postLevelOverlay);
 	}
 
 	private void initialiseLevel(Level level) {
@@ -388,29 +494,16 @@ public class Main extends Application {
 
 	}
 
-	private void restartLevel() {
-		int playerStartXPos = player.getStartIndex()[0];
-		int playerStartYPos = player.getStartIndex()[1];
+	private void initialiseOverlays(){
+		pauseScreen.setFill(Color.BLACK);
+		pauseScreen.setOpacity(0.8);
+		pauseText.setFill(Color.WHITE);
+		pauseText.setStyle("-fx-font: 24 arial;");
 
-		player.moveTo(convertToPosition(playerStartXPos, true), convertToPosition(playerStartYPos, false));
-
-		levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null;
-		levelObjectArray[playerStartYPos][playerStartXPos] = player;
-
-		for (Enemy enemy : enemyList) {
-			enemy.moveTo(convertToPosition(enemy.getStartIndex()[0], true), convertToPosition(enemy.getStartIndex()[1], false));
-		}
-		for (Player player : playerList) {
-			player.moveTo(convertToPosition(player.getStartIndex()[0], true), convertToPosition(player.getStartIndex()[1], false));
-		}
-		resetPlayerPowerUpState();
-		disableBoost();
-	}
-
-	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
-		obj.moveTo(gridSquareSize*x + levelOffsetX, gridSquareSize*y + levelOffsetY);
-		levelObjectArray[y][x] = obj;
-		currentLevel.getChildren().add(obj.getModel());
+		startScreen.setFill(Color.BLACK);
+		startScreen.setOpacity(0.8);
+		startText.setFill(Color.WHITE);
+		startText.setStyle("-fx-font: 24 arial;");
 	}
 
 	/**
@@ -484,166 +577,6 @@ public class Main extends Application {
 
 	}
 
-	private void readFromSaveFile(File saveFile) {
-		try {
-			scanFile = new Scanner(saveFile);
-
-			while(scanFile.hasNext()){
-				playerName = scanFile.next();
-				charsUnlocked = scanFile.next();
-				levsUnlocked = scanFile.next();
-			}
-
-			saveFilePath = saveFile.getName();
-
-			closeFile(scanFile);
-
-			for(int i = 0; i < charsUnlocked.length(); i++) {
-				if(charsUnlocked.charAt(i) == '0') {
-					charList.get(i).setUnlockedState(false);
-				}
-				else if(charsUnlocked.charAt(i) == '1') {
-					charList.get(i).resetColor();
-					charList.get(i).setUnlockedState(true);
-				}
-				else {
-					println("Corrupted/Incompatible save file");
-				}
-			}
-
-			for(int i = 0; i < LevelTree.levelList.size(); i++) {
-				if(levsUnlocked.charAt(i) == '1') {
-					levelTree.addCompletedLevel(LevelTree.levelList.get(i));
-				}
-			}
-
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void closeFile(Scanner scanFile) {
-		scanFile.close();
-	}
-
-	private void configureFileChooser(FileChooser fileChooser) {
-		fileChooser.setTitle("Choose your save file");
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
-	}
-
-	private void resetPlayerPowerUpState() {
-		playerPowerUpTimer = 0;
-		playerIsWallJumping = false;
-		for (Enemy enemy : enemyList) {
-			enemy.resetColor();
-			//println(Boolean.toString(isBoostActive));
-			if (!isBoostActive) {
-				enemy.resetSpeed();
-			}
-
-			int[] delta = {0,0};
-			if (((int)enemy.getPosition()[0] & 1) != 0) {
-				// If horizontal position is odd
-				delta[0] = 1;
-
-			}
-			if (((int)enemy.getPosition()[1] & 1) != 0) {
-				// If position is odd
-				delta[1] = 1;
-			}
-			enemy.moveBy(delta[0], delta[1]);
-		}
-
-		for (int i = 1; i < playerList.size(); i++) {
-			playerList.get(i).resetColor();
-			//println(Boolean.toString(isBoostActive));
-			if (!isBoostActive) {
-				playerList.get(i).resetSpeed();
-			}
-
-			int[] delta = {0,0};
-			if (((int)playerList.get(i).getPosition()[0] & 1) != 0) {
-				// If horizontal position is odd
-				delta[0] = 1;
-
-			}
-			if (((int)playerList.get(i).getPosition()[1] & 1) != 0) {
-				// If position is odd
-				delta[1] = 1;
-			}
-			playerList.get(i).moveBy(delta[0], delta[1]);
-		}
-
-		for (SnakePiece snakePiece : snakePieces) {
-			currentLevel.getChildren().remove(snakePiece.getModel());
-		}
-		snakePieces.clear();
-		player.resetSpeed();
-	}
-
-	/**
-	 * Loads the next level, clears previous level
-	 * @param primaryStage
-	 * @param newLevel
-	 * @return
-	 */
-	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
-		hidePostLevelScreen();
-		disableBoost();
-		resetPlayerPowerUpState();
-		levelObjectArray = new LevelObject[levelHeight][levelWidth];
-		currentLevel.getChildren().clear();
-		initialiseLevel(newLevel);
-		currentGameTick = 0;
-		currentLevel.getChildren().add(timeBar);
-		currentBoost.setText(player.getBoost().toString());
-		return true;
-	}
-
-	/**
-	 * Stops the gameLoop and handles game over UI
-	 */
-	private void gameOver() {
-		println("GAME OVER!");
-		player.setScore(0);
-		gameLoop.stop();
-	}
-
-	private boolean showOverlay(StackPane overlay) {
-		return currentLevel.getChildren().add(overlay);
-	}
-
-	private boolean hideOverlay(StackPane overlay) {
-		return currentLevel.getChildren().removeAll(overlay);
-	}
-
-	private boolean showPostLevelScreen() {
-		int randBoostIndex = rand.nextInt(5) * 2;
-		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
-		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
-		checkUnlockedLevels();
-		return currentLevel.getChildren().add(postLevelOverlay);
-	}
-
-
-	private boolean hidePostLevelScreen() {
-		return currentLevel.getChildren().removeAll(postLevelOverlay);
-	}
-
-	private void initialiseOverlays(){
-		pauseScreen.setFill(Color.BLACK);
-		pauseScreen.setOpacity(0.8);
-		pauseText.setFill(Color.WHITE);
-		pauseText.setStyle("-fx-font: 24 arial;");
-
-		startScreen.setFill(Color.BLACK);
-		startScreen.setOpacity(0.8);
-		startText.setFill(Color.WHITE);
-		startText.setStyle("-fx-font: 24 arial;");
-	}
-	
 	private void unlockNewLevels(){
 		levelTree.addCompletedLevel(loadedLevel);
 	}
@@ -656,6 +589,7 @@ public class Main extends Application {
 			}
 		}
 	}
+
 	/**
 	 * Loads , displays, and runs the game itself
 	 * @param primaryStage
@@ -988,124 +922,6 @@ public class Main extends Application {
 		}
 	}
 
-	private Circle createShield(Color color) {
-		Circle shield = new Circle(gridSquareSize/1.5, color);
-		shield.relocate(player.getPosition()[0] - shield.getRadius() - gridSquareSize/2, player.getPosition()[1] - shield.getRadius() - gridSquareSize/2 );
-		shield.setOpacity(0.5);
-
-		if (player.getModel() instanceof Circle){
-			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
-			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
-			shield.translateXProperty().bind(player.getModel().translateXProperty());
-			shield.translateYProperty().bind(player.getModel().translateYProperty());
-		}
-		else {
-			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
-			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
-		}
-
-
-		currentLevel.getChildren().add(shield);
-		sound.activateShield();
-
-		return shield;
-	}
-	private void deleteShield(){
-		currentLevel.getChildren().remove(player.getShield());
-		if (player.getShield() != null){
-			sound.shieldHit();
-		}
-		player.clearShield();
-	}
-
-	private void invertHeldKeys(){
-		SetArrayList<Direction> heldKeys = player.getHeldButtons();
-		SetArrayList<Direction> newHeldKeys = new SetArrayList<Direction>();
-		for (int i = 0; i < heldKeys.size(); i++){
-			Direction direction = heldKeys.getNFromTop(heldKeys.size() - (i + 1));
-			Direction newDirection;
-			switch (direction){
-				case up:{newDirection = Direction.down; break;}
-				case down:{newDirection = Direction.up; break;}
-				case left:{newDirection = Direction.right; break;}
-				case right:{newDirection = Direction.left; break;}
-				default:{newDirection = Direction.up; break;}
-			}
-			newHeldKeys.append(newDirection);
-		}
-		player.setHeldButtons(newHeldKeys);
-	}
-
-	private void usePlayerBoost(){
-		if (player.getBoostCharges() <= 0){
-			return;
-		}
-		else {
-			switch (player.getBoost()){
-				case timeSlow:{slowTime(false); break;}
-				case superTimeSlow:{slowTime(true); break;}
-
-				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
-				case dash:
-				case superDash:{ waitingForGridAlignment = true; break;}
-
-				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				case superPelletMagnet:{ pelletPickupSize = 3; break;}
-
-				case invisibility:
-				case superInvisibility: {player.setInvisible(true); break;}
-
-				case shield: {player.setShield(createShield(Color.BLUE)); break;}
-				case superShield: {player.setShield(createShield(Color.BLUE)); break;}
-
-				case invertControls:{
-					player.setControlsInverted(true);
-					invertHeldKeys();
-					break;
-				}
-				case randomTeleport:{
-					Integer[] pos;
-					double minDist;
-					double dist;
-
-					do {
-						minDist = Double.POSITIVE_INFINITY;
-						pos = findRandomValidIndexes();
-						for (Enemy enemy : enemyList){
-							Integer[] enemyIndex = {convertToIndex(enemy.getPosition()[0], true), convertToIndex(enemy.getPosition()[1], false)};
-							dist = AdjacencyMatrix.calcDistance(enemyIndex, pos);
-							if (dist < minDist) {
-								minDist = dist;
-							}
-						}
-					} while (minDist < 4);
-					player.moveTo(convertToPosition(pos[0], true), convertToPosition(pos[1], false));
-					break;
-				}
-				case random: {
-					Random rand = new Random();
-					int val = rand.nextInt(Player.Boost.values().length - 1);
-					player.setBoost(Player.Boost.values()[val]);
-					currentBoost.setText(Player.Boost.values()[val].text());
-					println("You got... " + Player.Boost.values()[val].text() + "!");
-
-					//If it is a debuff, use it immediately
-					if (val == 10 || val == 11){
-						println("Bad Luck!");
-						usePlayerBoost();
-					}
-					player.incrementBoostCharges();
-					break;
-				}
-			}
-			if (player.getBoost().duration() != null){
-				boostDuration = 60 * player.getBoost().duration();
-				isBoostActive = true;
-			}
-			player.decrementBoostCharges();
-		}
-	}
-
 	private Integer[] findRandomValidIndexes(){
 		Random rand = new Random();
 		int randYIndex;
@@ -1126,189 +942,6 @@ public class Main extends Application {
 		return new Integer[] {randXIndex, randYIndex};
 	}
 
-	private void disableBoost(){
-		switch(player.getBoost()){
-			case timeSlow:
-			case superTimeSlow:{
-				for (Enemy enemy : enemyList){
-					enemy.resetSpeed();
-					int[] delta = {0,0};
-					if (((int)enemy.getPosition()[0] & 1) != 0) {
-						// If horizontal position is odd
-						delta[0] = 1;
-
-					}
-					if (((int)enemy.getPosition()[1] & 1) != 0) {
-						// If position is odd
-						delta[1] = 1;
-					}
-					enemy.moveBy(delta[0], delta[1]);
-				}
-
-				break;
-			}
-
-			case dash:
-			case superDash:{player.resetSpeed(); break;}
-
-			case pelletMagnet:
-			case superPelletMagnet:{pelletPickupSize = 0; break;}
-
-			case invisibility:
-			case superInvisibility: {player.setInvisible(false); break;}
-
-			case shield:
-			case superShield:  {deleteShield(); break;}
-
-			case randomTeleport:{ break; }
-			case invertControls:{
-				invertHeldKeys();
-				player.setControlsInverted(false);
-				break;
-			}
-			default: {break;}
-		}
-	}
-
-	private void slowTime(boolean isSuper) {
-		for (Enemy enemy: enemyList){
-			enemy.setTempSpeed(1);
-		}
-		isBoostActive = true;
-		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
-	}
-
-	private void playerCaught() throws InterruptedException {
-		println("CAUGHT!");
-		println("You have " + extraLives + " extra lives remaining");
-		currentGameTick = 0;
-		TimeUnit.SECONDS.sleep(1);
-		extraLives--;
-
-		restartLevel();
-	}
-
-	/**
-	 * Manages the timer, and time bar, timeouts, etc.
-	 * Returns true if the game should continue, false if it should be paused (i.e ready screen)
-	 * */
-	private boolean manageTime() throws TimeOutException {
-		timeBar.setProgress(currentGameTick/(maxTime + 240));
-		if(currentGameTick >= (maxTime + 240)) {
-			print("Time's Up!");
-			throw new TimeOutException();
-		}
-		else {
-			currentGameTick++;
-		}
-
-		/* Display the starting screen*/
-		if (currentGameTick - 1 <= 240) {
-			switch( (int)currentGameTick - 1 ) {
-				case 0: {startText.setText("3!"); showOverlay(startOverlay); break;}
-				case 60: {startText.setText("2!"); break;}
-				case 120: {startText.setText("1!"); break;}
-				case 180: {startText.setText("Go!"); break;}
-				case 240: {hideOverlay(startOverlay); break;}
-				default: {break;}
-			}
-			return false;
-		}
-		return true;
-	}
-
-	private void manageEatGhosts() {
-		if (playerPowerUpTimer == 0 && player.isAbilityActive()) {
-			resetPlayerPowerUpState();
-			player.setAbilityActive(false);
-		}
-		else {
-			if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
-				for (Enemy enemy :enemyList) {
-					enemy.setColor(Color.WHITE);
-				}
-				for(int i = 1; i < playerList.size(); i++) {
-					playerList.get(i).getModel().setFill(Color.WHITE);
-				}
-			}
-			else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
-				for (Enemy enemy :enemyList) {
-					enemy.setColor(Color.DODGERBLUE);
-				}
-				for(int i = 1; i < playerList.size(); i++) {
-					playerList.get(i).getModel().setFill(Color.DODGERBLUE);
-				}
-			}
-			playerPowerUpTimer--;
-		}
-	}
-
-	private void manageSnake() throws PlayerCaughtException {
-		for (int i = 0; i < snakePieces.size(); i++) {
-			SnakePiece snakePiece = snakePieces.get(i);
-
-			if (i == 0) {
-				snakePiece.enqueueMove(player.getPrevDirection());
-			}
-			else {
-				snakePiece.enqueueMove(snakePieces.get(i-1).getPrevDirection());
-			}
-
-			Direction move = snakePiece.dequeueMove();
-			if (move != null) {
-				switch(move) {
-					case up:{
-						if (isGridAligned(snakePiece)) {
-							if (snakePiece.getPrevIndex()[1] == 0) {
-								//Wrap around
-								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(levelObjectArray.length-1, false));
-							}
-						}
-						snakePiece.moveBy(0, (int)-snakePiece.getSpeed());
-						break;
-					}
-					case down:{
-						if (isGridAligned(snakePiece)) {
-							if (snakePiece.getPrevIndex()[1] == levelObjectArray.length - 1) {
-								//Wrap around
-								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(0, false) );
-							}
-						}
-						snakePiece.moveBy(0, (int)snakePiece.getSpeed());
-						break;
-					}
-					case left:{
-						if (isGridAligned(snakePiece)) {
-							if (snakePiece.getPrevIndex()[0] == 0) {
-								//Wrap around
-								snakePiece.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), snakePiece.getPosition()[1]);
-							}
-						}
-						snakePiece.moveBy((int)-snakePiece.getSpeed(), 0);
-						break;
-					}
-					case right:{
-						if (isGridAligned(snakePiece)) {
-							if (snakePiece.getPrevIndex()[0] == levelObjectArray[0].length - 1) {
-								//Wrap around
-								snakePiece.moveTo(convertToPosition(0, true), snakePiece.getPosition()[1]);
-							}
-						}
-						snakePiece.moveBy((int)snakePiece.getSpeed(), 0);
-						break;
-					}
-				}
-			}
-			snakePiece.setPrevDirection(move);
-			snakePiece.setPrevIndex(convertToIndex(snakePiece.getPosition()[0], true), convertToIndex(snakePiece.getPosition()[1], false));
-			if (snakePieces.size() > 3) {
-				if (Math.abs(snakePiece.getPosition()[0] - player.getPosition()[0]) < 10 && Math.abs(snakePiece.getPosition()[1] - player.getPosition()[1]) < 10) {
-					throw new PlayerCaughtException();
-				}
-			}
-		}
-	}
-
 	private boolean isGridAligned(Character character) {
 		if ( ((character.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((character.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
 			return true;
@@ -1318,168 +951,14 @@ public class Main extends Application {
 		}
 	}
 
-	private void usePlayerAbility(boolean fromPickup) {
-		if (fromPickup == false) {
-			switch (player.getAbility()) {
-				case gun:{
-					if (player.getAbilityCharges() == 0) {
-						return;
-					}
-					else {
-						fireLaser();
-					}
-
-					break;
-				}
-				case wallJump:{
-					if (player.getAbilityCharges() == 0) {
-						return;
-					}
-					else {
-						wallJump();
-					}
-					break;
-				}
-				default: {break;}
-			}
-		}
-		else {
-			switch (player.getAbility()) {
-				case eatGhosts: {
-					player.setAbilityActive(true);
-					playerPowerUpTimer = playerPowerUpDuration;
-					for (Enemy enemy : enemyList) {
-						enemy.setColor(Color.DODGERBLUE);
-						enemy.setSpeed(1);
-					}
-
-					for (int i = 1; i < playerList.size(); i++) {
-						playerList.get(i).getModel().setFill(Color.DODGERBLUE);
-						playerList.get(i).setSpeed(1);
-					}
-				}
-				case gun:
-				case wallJump: {player.incrementAbilityCharges(); break;}
-
-				default: {break;}
-			}
-		}
-
-
-	}
-
-	private void wallJump() {
-		if (player.getAbilityCharges() <= 0) {
-			// play error sound
-			return;
-		}
-		if ( isGridAligned(player) ) {
-			try {
-				int xIndex = convertToIndex(player.getPosition()[0], true);
-				int yIndex = convertToIndex(player.getPosition()[1], false);
-				int[] delta = {0,0};
-
-				switch(player.getHeldButtons().getTop()) {
-					case up:{delta[1] = -2; break;}
-					case down:{delta[1] = 2; break;}
-					case left:{delta[0] = -2; break;}
-					case right:{delta[0] = 2; break;}
-				}
-
-				if(levelObjectArray[yIndex + delta[1]][xIndex + delta[0]] instanceof Wall) {
-					return;
-				}
-				else {
-					playerIsWallJumping = true;
-					player.setPrevDirection(player.getHeldButtons().getTop());
-					player.decrementAbilityCharges();
-					sound.wallJump();
-				}
-
-			}
-			catch (ArrayIndexOutOfBoundsException e)  {
-
-			}
-		}
-
-
-	}
-
-	private void fireLaser() {
-		if (player.getAbilityCharges() <= 0) {
-			// play error sound
-			return;
-		}
-		Double width;
-		Double height;
-		Double xPos;
-		Double yPos;
-		boolean isHorizontal = true;
-
-		if (player.getHeldButtons().isEmpty()) {
-			switch (player.getPrevDirection()) {
-			case up:
-			case down: {isHorizontal = false; break;}
-
-			case left:
-			case right: {isHorizontal = true; break;}
-			default: {break;}
-			}
-		}
-		else {
-			switch(player.getHeldButtons().getTop()) {
-				case up:
-				case down:{isHorizontal = false; break;}
-
-				case left:
-				case right: {isHorizontal = true; break;}
-				default: {break;}
-			}
-		}
-
-		if (isHorizontal) {
-			height = 1.5*gridSquareSize;
-			xPos = 0.0;
-			yPos = player.getPosition()[1] - height + 4;
-
-		}
-		else {
-			width = 1.5*gridSquareSize;
-			xPos = player.getPosition()[0] - width + 4;
-			yPos = 0.0;
-		}
-		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
-			currentLevel.getChildren().add(laserFactory.getLaserGroup());
-			player.decrementAbilityCharges();
-			sound.laser();
-			for (Enemy enemy : enemyList) {
-				if (isHorizontal) {
-					if (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) <= gridSquareSize * 1.5) {
-						enemyKilled(enemy);
-					}
-				}
-				else {
-					if (Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) <= gridSquareSize * 1.5) {
-						enemyKilled(enemy);
-					}
-				}
-			}
-
-		}
-		else {
-			//play error sound
-		}
-
-	}
-
 	private void initPostLevel(Stage primaryStage) {
 
-		
+
 		levelSelectButtons[0].setOnAction( e -> {
 			loadNewLevel(primaryStage, LevelTree.level1);
 			gameLoop.start();
 		});
-		
+
 		for (int i = 1; i < LevelTree.levelList.size(); i++){
 			final int j = i;
 			levelSelectButtons[i].setOnAction( e -> {
@@ -1655,9 +1134,23 @@ public class Main extends Application {
 
 	}
 
+	public static void main(String[] args) {
+		launch(args);
+	}
+
 	private void enemyKilled(Character enemy) {
 		player.modifyScore(ateGhostScore);
 		enemy.moveTo(convertToPosition(enemy.getStartIndex()[0],true), convertToPosition(enemy.getStartIndex()[1],false));
+	}
+
+	private void playerCaught() throws InterruptedException {
+		println("CAUGHT!");
+		println("You have " + extraLives + " extra lives remaining");
+		currentGameTick = 0;
+		TimeUnit.SECONDS.sleep(1);
+		extraLives--;
+
+		restartLevel();
 	}
 
 	private int[] calculateEnemyMovement(Enemy enemy) throws PlayerCaughtException {
@@ -2225,10 +1718,6 @@ public class Main extends Application {
 		return delta;
 	}
 
-	public static void main(String[] args) {
-		launch(args);
-	}
-
 	private Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
@@ -2331,4 +1820,519 @@ public class Main extends Application {
 			default: {throw new UnsupportedOperationException();}
 		}
 	}
+
+	private Object[] determineEnemyCharacteristics(int num) {
+		// Enemies have their characteristics encoded using prime factorisation.
+		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
+		Object[] array = new Object[3];
+
+		int twoExponent = 0;
+		while(num%2 == 0) {
+			twoExponent++;
+			num = num/2;
+		}
+		switch (twoExponent) {
+			case 0: {array[0] = Enemy.Intelligence.dumb; break;}
+			case 1: {array[0] = Enemy.Intelligence.moderate; break;}
+			case 2: {array[0] = Enemy.Intelligence.smart; break;}
+			case 3: {array[0] = Enemy.Intelligence.perfect; break;}
+		}
+
+		int threeExponent = 0;
+		while (num%3 == 0) {
+			threeExponent++;
+			num = num/3;
+		}
+		switch (threeExponent) {
+			case 0: {array[1] = Enemy.Behaviour.hunter; break;}
+			case 1: {array[1] = Enemy.Behaviour.ambusher; break;}
+			case 2: {array[1] = Enemy.Behaviour.guard; break;}
+			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
+			case 4: {array[1] = Enemy.Behaviour.scared; break;}
+		}
+
+		int fiveExponent = 0;
+		while (num%5 == 0) {
+			fiveExponent++;
+			num = num/5;
+		}
+		switch (fiveExponent) {
+			case 0: {array[2] = Enemy.Algorithm.dijkstra; break;}
+			case 1: {array[2] = Enemy.Algorithm.euclidean; break;}
+			case 2: {array[2] = Enemy.Algorithm.bfs; break;}
+			case 3: {array[2] = Enemy.Algorithm.dfs; break;}
+		}
+
+		return array;
+	}
+
+	private void usePlayerAbility(boolean fromPickup) {
+		if (fromPickup == false) {
+			switch (player.getAbility()) {
+				case gun:{
+					if (player.getAbilityCharges() == 0) {
+						return;
+					}
+					else {
+						fireLaser();
+					}
+
+					break;
+				}
+				case wallJump:{
+					if (player.getAbilityCharges() == 0) {
+						return;
+					}
+					else {
+						wallJump();
+					}
+					break;
+				}
+				default: {break;}
+			}
+		}
+		else {
+			switch (player.getAbility()) {
+				case eatGhosts: {
+					player.setAbilityActive(true);
+					playerPowerUpTimer = playerPowerUpDuration;
+					for (Enemy enemy : enemyList) {
+						enemy.setColor(Color.DODGERBLUE);
+						enemy.setSpeed(1);
+					}
+
+					for (int i = 1; i < playerList.size(); i++) {
+						playerList.get(i).getModel().setFill(Color.DODGERBLUE);
+						playerList.get(i).setSpeed(1);
+					}
+				}
+				case gun:
+				case wallJump: {player.incrementAbilityCharges(); break;}
+
+				default: {break;}
+			}
+		}
+
+
+	}
+
+	private void wallJump() {
+		if (player.getAbilityCharges() <= 0) {
+			// play error sound
+			return;
+		}
+		if ( isGridAligned(player) ) {
+			try {
+				int xIndex = convertToIndex(player.getPosition()[0], true);
+				int yIndex = convertToIndex(player.getPosition()[1], false);
+				int[] delta = {0,0};
+
+				switch(player.getHeldButtons().getTop()) {
+					case up:{delta[1] = -2; break;}
+					case down:{delta[1] = 2; break;}
+					case left:{delta[0] = -2; break;}
+					case right:{delta[0] = 2; break;}
+				}
+
+				if(levelObjectArray[yIndex + delta[1]][xIndex + delta[0]] instanceof Wall) {
+					return;
+				}
+				else {
+					playerIsWallJumping = true;
+					player.setPrevDirection(player.getHeldButtons().getTop());
+					player.decrementAbilityCharges();
+					sound.wallJump();
+				}
+
+			}
+			catch (ArrayIndexOutOfBoundsException e)  {
+
+			}
+		}
+
+
+	}
+
+	private void fireLaser() {
+		if (player.getAbilityCharges() <= 0) {
+			// play error sound
+			return;
+		}
+		Double width;
+		Double height;
+		Double xPos;
+		Double yPos;
+		boolean isHorizontal = true;
+
+		if (player.getHeldButtons().isEmpty()) {
+			switch (player.getPrevDirection()) {
+			case up:
+			case down: {isHorizontal = false; break;}
+
+			case left:
+			case right: {isHorizontal = true; break;}
+			default: {break;}
+			}
+		}
+		else {
+			switch(player.getHeldButtons().getTop()) {
+				case up:
+				case down:{isHorizontal = false; break;}
+
+				case left:
+				case right: {isHorizontal = true; break;}
+				default: {break;}
+			}
+		}
+
+		if (isHorizontal) {
+			height = 1.5*gridSquareSize;
+			xPos = 0.0;
+			yPos = player.getPosition()[1] - height + 4;
+
+		}
+		else {
+			width = 1.5*gridSquareSize;
+			xPos = player.getPosition()[0] - width + 4;
+			yPos = 0.0;
+		}
+		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
+			currentLevel.getChildren().add(laserFactory.getLaserGroup());
+			player.decrementAbilityCharges();
+			sound.laser();
+			for (Enemy enemy : enemyList) {
+				if (isHorizontal) {
+					if (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) <= gridSquareSize * 1.5) {
+						enemyKilled(enemy);
+					}
+				}
+				else {
+					if (Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) <= gridSquareSize * 1.5) {
+						enemyKilled(enemy);
+					}
+				}
+			}
+
+		}
+		else {
+			//play error sound
+		}
+
+	}
+
+	private void resetPlayerPowerUpState() {
+		playerPowerUpTimer = 0;
+		playerIsWallJumping = false;
+		for (Enemy enemy : enemyList) {
+			enemy.resetColor();
+			//println(Boolean.toString(isBoostActive));
+			if (!isBoostActive) {
+				enemy.resetSpeed();
+			}
+
+			int[] delta = {0,0};
+			if (((int)enemy.getPosition()[0] & 1) != 0) {
+				// If horizontal position is odd
+				delta[0] = 1;
+
+			}
+			if (((int)enemy.getPosition()[1] & 1) != 0) {
+				// If position is odd
+				delta[1] = 1;
+			}
+			enemy.moveBy(delta[0], delta[1]);
+		}
+
+		for (int i = 1; i < playerList.size(); i++) {
+			playerList.get(i).resetColor();
+			//println(Boolean.toString(isBoostActive));
+			if (!isBoostActive) {
+				playerList.get(i).resetSpeed();
+			}
+
+			int[] delta = {0,0};
+			if (((int)playerList.get(i).getPosition()[0] & 1) != 0) {
+				// If horizontal position is odd
+				delta[0] = 1;
+
+			}
+			if (((int)playerList.get(i).getPosition()[1] & 1) != 0) {
+				// If position is odd
+				delta[1] = 1;
+			}
+			playerList.get(i).moveBy(delta[0], delta[1]);
+		}
+
+		for (SnakePiece snakePiece : snakePieces) {
+			currentLevel.getChildren().remove(snakePiece.getModel());
+		}
+		snakePieces.clear();
+		player.resetSpeed();
+	}
+
+	private Circle createShield(Color color) {
+		Circle shield = new Circle(gridSquareSize/1.5, color);
+		shield.relocate(player.getPosition()[0] - shield.getRadius() - gridSquareSize/2, player.getPosition()[1] - shield.getRadius() - gridSquareSize/2 );
+		shield.setOpacity(0.5);
+
+		if (player.getModel() instanceof Circle){
+			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
+			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
+			shield.translateXProperty().bind(player.getModel().translateXProperty());
+			shield.translateYProperty().bind(player.getModel().translateYProperty());
+		}
+		else {
+			shield.layoutXProperty().bind(player.getModel().layoutXProperty());
+			shield.layoutYProperty().bind(player.getModel().layoutYProperty());
+		}
+
+
+		currentLevel.getChildren().add(shield);
+		sound.activateShield();
+
+		return shield;
+	}
+
+	private void deleteShield(){
+		currentLevel.getChildren().remove(player.getShield());
+		if (player.getShield() != null){
+			sound.shieldHit();
+		}
+		player.clearShield();
+	}
+
+	private void invertHeldKeys(){
+		SetArrayList<Direction> heldKeys = player.getHeldButtons();
+		SetArrayList<Direction> newHeldKeys = new SetArrayList<Direction>();
+		for (int i = 0; i < heldKeys.size(); i++){
+			Direction direction = heldKeys.getNFromTop(heldKeys.size() - (i + 1));
+			Direction newDirection;
+			switch (direction){
+				case up:{newDirection = Direction.down; break;}
+				case down:{newDirection = Direction.up; break;}
+				case left:{newDirection = Direction.right; break;}
+				case right:{newDirection = Direction.left; break;}
+				default:{newDirection = Direction.up; break;}
+			}
+			newHeldKeys.append(newDirection);
+		}
+		player.setHeldButtons(newHeldKeys);
+	}
+
+	private void usePlayerBoost(){
+		if (player.getBoostCharges() <= 0){
+			return;
+		}
+		else {
+			switch (player.getBoost()){
+				case timeSlow:{slowTime(false); break;}
+				case superTimeSlow:{slowTime(true); break;}
+
+				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
+				case dash:
+				case superDash:{ waitingForGridAlignment = true; break;}
+
+				case pelletMagnet:{ pelletPickupSize = 2; break;}
+				case superPelletMagnet:{ pelletPickupSize = 3; break;}
+
+				case invisibility:
+				case superInvisibility: {player.setInvisible(true); break;}
+
+				case shield: {player.setShield(createShield(Color.BLUE)); break;}
+				case superShield: {player.setShield(createShield(Color.BLUE)); break;}
+
+				case invertControls:{
+					player.setControlsInverted(true);
+					invertHeldKeys();
+					break;
+				}
+				case randomTeleport:{
+					Integer[] pos;
+					double minDist;
+					double dist;
+
+					do {
+						minDist = Double.POSITIVE_INFINITY;
+						pos = findRandomValidIndexes();
+						for (Enemy enemy : enemyList){
+							Integer[] enemyIndex = {convertToIndex(enemy.getPosition()[0], true), convertToIndex(enemy.getPosition()[1], false)};
+							dist = AdjacencyMatrix.calcDistance(enemyIndex, pos);
+							if (dist < minDist) {
+								minDist = dist;
+							}
+						}
+					} while (minDist < 4);
+					player.moveTo(convertToPosition(pos[0], true), convertToPosition(pos[1], false));
+					break;
+				}
+				case random: {
+					Random rand = new Random();
+					int val = rand.nextInt(Player.Boost.values().length - 1);
+					player.setBoost(Player.Boost.values()[val]);
+					currentBoost.setText(Player.Boost.values()[val].text());
+					println("You got... " + Player.Boost.values()[val].text() + "!");
+
+					//If it is a debuff, use it immediately
+					if (val == 10 || val == 11){
+						println("Bad Luck!");
+						usePlayerBoost();
+					}
+					player.incrementBoostCharges();
+					break;
+				}
+			}
+			if (player.getBoost().duration() != null){
+				boostDuration = 60 * player.getBoost().duration();
+				isBoostActive = true;
+			}
+			player.decrementBoostCharges();
+		}
+	}
+
+	private void disableBoost(){
+		switch(player.getBoost()){
+			case timeSlow:
+			case superTimeSlow:{
+				for (Enemy enemy : enemyList){
+					enemy.resetSpeed();
+					int[] delta = {0,0};
+					if (((int)enemy.getPosition()[0] & 1) != 0) {
+						// If horizontal position is odd
+						delta[0] = 1;
+
+					}
+					if (((int)enemy.getPosition()[1] & 1) != 0) {
+						// If position is odd
+						delta[1] = 1;
+					}
+					enemy.moveBy(delta[0], delta[1]);
+				}
+
+				break;
+			}
+
+			case dash:
+			case superDash:{player.resetSpeed(); break;}
+
+			case pelletMagnet:
+			case superPelletMagnet:{pelletPickupSize = 0; break;}
+
+			case invisibility:
+			case superInvisibility: {player.setInvisible(false); break;}
+
+			case shield:
+			case superShield:  {deleteShield(); break;}
+
+			case randomTeleport:{ break; }
+			case invertControls:{
+				invertHeldKeys();
+				player.setControlsInverted(false);
+				break;
+			}
+			default: {break;}
+		}
+	}
+
+	private void slowTime(boolean isSuper) {
+		for (Enemy enemy: enemyList){
+			enemy.setTempSpeed(1);
+		}
+		isBoostActive = true;
+		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
+	}
+
+	private void manageEatGhosts() {
+		if (playerPowerUpTimer == 0 && player.isAbilityActive()) {
+			resetPlayerPowerUpState();
+			player.setAbilityActive(false);
+		}
+		else {
+			if ((playerPowerUpTimer < (2*60)) && (playerPowerUpTimer % 20 == 0)) {
+				for (Enemy enemy :enemyList) {
+					enemy.setColor(Color.WHITE);
+				}
+				for(int i = 1; i < playerList.size(); i++) {
+					playerList.get(i).getModel().setFill(Color.WHITE);
+				}
+			}
+			else if ((playerPowerUpTimer < (2*60)) && ((playerPowerUpTimer+10) % 20 == 0)) {
+				for (Enemy enemy :enemyList) {
+					enemy.setColor(Color.DODGERBLUE);
+				}
+				for(int i = 1; i < playerList.size(); i++) {
+					playerList.get(i).getModel().setFill(Color.DODGERBLUE);
+				}
+			}
+			playerPowerUpTimer--;
+		}
+	}
+
+	private void manageSnake() throws PlayerCaughtException {
+		for (int i = 0; i < snakePieces.size(); i++) {
+			SnakePiece snakePiece = snakePieces.get(i);
+
+			if (i == 0) {
+				snakePiece.enqueueMove(player.getPrevDirection());
+			}
+			else {
+				snakePiece.enqueueMove(snakePieces.get(i-1).getPrevDirection());
+			}
+
+			Direction move = snakePiece.dequeueMove();
+			if (move != null) {
+				switch(move) {
+					case up:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[1] == 0) {
+								//Wrap around
+								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(levelObjectArray.length-1, false));
+							}
+						}
+						snakePiece.moveBy(0, (int)-snakePiece.getSpeed());
+						break;
+					}
+					case down:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[1] == levelObjectArray.length - 1) {
+								//Wrap around
+								snakePiece.moveTo(snakePiece.getPosition()[0], convertToPosition(0, false) );
+							}
+						}
+						snakePiece.moveBy(0, (int)snakePiece.getSpeed());
+						break;
+					}
+					case left:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[0] == 0) {
+								//Wrap around
+								snakePiece.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), snakePiece.getPosition()[1]);
+							}
+						}
+						snakePiece.moveBy((int)-snakePiece.getSpeed(), 0);
+						break;
+					}
+					case right:{
+						if (isGridAligned(snakePiece)) {
+							if (snakePiece.getPrevIndex()[0] == levelObjectArray[0].length - 1) {
+								//Wrap around
+								snakePiece.moveTo(convertToPosition(0, true), snakePiece.getPosition()[1]);
+							}
+						}
+						snakePiece.moveBy((int)snakePiece.getSpeed(), 0);
+						break;
+					}
+				}
+			}
+			snakePiece.setPrevDirection(move);
+			snakePiece.setPrevIndex(convertToIndex(snakePiece.getPosition()[0], true), convertToIndex(snakePiece.getPosition()[1], false));
+			if (snakePieces.size() > 3) {
+				if (Math.abs(snakePiece.getPosition()[0] - player.getPosition()[0]) < 10 && Math.abs(snakePiece.getPosition()[1] - player.getPosition()[1]) < 10) {
+					throw new PlayerCaughtException();
+				}
+			}
+		}
+	}
+
 }
+
+
