@@ -466,9 +466,8 @@ public class Main extends Application {
 			saveFile = fileChooser.showOpenDialog(primaryStage);
 			currentSaveFileName.setText(saveFile.getName());
 			readFromSaveFile(saveFile);
-			saveFilePath = saveFile.getName();
 		});
-
+		
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
@@ -627,7 +626,6 @@ public class Main extends Application {
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
-
 	private boolean hidePostLevelScreen() {
 		return currentLevel.getChildren().removeAll(postLevelOverlay);
 	}
@@ -647,6 +645,7 @@ public class Main extends Application {
 	private void unlockNewLevels(){
 		levelTree.addCompletedLevel(loadedLevel);
 	}
+	
 	private void checkUnlockedLevels(){
 		for (LevelButton button : levelSelectButtons) {
 			button.setDisable(true);
