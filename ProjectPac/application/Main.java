@@ -129,12 +129,29 @@ public class Main extends Application {
 
     //Post level elements
     public Text postLevelTitle = new Text();
-
-    public LevelButton castleSelect = new LevelButton("Castle", LevelTree.medieval1);
-    public LevelButton targetSelect = new LevelButton("Target", LevelTree.future1);
+    
+    public LevelButton level1Select = new LevelButton("Home", LevelTree.level1);
+    public LevelButton medieval1Select = new LevelButton("Medieval1", LevelTree.medieval1);
+    public LevelButton future1Select = new LevelButton("Future1", LevelTree.future1);
+    public LevelButton medieval2Select = new LevelButton("Medieval2", LevelTree.medieval2);
+    public LevelButton future2Select = new LevelButton("Future2", LevelTree.future2);
+    public LevelButton ice1Select = new LevelButton("Ice1", LevelTree.ice1);
+    public LevelButton rock1Select = new LevelButton("Rock1", LevelTree.rock1);
+    public LevelButton garden1Select = new LevelButton("Garden1", LevelTree.garden1);
+    public LevelButton ice2Select = new LevelButton("Ice2", LevelTree.ice2);
+    public LevelButton rock2Select = new LevelButton("Rock2", LevelTree.rock2);
+    public LevelButton garden2Select = new LevelButton("Garden2", LevelTree.garden2);
+    
     public Button givenBoostButton = new Button();
     public Button randomBoostButton = new Button("Random Boost");
-
+	private LevelButton[] levelSelectButtons = {level1Select, 
+												future1Select, future2Select,
+												medieval1Select, medieval2Select, 
+												rock1Select, rock2Select, 
+												ice1Select, ice2Select,
+												garden1Select, garden2Select};
+    
+    
 	private HBox postLevelTitles = new HBox(25);
 	private HBox postLevelElements = new HBox(25);
 	private VBox postLevelScreen = new VBox(25);
@@ -494,9 +511,9 @@ public class Main extends Application {
 				}
 			}
 
-			for(/*TODO*/) {
+			for(int i = 0; i < LevelTree.levelList.size(); i++) {
 				if(levsUnlocked.charAt(i) == '1') {
-					//TODO
+					levelTree.addCompletedLevel(LevelTree.levelList.get(i));
 				}
 			}
 
@@ -606,13 +623,7 @@ public class Main extends Application {
 		int randBoostIndex = rand.nextInt(5) * 2;
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
-
-		for(int i = 0; i < levelList.size(); i++) {
-			if(levelList.get(i).isUnlocked()) {
-				levelButtonList.get(i).setDisable(false);
-			}
-		}
-
+		checkUnlockedLevels();
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
@@ -632,10 +643,11 @@ public class Main extends Application {
 		startText.setFill(Color.WHITE);
 		startText.setStyle("-fx-font: 24 arial;");
 	}
-
-	private LevelButton[] levelSelectButtons = {targetSelect, castleSelect};
-	private void unlockNewLevels() throws Exception{
+	
+	private void unlockNewLevels(){
 		levelTree.addCompletedLevel(loadedLevel);
+	}
+	private void checkUnlockedLevels(){
 		for (LevelButton button : levelSelectButtons) {
 			button.setDisable(true);
 			if ( levelTree.isUnlocked(button.getConnectedLevel()) ) {
@@ -643,13 +655,6 @@ public class Main extends Application {
 				button.setDisable(false);
 			}
 		}
-		/*
-		switch(loadedLevelName){
-			case "level1": { targetSelect.setDisable(false); break; }
-			case "target" : { castleSelect.setDisable(false); break; }
-			case "castle": { break; }
-			default: throw new IllegalArgumentException("invalid level name");
-		}*/
 	}
 	/**
 	 * Loads , displays, and runs the game itself
@@ -710,11 +715,7 @@ public class Main extends Application {
 					case V:{ if (currentGameTick >= 240) {usePlayerAbility(false);} break; }
 
 					case N:{
-						try {
-							unlockNewLevels();
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
+						unlockNewLevels();
 						showPostLevelScreen();
 						gameLoop.stop();
 						break;
@@ -964,7 +965,7 @@ public class Main extends Application {
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
-
+								unlockNewLevels();
 								showPostLevelScreen();
 								return;
 							}
@@ -1473,26 +1474,22 @@ public class Main extends Application {
 
 	private void initPostLevel(Stage primaryStage) {
 
-		castleSelect.setDisable(true);
-		targetSelect.setDisable(true);
-
-		castleSelect.setOnAction( e -> {
-			if(levelCastle.isUnlocked()) {
-				loadNewLevel(primaryStage, levelCastle);
-				gameLoop.start();
-			}});
-		targetSelect.setOnAction( e -> {
-			if(levelTarget.isUnlocked()) {
-				loadNewLevel(primaryStage, levelTarget);
-				gameLoop.start();
-			}});
-		level1Select.setOnAction(e -> {
+		
+		levelSelectButtons[0].setOnAction( e -> {
+			loadNewLevel(primaryStage, LevelTree.level1);
 			gameLoop.start();
-			hidePostLevelScreen();
 		});
+		
+		for (int i = 1; i < LevelTree.levelList.size(); i++){
+			final int j = i;
+			levelSelectButtons[i].setOnAction( e -> {
+				loadNewLevel(primaryStage, LevelTree.levelList.get(j));
+				gameLoop.start();
+			});
+		}
 
-		castleSelect.setOnAction( e -> {loadNewLevel(primaryStage, LevelTree.medieval1); gameLoop.start();} );
-		targetSelect.setOnAction( e -> {loadNewLevel(primaryStage, levelTree.future1); gameLoop.start();} );
+		medieval1Select.setOnAction( e -> {loadNewLevel(primaryStage, LevelTree.medieval1); gameLoop.start();} );
+		future1Select.setOnAction( e -> {loadNewLevel(primaryStage, levelTree.future1); gameLoop.start();} );
 
 		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
@@ -1513,10 +1510,17 @@ public class Main extends Application {
 		worldMap.setTranslateX(100);
 		worldMap.getColumnConstraints().add(new ColumnConstraints(75));
 		worldMap.getRowConstraints().add(new RowConstraints(75));
-		worldMap.add(level1Select, 0, 1);
-		worldMap.add(targetSelect, 1, 1);
-		worldMap.add(castleSelect, 2, 1);
-
+		worldMap.add(level1Select, 0, 2);
+		worldMap.add(future1Select, 1, 1);
+		worldMap.add(medieval1Select, 1, 3);
+		worldMap.add(future2Select, 2, 1);
+		worldMap.add(medieval2Select, 2, 3);
+		worldMap.add(ice1Select, 3, 0);
+		worldMap.add(rock1Select, 3, 2);
+		worldMap.add(garden1Select, 3, 4);
+		worldMap.add(ice2Select, 4, 0);
+		worldMap.add(rock2Select, 4, 2);
+		worldMap.add(garden2Select, 4, 4);
 
 		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
 		postLevelTitles.getChildren().addAll(postLevelTitle);

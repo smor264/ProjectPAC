@@ -17,7 +17,7 @@ public class LevelTree {
 	public final static Level garden1 = new Level("garden1");
 	public final static Level garden2 = new Level("garden2");
 	
-	private final static ArrayList<Level> levelList = new ArrayList<Level>(Arrays.asList(
+	public final static ArrayList<Level> levelList = new ArrayList<Level>(Arrays.asList(
 																				level1, 	//0
 																				future1, 	//1
 																				future2, 	//2
@@ -46,7 +46,7 @@ public class LevelTree {
 				treeNodeList.get(2).addChild(treeNodeList.get(5)); // Add rock1 as child of future2
 					treeNodeList.get(5).addChild(treeNodeList.get(6)); // Add rock2 as child of rock1
 		
-		treeNodeList.get(1).addChild(treeNodeList.get(3)); // Add medieval1 as child of level1
+		treeNodeList.get(0).addChild(treeNodeList.get(3)); // Add medieval1 as child of level1
 			treeNodeList.get(3).addChild(treeNodeList.get(4)); // Add medieval2 as child of medieval1
 				treeNodeList.get(5).addParent(treeNodeList.get(4)); // Add medieval2 as parent of rock1
 		
@@ -56,21 +56,27 @@ public class LevelTree {
 		completedLevels = new ArrayList<TreeNode<Level>>();
 	}
 	
-	public void addCompletedLevel(Level level) throws Exception {
+	public void addCompletedLevel(Level level){
 		completedLevels.add(getTreeNodeEquivalent(level));
 	}
 	
-	private TreeNode<Level> getTreeNodeEquivalent(Level level) throws Exception{
+	private TreeNode<Level> getTreeNodeEquivalent(Level level){
 		for (int i = 0; i < levelList.size(); i++) {
 			if (level == levelList.get(i)) {
 				return treeNodeList.get(i);
 			}
 		}
-		throw new Exception("Invalid level name");
+		try {
+			throw new Exception("Invalid level name");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
-	public boolean isUnlocked(Level level) throws Exception {
-		if (getTreeNodeEquivalent(level).getParents() == null) {
+	public boolean isUnlocked(Level level) {
+		if (getTreeNodeEquivalent(level).getParents().isEmpty()) {
 			System.out.println("level is unlocked because parents are null");
 			return true;
 		}
