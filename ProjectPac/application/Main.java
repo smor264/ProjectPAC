@@ -1,8 +1,21 @@
 package application;
 
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Observable;
@@ -182,6 +195,8 @@ public class Main extends Application {
     private String levsUnlocked;
     private String saveFilePath;
     private ArrayList<PlayerCharacter> charList = new ArrayList<PlayerCharacter>();
+    private Charset utf8 = StandardCharsets.UTF_8;
+    private String baseSaveData = "Player1\r\n100000\r\n10000000000";
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
@@ -336,9 +351,23 @@ public class Main extends Application {
 				levsUnlocked = scanFile.next();
 			}
 
-			saveFilePath = saveFile.getName();
+			if(playerName == null) {
+				playerName = "player1";
+			}
+			if(charsUnlocked == null) {
+				charsUnlocked = "100000";
+			}
+			if(levsUnlocked == null) {
+				levsUnlocked = "10000000000";
+			}
 
-			closeFile(scanFile);
+			println(levsUnlocked);
+
+			saveFilePath = saveFile.getAbsolutePath();
+
+			scanFile.close();
+
+			//writeSave(saveFile);
 
 			for(int i = 0; i < charsUnlocked.length(); i++) {
 				if(charsUnlocked.charAt(i) == '0') {
@@ -365,8 +394,32 @@ public class Main extends Application {
 		}
 	}
 
-	private void closeFile(Scanner scanFile) {
-		scanFile.close();
+
+	private void writeSave(File saveFile) throws FileNotFoundException {
+		PrintWriter writer = new PrintWriter(saveFile);
+		BufferedWriter buffWriter = new BufferedWriter(writer);
+
+		String newLvl;
+
+		if(levsUnlocked == null) {
+			println("LevsUnlocked is null!");
+		}
+
+		newLvl = levsUnlocked.substring(0, levelTree.levelList.indexOf(loadedLevel)) + "1" + levsUnlocked.substring(levelTree.levelList.indexOf(loadedLevel)+1);
+		levsUnlocked = newLvl;
+
+		println(saveFilePath);
+
+		try {
+			buffWriter.write(playerName);
+			buffWriter.newLine();
+			buffWriter.write(charsUnlocked);
+			buffWriter.newLine();
+			buffWriter.write(levsUnlocked);
+			buffWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -410,6 +463,11 @@ public class Main extends Application {
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
+		try {
+			writeSave(saveFile);
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
@@ -564,6 +622,17 @@ public class Main extends Application {
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
+			if(saveFile == null) {
+				try {
+					Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
+					saveFile = new File(System.getProperty("user.home")+"\\auto-save.txt");
+
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			readFromSaveFile(saveFile);
 			currentGameMode = GameMode.SinglePlayer;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 			game(primaryStage);
@@ -579,7 +648,7 @@ public class Main extends Application {
 	private void unlockNewLevels(){
 		levelTree.addCompletedLevel(loadedLevel);
 	}
-	
+
 	private void checkUnlockedLevels(){
 		for (LevelButton button : levelSelectButtons) {
 			button.setDisable(true);
