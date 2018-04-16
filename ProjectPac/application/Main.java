@@ -34,6 +34,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Group;
@@ -1038,8 +1039,6 @@ public class Main extends Application {
 			});
 		}
 
-		medieval1Select.setOnAction( e -> {loadNewLevel(primaryStage, LevelTree.medieval1); gameLoop.start();} );
-		future1Select.setOnAction( e -> {loadNewLevel(primaryStage, levelTree.future1); gameLoop.start();} );
 
 		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
@@ -1072,6 +1071,10 @@ public class Main extends Application {
 		worldMap.add(rock2Select, 4, 2);
 		worldMap.add(garden2Select, 4, 4);
 
+		for(int i = 0; i < levelSelectButtons.length; i++) {
+			levelSelectButtons[i].setAlignment(Pos.CENTER);
+		}
+
 		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
 		postLevelTitles.getChildren().addAll(postLevelTitle);
 		postLevelElements.getChildren().addAll(givenBoostButton,randomBoostButton,worldMap);
@@ -1092,7 +1095,7 @@ public class Main extends Application {
 
 			try {
 				Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
-				saveFile = new File(System.getProperty("user.home")+"\\auto-save.txt");
+				saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
 				readFromSaveFile(saveFile);
 
 			} catch (IOException e1) {
