@@ -150,7 +150,7 @@ public class Main extends Application {
     public LevelButton medieval1Select = new LevelButton("Village", LevelTree.medieval1);
     public LevelButton future1Select = new LevelButton("Target", LevelTree.future1);
     public LevelButton medieval2Select = new LevelButton("Castle", LevelTree.medieval2);
-    public LevelButton future2Select = new LevelButton("Divide", LevelTree.future2);
+    public LevelButton future2Select = new LevelButton("City", LevelTree.future2);
     public LevelButton ice1Select = new LevelButton("Glacier", LevelTree.ice1);
     public LevelButton rock1Select = new LevelButton("Canyon", LevelTree.rock1);
     public LevelButton garden1Select = new LevelButton("Garden", LevelTree.garden1);
@@ -180,6 +180,7 @@ public class Main extends Application {
 	public FXMLController controller = new FXMLController();
 	public Text currentScoreText = (Text) gameScene.lookup("#currentScoreText");
     public AnchorPane HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
+    public Text currentLevelText;
 
     //Start Screen FXML
     public Button playButton;
@@ -469,6 +470,7 @@ public class Main extends Application {
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
 		initialiseLevel(newLevel);
+		currentLevelText.setText(loadedLevelName);
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
 		currentBoost.setText(player.getBoost().toString());
@@ -479,10 +481,10 @@ public class Main extends Application {
 	 * Stops the gameLoop and handles game over UI
 	 */
 	private void gameOver() {
-		
+
 		player.setScore((int)(player.getScore()/2.0));
 		gameLoop.stop();
-		
+
 		if (retries >= 0){
 			retries--;
 			player.resetLives();
@@ -492,7 +494,7 @@ public class Main extends Application {
 			levelTree.clearCompletedLevels();
 			println("Bad Luck! You have no more retries! Better luck next time!");
 		}
-		
+
 		showPostLevelScreen();
 	}
 
@@ -534,6 +536,8 @@ public class Main extends Application {
 		pelletsRemaining = 0;
 		loadedLevelName = level.getLevelName();
 		loadedLevel = level;
+
+
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
@@ -733,6 +737,7 @@ public class Main extends Application {
 		currentScoreText = (Text) gameScene.lookup("#currentScoreText");
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
+		currentLevelText = (Text) gameScene.lookup("#currentLevelText");
 
 		showPostLevelScreen();
 
@@ -948,7 +953,6 @@ public class Main extends Application {
 					}
 
 					try {
-
 						if ( !manageTime() ) {
 							return;
 						}

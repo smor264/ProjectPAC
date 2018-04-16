@@ -48,6 +48,8 @@ public class FXMLController {
 	@FXML
 	private StackPane glitchSelect;
 
+	@FXML Text currentLevelText;
+
 
 	@FXML
 	private void initialize() {
