@@ -9,13 +9,13 @@ public class TreeNode<T> {
 	T data;
 	List<TreeNode<T>> parents;
 	List<TreeNode<T>> children;
-	
+
 	public TreeNode(T data) {
 		this.data = data;
 		this.children = new ArrayList<TreeNode<T>>();
 		this.parents = new ArrayList<TreeNode<T>>();
 	}
-	
+
 	public TreeNode<T> addChild(T child) {
 		TreeNode<T> childNode = new TreeNode<T>(child);
 		childNode.parents.add(this);
@@ -30,7 +30,7 @@ public class TreeNode<T> {
 		this.parents.add(parent);
 		parent.parents.add(this);
 	}
-	
+
 	public ArrayList<TreeNode<T>> addChildren(List<T> children) {
 		ArrayList<TreeNode<T>> childrenList = new ArrayList<TreeNode<T>>();
 		for (T child : children) {
@@ -41,37 +41,40 @@ public class TreeNode<T> {
 		}
 		return childrenList;
 	}
-	
+
 	public boolean isParentOf(TreeNode<T> node) {
 		if (this.children.contains(node)) {
 			return true;
 		}
 		else { return false; }
 	}
-	
+
 	public boolean isChildOf(TreeNode<T> node) {
 		if (this.parents.contains(node)) {
 			return true;
 		}
 		else { return false; }
 	}
-	
+
 	public ArrayList<TreeNode<T>> getChildren(){
 		ArrayList<TreeNode<T>> childrenList = new ArrayList<TreeNode<T>>();
-		
+
 		for (TreeNode<T> node : this.children) {
 			childrenList.add(node);
 		}
-		
+
 		return childrenList;
 	}
-	
+
 	public List<TreeNode<T>> getParents() {
 		return this.parents;
 	}
-	
+
 	public boolean isLeaf() {
 		return (children.isEmpty() ? true : false);
 	}
-	
+	public T getData() {
+		return data;
+	}
+
 }

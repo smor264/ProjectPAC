@@ -191,15 +191,24 @@ public class Main extends Application {
     public Text currentBoost;
     public Text currentSaveFileName;
 
+    //StartScreen elements
+	Text currentCharacter;
+	StackPane pacmanSelect;
+	StackPane msPacmanSelect;
+	StackPane packidSelect;
+	StackPane robotSelect;
+	StackPane snacSelect;
+	StackPane glitchSelect;
+
     //Save/Load
     private File saveFile;
     private String playerName;
     private String charsUnlocked;
-    private String levsUnlocked;
+    private String levsComplete;
     private String saveFilePath;
     private ArrayList<PlayerCharacter> charList = new ArrayList<PlayerCharacter>();
     private Charset utf8 = StandardCharsets.UTF_8;
-    private String baseSaveData = "Player1\r\n100000\r\n10000000000";
+    private String baseSaveData = "Player1\r\n110000\r\n00000000000";
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
@@ -351,29 +360,25 @@ public class Main extends Application {
 			while(scanFile.hasNext()){
 				playerName = scanFile.next();
 				charsUnlocked = scanFile.next();
-				levsUnlocked = scanFile.next();
+				levsComplete = scanFile.next();
 			}
 
+			//Creates a save if one doesn't exist
 			if(playerName == null) {
 				playerName = "player1";
 			}
 			if(charsUnlocked == null) {
-				charsUnlocked = "100000";
+				charsUnlocked = "110000";
 			}
-			if(levsUnlocked == null) {
-				levsUnlocked = "10000000000";
+			if(levsComplete == null) {
+				levsComplete = "00000000000";
 			}
-
-			println(charsUnlocked);
-			println(levsUnlocked);
 
 			saveFilePath = saveFile.getAbsolutePath();
 
 			scanFile.close();
-
 			currentSaveFileName.setText(saveFile.getName());
 
-			//writeSave(saveFile);
 
 			for(int i = 0; i < charsUnlocked.length(); i++) {
 				if(charsUnlocked.charAt(i) == '0') {
@@ -382,6 +387,7 @@ public class Main extends Application {
 				else if(charsUnlocked.charAt(i) == '1') {
 					charList.get(i).resetColor();
 					charList.get(i).setUnlockedState(true);
+					println("character available");
 				}
 				else {
 					println("Corrupted/Incompatible save file");
@@ -389,10 +395,11 @@ public class Main extends Application {
 			}
 
 			for(int i = 0; i < LevelTree.levelList.size(); i++) {
-				if(levsUnlocked.charAt(i) == '1') {
+				if(levsComplete.charAt(i) == '1') {
 					levelTree.addCompletedLevel(LevelTree.levelList.get(i));
 				}
 			}
+
 
 		}
 		catch(Exception e) {
@@ -406,12 +413,34 @@ public class Main extends Application {
 
 		String newLvl;
 
-		if(levsUnlocked == null) {
+		if(levsComplete == null) {
 			println("LevsUnlocked is null!");
 		}
 
-		newLvl = levsUnlocked.substring(0, levelTree.levelList.indexOf(loadedLevel)) + "1" + levsUnlocked.substring(levelTree.levelList.indexOf(loadedLevel)+1);
-		levsUnlocked = newLvl;
+		newLvl = levsComplete.substring(0, levelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(levelTree.levelList.indexOf(loadedLevel)+1);
+		levsComplete = newLvl;
+
+
+		if(levelTree.isCompleted(levelTree.level1)) {
+			String pacKidUnlock;
+			pacKidUnlock = charsUnlocked.substring(0, 2) + "1" + charsUnlocked.substring(3);
+			charsUnlocked = pacKidUnlock;
+		}
+		if(levelTree.isCompleted(levelTree.future2)) {
+			String robotUnlock;
+			robotUnlock = charsUnlocked.substring(0, 3) + "1" + charsUnlocked.substring(4);
+			charsUnlocked = robotUnlock;
+		}
+		if (levelTree.isCompleted(levelTree.garden2)) {
+			String snacUnlock;
+			snacUnlock = charsUnlocked.substring(0,4) + "1" + charsUnlocked.substring(5);
+			charsUnlocked = snacUnlock;
+		}
+		if (levelTree.isCompleted(levelTree.garden2) && levelTree.isCompleted(levelTree.ice2) && levelTree.isCompleted(levelTree.rock2)) {
+			String glitchUnlock;
+			glitchUnlock = charsUnlocked.substring(0,5) + "1";
+			charsUnlocked = glitchUnlock;
+		}
 
 		println(saveFilePath);
 
@@ -420,7 +449,7 @@ public class Main extends Application {
 			buffWriter.newLine();
 			buffWriter.write(charsUnlocked);
 			buffWriter.newLine();
-			buffWriter.write(levsUnlocked);
+			buffWriter.write(levsComplete);
 			buffWriter.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -597,6 +626,17 @@ public class Main extends Application {
 
 	}
 
+	public void initCharList() {
+		if(charList.isEmpty()) {
+		charList.add(PlayerCharacter.PacMan);
+		charList.add(PlayerCharacter.MsPacMan);
+		charList.add(PlayerCharacter.PacKid);
+		charList.add(PlayerCharacter.Robot);
+		charList.add(PlayerCharacter.SnacTheSnake);
+		charList.add(PlayerCharacter.GlitchTheGhost);
+		}
+	}
+
 	/**
 	 * Initializes the root launch layout
 	 * @throws IOException
@@ -639,16 +679,6 @@ public class Main extends Application {
 		exitButton.setOnAction(e -> {primaryStage.close();});
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
-		/*	if(saveFile == null) {
-				try {
-					Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
-					saveFile = new File(System.getProperty("user.home")+"\\auto-save.txt");
-
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			}
-	*/
 			readFromSaveFile(saveFile);
 			currentGameMode = GameMode.SinglePlayer;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
@@ -675,6 +705,17 @@ public class Main extends Application {
 			}
 		}
 	}
+
+	/*private void toLaunchScreen(Stage primaryStage) {
+		gameLoop.stop();
+		currentLevel.getChildren().clear();
+		readFromSaveFile(saveFile);
+		//start(primaryStage);
+		primaryStage.setScene(launchScene);
+		primaryStage.show();
+
+	}
+	*/
 
 	/**
 	 * Loads , displays, and runs the game itself
@@ -742,7 +783,10 @@ public class Main extends Application {
 					}
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
-					case ESCAPE:{ primaryStage.close(); break;}
+					case ESCAPE:{
+						primaryStage.close();
+						 break;
+						}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
 							println("PAUSED!");
@@ -1040,7 +1084,6 @@ public class Main extends Application {
 
 	private void initPostLevel(Stage primaryStage) {
 
-
 		levelSelectButtons[0].setOnAction( e -> {
 			loadNewLevel(primaryStage, LevelTree.level1);
 			gameLoop.start();
@@ -1126,24 +1169,28 @@ public class Main extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		try {
-			charList.add(PlayerCharacter.PacMan);
-			charList.add(PlayerCharacter.MsPacMan);
-			charList.add(PlayerCharacter.PacKid);
-			charList.add(PlayerCharacter.Robot);
-			charList.add(PlayerCharacter.SnacTheSnake);
-			charList.add(PlayerCharacter.GlitchTheGhost);
+
+			initCharList();
 			initRootLaunchLayout(primaryStage);
 
+			File saveCheck = new File(System.getProperty("user.home"),"auto-save.txt");
+
 			try {
-				Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
-				saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
-				readFromSaveFile(saveFile);
+				if(!saveCheck.exists()) {
+					println("No save exists! Creating one now");
+					Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
+					saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
+					readFromSaveFile(saveFile);
+				}
+				else {
+					saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
+					readFromSaveFile(saveFile);
+				}
 
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
 
-			//initRootLaunchLayout(primaryStage);
 			initPostLevel(primaryStage);
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
@@ -1152,14 +1199,10 @@ public class Main extends Application {
 			glitchTheGhostModel.setRotate(180);
 			glitchTheGhostModel.setFill(Color.RED);
 
-
+			//Unlocks characters based off save file
 			for(int i = 0; i < charList.size(); i++) {
-				if (i < 2) {
-					charList.get(i).setUnlockedState(true);
-				}
-				else {
+				if (!charList.get(i).isUnlocked) {
 					charList.get(i).model().setFill(Color.WHITESMOKE);
-					charList.get(i).setUnlockedState(false);
 				}
 			}
 
@@ -1263,6 +1306,7 @@ public class Main extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
+
 
 	private void enemyKilled(Character enemy) {
 		player.modifyScore(ateGhostScore);
