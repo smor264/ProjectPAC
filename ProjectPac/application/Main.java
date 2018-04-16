@@ -34,7 +34,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.HPos;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Group;
@@ -145,16 +147,16 @@ public class Main extends Application {
     public Text postLevelTitle = new Text();
 
     public LevelButton level1Select = new LevelButton("Home", LevelTree.level1);
-    public LevelButton medieval1Select = new LevelButton("Medieval1", LevelTree.medieval1);
-    public LevelButton future1Select = new LevelButton("Future1", LevelTree.future1);
-    public LevelButton medieval2Select = new LevelButton("Medieval2", LevelTree.medieval2);
-    public LevelButton future2Select = new LevelButton("Future2", LevelTree.future2);
-    public LevelButton ice1Select = new LevelButton("Ice1", LevelTree.ice1);
-    public LevelButton rock1Select = new LevelButton("Rock1", LevelTree.rock1);
-    public LevelButton garden1Select = new LevelButton("Garden1", LevelTree.garden1);
-    public LevelButton ice2Select = new LevelButton("Ice2", LevelTree.ice2);
-    public LevelButton rock2Select = new LevelButton("Rock2", LevelTree.rock2);
-    public LevelButton garden2Select = new LevelButton("Garden2", LevelTree.garden2);
+    public LevelButton medieval1Select = new LevelButton("Village", LevelTree.medieval1);
+    public LevelButton future1Select = new LevelButton("Target", LevelTree.future1);
+    public LevelButton medieval2Select = new LevelButton("Castle", LevelTree.medieval2);
+    public LevelButton future2Select = new LevelButton("Divide", LevelTree.future2);
+    public LevelButton ice1Select = new LevelButton("Glacier", LevelTree.ice1);
+    public LevelButton rock1Select = new LevelButton("Canyon", LevelTree.rock1);
+    public LevelButton garden1Select = new LevelButton("Garden", LevelTree.garden1);
+    public LevelButton ice2Select = new LevelButton("Iceberg", LevelTree.ice2);
+    public LevelButton rock2Select = new LevelButton("Temple", LevelTree.rock2);
+    public LevelButton garden2Select = new LevelButton("Maze", LevelTree.garden2);
 
     public Button givenBoostButton = new Button();
     public Button randomBoostButton = new Button("Random Boost");
@@ -169,7 +171,7 @@ public class Main extends Application {
 	private HBox postLevelTitles = new HBox(25);
 	private HBox postLevelElements = new HBox(25);
 	private VBox postLevelScreen = new VBox(25);
-	private Rectangle postLevelBackground = new Rectangle(800, 400);
+	private Rectangle postLevelBackground = new Rectangle(1000, 500);
     private StackPane postLevelOverlay = new StackPane(postLevelBackground, postLevelScreen);
     private GridPane worldMap = new GridPane();
 
@@ -1042,11 +1044,11 @@ public class Main extends Application {
 
 		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
 
-		postLevelOverlay.relocate((windowWidth/2)-400, (windowHeight/2)-200);
+		postLevelOverlay.relocate((windowWidth/2)-500, (windowHeight/2)-200);
 		postLevelBackground.setArcHeight(100);
 		postLevelBackground.setArcWidth(100);
-		postLevelBackground.setFill(Color.AQUA);
-		postLevelBackground.setOpacity(0.5);
+		postLevelBackground.setFill(Color.SILVER);
+		postLevelBackground.setOpacity(0.9);
 
 		postLevelTitle.setTranslateX(50);
 		postLevelTitle.setTranslateY(50);
@@ -1056,9 +1058,14 @@ public class Main extends Application {
 		postLevelElements.setTranslateX(50);
 		postLevelElements.setTranslateY(50);
 
-		worldMap.setTranslateX(100);
-		worldMap.getColumnConstraints().add(new ColumnConstraints(75));
-		worldMap.getRowConstraints().add(new RowConstraints(75));
+		worldMap.setTranslateX(200);
+		worldMap.setTranslateY(-50);
+		worldMap.getColumnConstraints().add(new ColumnConstraints(100));
+		worldMap.getRowConstraints().add(new RowConstraints(100));
+		worldMap.setHgap(10);
+		worldMap.setVgap(10);
+		worldMap.setAlignment(Pos.CENTER);
+
 		worldMap.add(level1Select, 0, 2);
 		worldMap.add(future1Select, 1, 1);
 		worldMap.add(medieval1Select, 1, 3);
@@ -1071,14 +1078,35 @@ public class Main extends Application {
 		worldMap.add(rock2Select, 4, 2);
 		worldMap.add(garden2Select, 4, 4);
 
-		for(int i = 0; i < levelSelectButtons.length; i++) {
-			levelSelectButtons[i].setAlignment(Pos.CENTER);
-		}
+		worldMap.setValignment(ice1Select, VPos.BOTTOM);
+		worldMap.setValignment(ice2Select, VPos.BOTTOM);
+		worldMap.setHalignment(future1Select, HPos.LEFT);
+		worldMap.setHalignment(medieval1Select, HPos.LEFT);
+		worldMap.setHalignment(level1Select, HPos.RIGHT);
 
 		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
 		postLevelTitles.getChildren().addAll(postLevelTitle);
 		postLevelElements.getChildren().addAll(givenBoostButton,randomBoostButton,worldMap);
 
+		for(int i = 0; i < levelSelectButtons.length; i++) {
+			levelSelectButtons[i].setPrefSize(80, 25);
+
+			/*
+			levelSelectButtons[i].setStyle("-fx-background-radius: 5em; " +
+                "-fx-min-width: 60px; " +
+                "-fx-min-height: 60px; " +
+                "-fx-max-width: 60px; " +
+                "-fx-max-height: 60px;" +
+                "-fx-base: #" + LevelTree.levelList.get(i).getBackground().toString());
+			*/
+				levelSelectButtons[i].setStyle("-fx-background-radius: 5em; " +
+		                "-fx-min-width: 60px; " +
+		                "-fx-min-height: 60px; " +
+		                "-fx-max-width: 60px; " +
+		                "-fx-max-height: 60px;" +
+		                "-fx-base: #41C7F6");
+
+		}
 
 	}
 
