@@ -87,7 +87,7 @@ public class Main extends Application {
 	private Level loadedLevel;
 
 	//Managed Variables and Objects
-	private int extraLives = 2;
+	private int retries = 2;
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player; //= new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
@@ -448,9 +448,21 @@ public class Main extends Application {
 	 * Stops the gameLoop and handles game over UI
 	 */
 	private void gameOver() {
-		println("GAME OVER!");
-		player.setScore(0);
+		
+		player.setScore((int)(player.getScore()/2.0));
 		gameLoop.stop();
+		
+		if (retries >= 0){
+			retries--;
+			player.resetLives();
+			println("You have " + (retries + 1) + " retries remaining.");
+		}
+		else{
+			levelTree.clearCompletedLevels();
+			println("Bad Luck! You have no more retries! Better luck next time!");
+		}
+		
+		showPostLevelScreen();
 	}
 
 	private boolean showOverlay(StackPane overlay) {
@@ -955,7 +967,7 @@ public class Main extends Application {
 					catch (GameFinishedException exception) {
 						if (exception instanceof LossException) {
 							try {
-								if (extraLives < 0) {
+								if (player.getLives() < 0) {
 									gameOver();
 								}
 								else {
@@ -971,6 +983,7 @@ public class Main extends Application {
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
+								player.resetLives();
 								unlockNewLevels();
 								showPostLevelScreen();
 								return;
@@ -1230,10 +1243,10 @@ public class Main extends Application {
 
 	private void playerCaught() throws InterruptedException {
 		println("CAUGHT!");
-		println("You have " + extraLives + " extra lives remaining");
+		println("You have " + (player.getLives()) + " lives remaining");
 		currentGameTick = 0;
 		TimeUnit.SECONDS.sleep(1);
-		extraLives--;
+		player.decrementLives();
 
 		restartLevel();
 	}

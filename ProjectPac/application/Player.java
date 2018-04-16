@@ -19,6 +19,8 @@ public class Player extends Character{
 	private Circle shield = null;
 	private boolean controlsInverted = false;
 	private boolean isGhost = false;
+	private int lives = 2;
+	private int maxLives = 2;
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
@@ -204,6 +206,20 @@ public class Player extends Character{
 	}
 	public void setAbilityActive(boolean value) {
 		isAbilityActive = value;
+	}
+	
+	public void resetLives(){
+		lives = maxLives;
+	}
+	public int getLives(){
+		return lives;
+	}
+	public void setMaxLives(int max){
+		maxLives = max;
+		lives = max;
+	}
+	public void decrementLives(){
+		lives--;
 	}
 
 }

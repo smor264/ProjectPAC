@@ -60,6 +60,10 @@ public class LevelTree {
 		completedLevels.add(getTreeNodeEquivalent(level));
 	}
 	
+	public void clearCompletedLevels(){
+		completedLevels.clear();
+	}
+	
 	private TreeNode<Level> getTreeNodeEquivalent(Level level){
 		for (int i = 0; i < levelList.size(); i++) {
 			if (level == levelList.get(i)) {
