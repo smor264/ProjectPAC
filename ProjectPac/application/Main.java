@@ -577,7 +577,20 @@ public class Main extends Application {
 					placeLevelObject(pickUp, xPos, yPos);
 				}
 			}
-			resetPlayerPowerUpState();
+		}
+		resetPlayerPowerUpState();
+		
+		/*Check for solid areas*/
+		for (int xPos = 0; xPos < array[0].length-1; xPos++) {
+			for (int yPos = 0; yPos < array.length-1; yPos++) {
+				if (array[yPos][xPos] == 1 && array[yPos][xPos+1] == 1 && array[yPos+1][xPos] == 1 && array[yPos+1][xPos+1] == 1) {
+					double xAvg = (convertToPosition(xPos+1, true) +convertToPosition(xPos+2, true))/2.0 - Main.gridSquareSize/4;
+					double yAvg = (convertToPosition(yPos+1, false) +convertToPosition(yPos+2, false))/2.0 - Main.gridSquareSize/4;
+					Wall wall = new Wall(Wall.WallType.single, Direction.up, level.getWallColor());
+					wall.moveTo(xAvg, yAvg);
+					currentLevel.getChildren().add(wall.getModel());
+				}
+			}
 		}
 		player.getModel().toFront(); // Draw player and enemies over top of pellets, etc.
 		for (Enemy enemy: enemyList) {
@@ -1062,39 +1075,22 @@ public class Main extends Application {
 			return;
 		}
 		
+		
 		double rotation = character.getModel().getRotate();
 		int animationFrame; 
-		double xPos;
-		double yPos1;
-		double yPos2;
+		
 		
 		switch (character.getPrevDirection()){
 			default:
 			case up:
 			case down:{ 
-				animationFrame = (int) character.getPosition()[1] % gridSquareSize; break;}			
+				animationFrame = (int) (character.getPosition()[1] - levelOffsetY) % (gridSquareSize); break;}			
 			case left:
 			case right:{
-				animationFrame = (int) character.getPosition()[0] % gridSquareSize; break;}
+				animationFrame = (int) (character.getPosition()[0] - levelOffsetX) % (gridSquareSize); break;}
 		}
-		if (animationFrame <= 18) {
-			xPos = (-4.8)/(18.0) * (animationFrame - 135.0) + 18.0;
-			yPos1 = 9/18.0 * animationFrame + 9.0;
-			yPos2 = -9.0/18.0 * (animationFrame) + 18;
-		}
-		else {
-			xPos = (4.8)/(18.0) * (animationFrame + 99.0) + 18.0;
-			yPos1 = -9/18.0 *  (animationFrame) + 27;
-			yPos2 = -9.0/18.0 * (animationFrame) + 36;
-		}
-		println((xPos-18.0) + ", " + (yPos1- 18.0));
-		Shape pacMouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos-18.0),(yPos1-18.0), 0.0,0.0, (xPos-18.0),(yPos2-18.0), 18.0,18.0, -18.0,18.0 );
-		Shape newModel = Shape.intersect(new Circle(gridSquareSize/2), pacManMouth);
 		currentLevel.getChildren().remove(character.getModel());
-		
-		character.setModel(pacMouth);
-		character.getModel().setFill(character.getRegularColor());
-		character.getModel().setRotate(rotation);
+		character.manageAnimation(animationFrame);
 		currentLevel.getChildren().add(character.getModel());
 	}
 	
@@ -1992,7 +1988,7 @@ public class Main extends Application {
 			case (4):{
 				type[0] = Wall.WallType.cross;
 				type[1] = Direction.up;
-				return type;
+				break;
 			}
 			case (3): {
 				type[0] = Wall.WallType.tee;
@@ -2007,7 +2003,7 @@ public class Main extends Application {
 				else {
 					type[1] = Direction.left;
 				}
-				return type;
+				break;
 			}
 			case (2): {
 				if (northNeighbour && southNeighbour) {
@@ -2033,7 +2029,7 @@ public class Main extends Application {
 						type[1] = Direction.left;
 					}
 				}
-				return type;
+				break;
 			}
 			case (1): {
 				type[0] = Wall.WallType.end;

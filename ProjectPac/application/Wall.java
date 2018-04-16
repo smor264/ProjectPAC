@@ -15,7 +15,7 @@ public class Wall extends LevelObject{
 		corner,
 		tee,
 		cross,
-		full,
+		solid,
 	}
 
 	WallType walltype;
@@ -162,8 +162,8 @@ public class Wall extends LevelObject{
 			}
 
 
-			case full:{
-				Rectangle shape = new Rectangle(20,20, colour);
+			case solid:{
+				Rectangle shape = new Rectangle(w,w, colour);
 				super.model = shape;
 				break;
 			}
