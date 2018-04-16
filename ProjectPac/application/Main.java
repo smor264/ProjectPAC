@@ -2045,15 +2045,16 @@ public class Main extends Application {
 				else {
 					type[1] = Direction.right;
 				}
-				return type;
+				break;
 			}
 			case(0): {
 				type[0] = Wall.WallType.single;
 				type[1] = Direction.up;
-				return type;
+				break;
 			}
 			default: {throw new UnsupportedOperationException();}
 		}
+		return type;
 	}
 
 	private Object[] determineEnemyCharacteristics(int num) {
