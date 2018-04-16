@@ -56,4 +56,15 @@ public class Character extends LevelObject {
 	public void resetColor() {
 		model.setFill(regularColor);
 	}
+	public Color getRegularColor(){
+		return regularColor;
+	}
+	public void pointModel(Main.Direction dir) {
+		switch(dir) {
+			case up:{ model.setRotate(270); break;}
+			case down:{ model.setRotate(90); break;}
+			case left:{ model.setRotate(180);break;}
+			case right:{ model.setRotate(0);break;}
+		}
+	}
 }

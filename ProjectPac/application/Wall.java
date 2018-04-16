@@ -169,6 +169,13 @@ public class Wall extends LevelObject{
 			}
 			default:{return;}
 		}
+		model.layoutXProperty().bind(container.layoutXProperty());
+		model.layoutYProperty().bind(container.layoutYProperty());
+		model.translateXProperty().bind(container.translateXProperty());
+		model.translateYProperty().bind(container.translateYProperty());
+		width = container.getBoundsInLocal().getWidth();
+		height = container.getBoundsInLocal().getHeight();
+		container.getChildren().add(model);
 	}
 
 }

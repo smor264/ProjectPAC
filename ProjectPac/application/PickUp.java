@@ -17,8 +17,9 @@ public class PickUp extends LevelObject {
 
 	private final static double powerPelletSize = Main.gridSquareSize / 5.0; // 4 when gridsquare = 20
 
-
+	
 	public PickUp(int ID) {
+		super();
 		switch(ID){
 			case 4:{ //Pellet, increases score by 10
 				type = PickUpType.pellet;
@@ -47,6 +48,14 @@ public class PickUp extends LevelObject {
 			}
 			default:{break;}
 		}
+		model.layoutXProperty().bind(container.layoutXProperty());
+		model.layoutYProperty().bind(container.layoutYProperty());
+		model.translateXProperty().bind(container.translateXProperty());
+		model.translateYProperty().bind(container.translateYProperty());
+		width = container.getBoundsInLocal().getWidth();
+		height = container.getBoundsInLocal().getHeight();
+		container.getChildren().add(model);
+		regularModel = model;
 	}
 
 	public int getScoreValue() {

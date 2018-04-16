@@ -227,13 +227,14 @@ public class Main extends Application {
 	 * A list of all characters that the player can use.
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
+	private static Polygon pacManMouth = new Polygon(-18.0,-18.0, 18.0,-18.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 18.0,18.0, -18.0,18.0 );
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
-		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
+		PacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.YELLOW, Player.Ability.eatGhosts, 2),
+		MsPacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.LIGHTPINK, Player.Ability.eatGhosts, 2),
+		PacKid (new Circle(gridSquareSize/3), Color.GREENYELLOW, Player.Ability.wallJump, 2),
+		GlitchTheGhost (glitchTheGhostModel, null, Player.Ability.eatSameColor, 2),
+		SnacTheSnake (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.SEAGREEN, Player.Ability.snake, 3),
+		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2), Color.DARKGREY , Player.Ability.gun, 2);
 
 		private final Shape model;
 		private final Player.Ability ability;
@@ -241,18 +242,19 @@ public class Main extends Application {
 		private boolean isUnlocked;
 		private final Color originalColor;
 
-		PlayerCharacter(Shape model, Player.Ability ability, int speed){
+		PlayerCharacter(Shape model, Color originalColor, Player.Ability ability, int speed){
 			this.model = model;
 			this.ability = ability;
 			this.speed = speed;
 			this.isUnlocked = true;
-			this.originalColor = (Color) model.getFill();
+			this.originalColor = originalColor;
 		}
 		public Shape model() {return model;}
 		public Player.Ability ability() {return ability;}
 		public int speed() {return speed;}
 		public void setUnlockedState(Boolean state) {isUnlocked = state;}
 		public void resetColor() { this.model().setFill(originalColor);}
+		public Color originalColor() {return originalColor;}
 	}
 
 	/**
@@ -323,9 +325,10 @@ public class Main extends Application {
 	}
 
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
-		obj.moveTo(gridSquareSize*x + levelOffsetX, gridSquareSize*y + levelOffsetY);
-		levelObjectArray[y][x] = obj;
 		currentLevel.getChildren().add(obj.getModel());
+		obj.moveTo(convertToPosition(x, true), convertToPosition(y, false));
+		levelObjectArray[y][x] = obj;
+		
 	}
 
 	private void restartLevel() {
@@ -590,9 +593,9 @@ public class Main extends Application {
 				playerList.add(playerGhost);
 				playerGhost.moveTo(convertToPosition(enemyList.get(0).getStartIndex()[0],true), convertToPosition(enemyList.get(0).getStartIndex()[1],false));
 				playerGhost.setStartIndex(enemyList.get(0).getStartIndex());
-				currentLevel.getChildren().remove(enemyList.get(0).getModel());
+				currentLevel.getChildren().remove(enemyList.get(0).getContainer());
 				enemyList.remove(0);
-				currentLevel.getChildren().add(playerGhost.getModel());
+				currentLevel.getChildren().add(playerGhost.getContainer());
 			}
 		}
 
@@ -971,6 +974,7 @@ public class Main extends Application {
 							delta = new int[] {0,0};
 							delta = calculatePlayerMovement(playerList.get(i));
 							playerList.get(i).moveBy(delta[0], delta[1]);
+							manageAnimation(playerList.get(i));
 						}
 
 						if (player.getAbility() == Player.Ability.snake) {
@@ -1053,6 +1057,47 @@ public class Main extends Application {
 		}
 	}
 
+	private void manageAnimation(Character character){
+		if (character.getPrevDirection() == null) {
+			return;
+		}
+		
+		double rotation = character.getModel().getRotate();
+		int animationFrame; 
+		double xPos;
+		double yPos1;
+		double yPos2;
+		
+		switch (character.getPrevDirection()){
+			default:
+			case up:
+			case down:{ 
+				animationFrame = (int) character.getPosition()[1] % gridSquareSize; break;}			
+			case left:
+			case right:{
+				animationFrame = (int) character.getPosition()[0] % gridSquareSize; break;}
+		}
+		if (animationFrame <= 18) {
+			xPos = (-4.8)/(18.0) * (animationFrame - 135.0) + 18.0;
+			yPos1 = 9/18.0 * animationFrame + 9.0;
+			yPos2 = -9.0/18.0 * (animationFrame) + 18;
+		}
+		else {
+			xPos = (4.8)/(18.0) * (animationFrame + 99.0) + 18.0;
+			yPos1 = -9/18.0 *  (animationFrame) + 27;
+			yPos2 = -9.0/18.0 * (animationFrame) + 36;
+		}
+		println((xPos-18.0) + ", " + (yPos1- 18.0));
+		Shape pacMouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos-18.0),(yPos1-18.0), 0.0,0.0, (xPos-18.0),(yPos2-18.0), 18.0,18.0, -18.0,18.0 );
+		Shape newModel = Shape.intersect(new Circle(gridSquareSize/2), pacManMouth);
+		currentLevel.getChildren().remove(character.getModel());
+		
+		character.setModel(pacMouth);
+		character.getModel().setFill(character.getRegularColor());
+		character.getModel().setRotate(rotation);
+		currentLevel.getChildren().add(character.getModel());
+	}
+	
 	private Integer[] findRandomValidIndexes(){
 		Random rand = new Random();
 		int randYIndex;
@@ -1649,7 +1694,7 @@ public class Main extends Application {
 
 				case euclidean:{
 					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
-					println("euc");
+					//println("euc");
 					break;
 				}
 				default:{throw new IllegalArgumentException("Invalid algorithm");}
@@ -1663,7 +1708,6 @@ public class Main extends Application {
 
 	private int[] calculatePlayerMovement(Player player) throws LevelCompleteException, PlayerCaughtException{
 		int[] delta = {0,0};
-
 		// Is this playerGhost colliding with the player?
 		if(player != playerList.get(0)) {
 			if ((Math.abs(player.getPosition()[0] - playerList.get(0).getPosition()[0]) < gridSquareSize/2) && (Math.abs(player.getPosition()[1] - playerList.get(0).getPosition()[1]) < gridSquareSize/2)) {
@@ -1698,7 +1742,7 @@ public class Main extends Application {
 
 			}
 
-			//This bit is for the snake player, who needs to stop all his other pieces to stop moving if he stops
+			//This bit is for the snake player, who needs to stop all his other pieces if he stops
 			if (player.getAbility() == Player.Ability.snake) {
 				if (player.getHeldButtons().isEmpty()) {
 					player.setPrevDirection(null);
@@ -1768,17 +1812,14 @@ public class Main extends Application {
 					if (player.incrementPelletCounter()) {
 						//println("Spawning new snake bit");
 						SnakePiece newPiece;
-						Random rand = new Random();
-						double rand1 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
-						double rand2 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
 						if (snakePieces.isEmpty()) {
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), player);
-							newPiece.moveTo(player.getPosition()[0] + rand1 , player.getPosition()[1] + rand2);
+							newPiece = new SnakePiece(new Circle(gridSquareSize/2, Color.SEAGREEN), (int)player.getSpeed(), player);
+							newPiece.moveTo(player.getPosition()[0]+gridSquareSize, player.getPosition()[1]+gridSquareSize);
 						}
 						else {
 							SnakePiece lastPiece = snakePieces.get(snakePieces.size() - 1);
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
-							newPiece.moveTo(lastPiece.getPosition()[0] + rand1, lastPiece.getPosition()[1] + rand2);
+							newPiece = new SnakePiece(new Circle(gridSquareSize/2,Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
+							newPiece.moveTo(lastPiece.getPosition()[0]+gridSquareSize, lastPiece.getPosition()[1]+gridSquareSize);
 						}
 						snakePieces.add(newPiece);
 						currentLevel.getChildren().add(newPiece.getModel());
@@ -1816,10 +1857,14 @@ public class Main extends Application {
 								 if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
 									 if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
 										 usePlayerAbility(true);
+										 sound.powerPelletPickup();
+									 }
+									 else {
+										 sound.pelletPickup();
 									 }
 									 player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
 									 currentScoreText.setText(player.getScoreString());
-									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getModel()));
+									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
 									 levelObjectArray[yIndex + j][xIndex + i] = null;
 									 pelletsRemaining--;
 								 }
@@ -1837,6 +1882,7 @@ public class Main extends Application {
 					// If regular move...
 					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 						delta[1] = -(int)player.getSpeed();
+						player.pointModel(Direction.up);
 						player.setPrevDirection(Direction.up);
 						break;
 					} // If wrapping around screen...
@@ -1847,6 +1893,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
 					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
 						delta[1] = (int)player.getSpeed();
+						player.pointModel(Direction.down);
 						player.setPrevDirection(Direction.down);
 						break;
 					}
@@ -1857,6 +1904,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
 					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
 						delta[0] = -(int)player.getSpeed();
+						player.pointModel(Direction.left);
 						player.setPrevDirection(Direction.left);
 						break;
 					}
@@ -1867,6 +1915,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
 					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
 						delta[0] = (int)player.getSpeed();
+						player.pointModel(Direction.right);
 						player.setPrevDirection(Direction.right);
 						break;
 					}
@@ -1876,7 +1925,10 @@ public class Main extends Application {
 				}
 			}
 		}
-		else { // If player not aligned with grid, continue in same direction.
+		else if (player.getPrevDirection() == null){ // If player not aligned with grid, continue in same direction.
+			snapToGrid(player);
+		}
+		else {
 			switch (player.getPrevDirection()) {
 				case up: {delta[1] = -(int)player.getSpeed(); break;}
 				case down: {delta[1] = (int)player.getSpeed(); break;}
@@ -1887,7 +1939,24 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-
+	
+	private void snapToGrid(LevelObject object) {
+		double xPos = object.getPosition()[0];
+		double yPos = object.getPosition()[1];
+		println(xPos +", " + yPos);
+		/*println(((xPos - levelOffsetX) / gridSquareSize) + ", " + ((yPos - levelOffsetY) / gridSquareSize));
+		
+		int xIndex = convertToIndex(xPos, true);
+		int yIndex = convertToIndex(yPos, false);
+		
+		println(xIndex + ", " + yIndex);
+		
+		xPos = convertToPosition(xIndex, true);
+		yPos = convertToPosition(yIndex, false);*/
+		
+		//object.moveTo((int)xPos, (int)yPos);
+	}
+	
 	private Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
