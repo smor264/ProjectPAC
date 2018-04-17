@@ -212,10 +212,9 @@ public class Main extends Application {
     private String baseSaveData = "Player1\r\n110000\r\n00000000000";
 
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
-	private static Shape ghostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
-	public  PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
+	public PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
 
-	public static enum GameMode {
+	public enum GameMode {
 		SinglePlayer,
 		TwoPlayer,
 		ThreePlayer;
@@ -229,7 +228,7 @@ public class Main extends Application {
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
 	private static Polygon pacManMouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
-	public static enum PlayerCharacter {
+	public enum PlayerCharacter {
 		PacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.YELLOW, Player.Ability.eatGhosts, 2),
 		MsPacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.LIGHTPINK, Player.Ability.eatGhosts, 2),
 		PacKid (Shape.intersect(new Circle(gridSquareSize/3), pacManMouth), Color.GREENYELLOW, Player.Ability.wallJump, 2),

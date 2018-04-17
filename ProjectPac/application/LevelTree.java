@@ -73,7 +73,6 @@ public class LevelTree {
 		try {
 			throw new Exception("Invalid level name");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
