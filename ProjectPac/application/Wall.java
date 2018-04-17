@@ -5,8 +5,10 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 
-
-public class Wall extends LevelObject{
+/** Parent class of GhostGate and SolidWall.
+ * Can have many shapes, depending on the connectivity with neighbours.
+ * */
+public abstract class Wall extends LevelObject{
 
 	public static enum WallType {
 		SINGLE,

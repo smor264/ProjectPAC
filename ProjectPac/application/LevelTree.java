@@ -80,14 +80,11 @@ public class LevelTree {
 
 	public boolean isUnlocked(Level level) {
 		if (getTreeNodeEquivalent(level).getParents().isEmpty()) {
-			System.out.println("level is unlocked because parents are null");
 			return true;
 		}
 
 		for (TreeNode<Level> parent : getTreeNodeEquivalent(level).getParents()) {
 			if (completedLevels.contains(parent)) {
-
-				System.out.println("level is unlocked because a parent level was beaten");
 				return true;
 			}
 		}

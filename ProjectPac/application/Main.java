@@ -4,35 +4,20 @@ package application;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Observable;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-import application.Player.Ability;
-import application.Player.Boost;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.Property;
-import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.HPos;
 import javafx.geometry.Pos;
@@ -40,8 +25,6 @@ import javafx.geometry.VPos;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Group;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressBar;
@@ -55,7 +38,6 @@ import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
@@ -395,7 +377,6 @@ public class Main extends Application {
 				else if(charsUnlocked.charAt(i) == '1') {
 					charList.get(i).resetColor();
 					charList.get(i).setUnlockedState(true);
-					println("character available");
 				}
 				else {
 					println("Corrupted/Incompatible save file");
@@ -425,26 +406,26 @@ public class Main extends Application {
 			println("LevsUnlocked is null!");
 		}
 
-		newLvl = levsComplete.substring(0, levelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(levelTree.levelList.indexOf(loadedLevel)+1);
+		newLvl = levsComplete.substring(0, LevelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(LevelTree.levelList.indexOf(loadedLevel)+1);
 		levsComplete = newLvl;
 
 
-		if(levelTree.isCompleted(levelTree.level1)) {
+		if(levelTree.isCompleted(LevelTree.level1)) {
 			String pacKidUnlock;
 			pacKidUnlock = charsUnlocked.substring(0, 2) + "1" + charsUnlocked.substring(3);
 			charsUnlocked = pacKidUnlock;
 		}
-		if(levelTree.isCompleted(levelTree.future2)) {
+		if(levelTree.isCompleted(LevelTree.future2)) {
 			String robotUnlock;
 			robotUnlock = charsUnlocked.substring(0, 3) + "1" + charsUnlocked.substring(4);
 			charsUnlocked = robotUnlock;
 		}
-		if (levelTree.isCompleted(levelTree.garden2)) {
+		if (levelTree.isCompleted(LevelTree.garden2)) {
 			String snacUnlock;
 			snacUnlock = charsUnlocked.substring(0,4) + "1" + charsUnlocked.substring(5);
 			charsUnlocked = snacUnlock;
 		}
-		if (levelTree.isCompleted(levelTree.garden2) && levelTree.isCompleted(levelTree.ice2) && levelTree.isCompleted(levelTree.rock2)) {
+		if (levelTree.isCompleted(LevelTree.garden2) && levelTree.isCompleted(LevelTree.ice2) && levelTree.isCompleted(LevelTree.rock2)) {
 			String glitchUnlock;
 			glitchUnlock = charsUnlocked.substring(0,5) + "1";
 			charsUnlocked = glitchUnlock;
@@ -478,7 +459,7 @@ public class Main extends Application {
 		currentLevelText.setText(loadedLevelName);
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
-		currentBoost.setText(player.getBoost().toString());
+		currentBoost.setText(player.getBoost().text());
 		return true;
 	}
 
@@ -588,15 +569,12 @@ public class Main extends Application {
 		loadedLevelName = level.getLevelName();
 		loadedLevel = level;
 
-
-
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
 			for (int yPos = 0; yPos < array.length; yPos++) {
 				if (array[yPos][xPos] == 1) { // Wall
 					Object[] wallType;
-					//ArrayList<Object> wallType = new ArrayList<Object>();
 					wallType = determineWallType(array,xPos,yPos);
-					Wall wall = new Wall( (Wall.WallType)wallType[0], (Direction)wallType[1], level.getWallColor());
+					SolidWall wall = new SolidWall( (Wall.WallType)wallType[0], (Direction)wallType[1], level.getWallColor());
 
 					placeLevelObject(wall, xPos, yPos);
 				}
@@ -613,15 +591,31 @@ public class Main extends Application {
 						placeLevelObject(player, xPos, yPos);
 					}
 				}
+				else if (array[yPos][xPos] == 3) { // ghost gate
+					Object[] wallType;
+					wallType = determineWallType(array,xPos,yPos);
+					GhostGate gate = new GhostGate( (Wall.WallType)wallType[0], (Direction)wallType[1]);
+
+					placeLevelObject(gate, xPos, yPos);
+				}
 				else if (array[yPos][xPos] < 0) { //Enemy
-						Object[] characteristics = determineEnemyCharacteristics(-array[yPos][xPos]);
-						Enemy enemy = new Enemy(2, enemyColors[enemyList.size()], (Enemy.Intelligence)characteristics[0], (Enemy.Behaviour)characteristics[1], (Enemy.Algorithm)characteristics[2]);
-						enemyList.add(enemy);
+					Object[] characteristics = determineEnemyCharacteristics(-array[yPos][xPos]);
+					double g = gridSquareSize;
+					Shape top = new Circle(g/2.0);
+					top.setTranslateY(-g/8.0);
+					
+					Shape bottom = new Polygon(-g/2,-g/4, -g/2,5*g/8.0, -g/3,g/2, -g/6,5*g/8, 0,g/2, g/6,5*g/8, g/3,g/2, g/2,5*g/8, g/2,-g/4);
+					Shape model = Shape.union(top, bottom);
+					model.setFill(enemyColors[enemyList.size()]);
+					model.setScaleY(0.9);
+					model.setScaleX(0.9);
+					Enemy enemy = new Enemy(model, 2, (Enemy.Intelligence)characteristics[0], (Enemy.Behaviour)characteristics[1], (Enemy.Algorithm)characteristics[2]);
+					enemyList.add(enemy);
 
-						enemy.setPrevIndex(xPos, yPos);
-						enemy.setStartIndex(new int[] {xPos, yPos});
+					enemy.setPrevIndex(xPos, yPos);
+					enemy.setStartIndex(new int[] {xPos, yPos});
 
-						placeLevelObject(enemy, xPos, yPos);
+					placeLevelObject(enemy, xPos, yPos);
 				}
 				else if(array[yPos][xPos] == 4 || array[yPos][xPos] == 5 || array[yPos][xPos] == 6) {
 					PickUp pickUp = new PickUp(array[yPos][xPos]);
@@ -636,9 +630,10 @@ public class Main extends Application {
 		for (int xPos = 0; xPos < array[0].length-1; xPos++) {
 			for (int yPos = 0; yPos < array.length-1; yPos++) {
 				if (array[yPos][xPos] == 1 && array[yPos][xPos+1] == 1 && array[yPos+1][xPos] == 1 && array[yPos+1][xPos+1] == 1) {
+					// If you find a solid area, just plonk a wall in the centre so it looks solid
 					double xAvg = (convertToPosition(xPos+1, true) +convertToPosition(xPos+2, true))/2.0 - Main.gridSquareSize/4;
 					double yAvg = (convertToPosition(yPos+1, false) +convertToPosition(yPos+2, false))/2.0 - Main.gridSquareSize/4;
-					Wall wall = new Wall(Wall.WallType.SINGLE, Direction.UP, level.getWallColor());
+					SolidWall wall = new SolidWall(Wall.WallType.SINGLE, Direction.UP, level.getWallColor());
 					wall.moveTo(xAvg, yAvg);
 					currentLevel.getChildren().add(wall.getModel());
 				}
@@ -654,13 +649,24 @@ public class Main extends Application {
 		//For multiplayer, replaces AI with playable ghosts
 		if(currentGameMode != GameMode.SINGLEPLAYER) {
 			for(int i = 0; i < currentGameMode.ordinal(); i++) {
-				Player playerGhost = new Player(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), playerCharacter.speed(), true,enemyColors[i]);
+				double g = gridSquareSize;
+				Shape top = new Circle(g/2.4);
+				top.setTranslateY(-3);
+				top.setScaleX(1.2);
+				
+				Shape bottom = new Polygon(-g/2,0, -g/2,g/2.0, -g/3,g/2-g/8, -g/6,g/2, 0,g/2-g/8, g/6,g/2, g/3,g/2-g/8, g/2,g/2, g/2,0);
+				Shape model = Shape.union(top, bottom);
+				model.setFill(enemyColors[enemyList.size()]);
+				
+				Player playerGhost = new Player(model, playerCharacter.speed(), true,enemyColors[i]);
+				println(playerGhost.getContainer().getBoundsInLocal().getWidth() +"");
 				playerList.add(playerGhost);
-				playerGhost.moveTo(convertToPosition(enemyList.get(0).getStartIndex()[0],true), convertToPosition(enemyList.get(0).getStartIndex()[1],false));
+				playerGhost.moveTo(convertToPosition(enemyList.get(0).getStartIndex()[0]+1,true), convertToPosition(enemyList.get(0).getStartIndex()[1]+1,false));
 				playerGhost.setStartIndex(enemyList.get(0).getStartIndex());
-				currentLevel.getChildren().remove(enemyList.get(0).getContainer());
+				currentLevel.getChildren().remove(enemyList.get(0).getModel());
 				enemyList.remove(0);
-				currentLevel.getChildren().add(playerGhost.getContainer());
+				currentLevel.getChildren().add(playerGhost.getModel());
+				println(playerGhost.getPosition()[0] +", " + playerGhost.getPosition()[1]);
 			}
 		}
 
@@ -818,8 +824,7 @@ public class Main extends Application {
 					switch (event.getCode()) {
 					case W:
 					case UP: {
-						player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;
-					}
+						player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
 
 					case S:
 					case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
@@ -867,65 +872,75 @@ public class Main extends Application {
 				}
 					case TWOPLAYER: {
 						switch (event.getCode()) {
-						case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
-						case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;
-						}
-
-						case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
-						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
-
-						case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
-						case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
-
-						case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
-						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
-						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-
-						case ESCAPE:{ closeGame(primaryStage); break;}
-						case P: { pausePressed = !pausePressed;
-							if (pausePressed) {
-								println("PAUSED!");
-								showOverlay(pauseOverlay);
-							}
-							else {
-								println("UNPAUSED!");
-								hideOverlay(pauseOverlay);
-							}
-							break;
+							case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
+							case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
+	
+							case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
+							case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
+	
+							case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
+							case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
+	
+							case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
+							case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
+							case PAGE_DOWN:{ currentGameTick = maxTime; break;}
+	
+							case ESCAPE:{ closeGame(primaryStage); break;}
+							case P: { pausePressed = !pausePressed;
+								if (pausePressed) {
+									println("PAUSED!");
+									showOverlay(pauseOverlay);
+								}
+								else {
+									println("UNPAUSED!");
+									hideOverlay(pauseOverlay);
+								}
+								break;
+								}
+							case N:{
+								unlockNewLevels();
+								try {
+									writeSave(saveFile);
+								} catch (FileNotFoundException e) {
+									e.printStackTrace();
+								}
+								showPostLevelScreen();
+								gameLoop.stop();
+								break;
 							}
 						}
 						break;}
 					case THREEPLAYER: {
 						switch (event.getCode()) {
-						case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
-						case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
-						case I: {playerList.get(2).getHeldButtons().append(Direction.UP);break;}
-
-						case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
-						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
-						case K: {playerList.get(2).getHeldButtons().append(Direction.DOWN);break;}
-
-						case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
-						case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
-						case J: {playerList.get(2).getHeldButtons().append(Direction.LEFT);break;}
-
-						case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
-						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
-						case L: {playerList.get(2).getHeldButtons().append(Direction.RIGHT);break;}
-						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-
-						case ESCAPE:{ closeGame(primaryStage); break;}
-						case P: { pausePressed = !pausePressed;
-						if (pausePressed) {
-							println("PAUSED!");
-							showOverlay(pauseOverlay);
-						}
-						else {
-							println("UNPAUSED!");
-							hideOverlay(pauseOverlay);
-						}
-						break;
-						}
+							case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
+							case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
+							case I: {playerList.get(2).getHeldButtons().append(Direction.UP);break;}
+	
+							case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
+							case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
+							case K: {playerList.get(2).getHeldButtons().append(Direction.DOWN);break;}
+	
+							case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
+							case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
+							case J: {playerList.get(2).getHeldButtons().append(Direction.LEFT);break;}
+	
+							case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
+							case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
+							case L: {playerList.get(2).getHeldButtons().append(Direction.RIGHT);break;}
+							case PAGE_DOWN:{ currentGameTick = maxTime; break;}
+	
+							case ESCAPE:{ closeGame(primaryStage); break;}
+							case P: { pausePressed = !pausePressed;
+								if (pausePressed) {
+									println("PAUSED!");
+									showOverlay(pauseOverlay);
+								}
+								else {
+									println("UNPAUSED!");
+									hideOverlay(pauseOverlay);
+								}
+								break;
+							}
 						}
 					}
 
@@ -1033,7 +1048,9 @@ public class Main extends Application {
 							delta = new int[] {0,0};
 							delta = calculatePlayerMovement(playerList.get(i));
 							playerList.get(i).moveBy(delta[0], delta[1]);
-							manageAnimation(playerList.get(i));
+							if (i == 0) {
+								manageAnimation(playerList.get(0));
+							}
 						}
 
 						if (player.getAbility() == Player.Ability.SNAKE) {
@@ -1048,6 +1065,7 @@ public class Main extends Application {
 							delta = new int[] {0,0};
 							delta = calculateEnemyMovement(enemyList.get(i));
 							enemyList.get(i).moveBy(delta[0], delta[1]);
+							manageAnimation(enemyList.get(i));
 						}
 
 						if (isBoostActive){
@@ -1117,6 +1135,10 @@ public class Main extends Application {
 		}
 	}
 
+	protected void manageAnimation(Enemy enemy) {
+				
+	}
+
 	private void manageAnimation(Player player){
 		if (player.getPrevDirection() == null) {
 			return;
@@ -1169,7 +1191,7 @@ public class Main extends Application {
 			randYIndex = rand.nextInt(levelHeight);
 			randXIndex = rand.nextInt(levelWidth);
 			try {
-				if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) {
+				if (levelObjectArray[randYIndex][randXIndex] instanceof SolidWall) {
 					validMove = false;
 				}
 			}
@@ -1484,17 +1506,13 @@ public class Main extends Application {
 						randYIndex = rand.nextInt(searchRadius) - searchRadius / 2;
 						randXIndex = rand.nextInt(searchRadius) - searchRadius / 2;
 						try {
-							if (levelObjectArray[yIndex + randYIndex][xIndex + randXIndex] instanceof Wall) {
+							if (levelObjectArray[yIndex + randYIndex][xIndex + randXIndex] instanceof SolidWall) {
 								validMove = false;
 							}
 						}
 						catch (ArrayIndexOutOfBoundsException e) {validMove = false;}
 					}
-
-					println("I guess I'll move to " + (xIndex + randXIndex) + ", " + (yIndex + randYIndex));
-
 					chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {yIndex + randYIndex, xIndex + randXIndex});
-					println("My path is now " + enemy.getPathLength() + " long.");
 				}
 			}
 			else {
@@ -1518,7 +1536,7 @@ public class Main extends Application {
 									randXIndex = rand.nextInt(levelWidth);
 									randYIndex = rand.nextInt(levelHeight);
 									try {
-										if (levelObjectArray[randYIndex][randXIndex] instanceof Wall) {
+										if (levelObjectArray[randYIndex][randXIndex] instanceof SolidWall) {
 											validMove = false;
 										}
 									}
@@ -1555,7 +1573,7 @@ public class Main extends Application {
 									del[0] =  0;
 								}
 								try {
-									if (levelObjectArray[playerYIndex+del[1]][playerXIndex + del[0]] instanceof Wall) {
+									if (levelObjectArray[playerYIndex+del[1]][playerXIndex + del[0]] instanceof SolidWall) {
 										break;
 									}
 								} catch(ArrayIndexOutOfBoundsException e){break;}
@@ -1603,7 +1621,7 @@ public class Main extends Application {
 								randomXCoord = random.nextInt(2*guardRadius) - guardRadius; // random index from (-guardRadius) to (guardRadius)
 								randomYCoord = random.nextInt(2*guardRadius) - guardRadius;
 								try{
-									if (levelObjectArray[guardIndexes[1] - randomYCoord][guardIndexes[0] - randomXCoord] instanceof Wall) {
+									if (levelObjectArray[guardIndexes[1] - randomYCoord][guardIndexes[0] - randomXCoord] instanceof SolidWall) {
 										validMove = false;
 									}
 								}
@@ -1660,52 +1678,52 @@ public class Main extends Application {
 			switch (next) {
 				case UP: {
 					//If wrapping around level...
-					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
+					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof SolidWall)){
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(levelObjectArray.length-1, false));
 						break;
 					}
 
 					// Is this needed?
-					if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {break;}
+					if (levelObjectArray[yIndex-1][xIndex] instanceof SolidWall) {break;}
 
 					//Otherwise, regular move...
 					delta[1] = -(int)enemy.getSpeed();
 					enemy.setPrevDirection(Direction.UP); break;}
 				case DOWN:{
 					//If wrapping around level...
-					if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
+					if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof SolidWall)){
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(0, false));
 						break;
 					}
 
 					// Is this needed?
-					if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {break;}
+					if (levelObjectArray[yIndex+1][xIndex] instanceof SolidWall) {break;}
 
 					//Otherwise, regular move...
 					delta[1] = (int)enemy.getSpeed();
 					enemy.setPrevDirection(Direction.DOWN); break;}
 				case LEFT:{
 					//If wrapping around level...
-					if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+					if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof SolidWall)) {
 						enemy.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
 						break;
 					}
 
 					// Is this needed?
-					if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {break;}
+					if (levelObjectArray[yIndex][xIndex-1] instanceof SolidWall) {break;}
 
 					//Otherwise, regular move...
 					delta[0] = -(int)enemy.getSpeed();
 					enemy.setPrevDirection(Direction.LEFT); break;}
 				case RIGHT:{
 					//If wrapping around level...
-					if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+					if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof SolidWall)) {
 						enemy.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
 						break;
 					}
 
 					// Is this needed?
-					if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {break;}
+					if (levelObjectArray[yIndex][xIndex+1] instanceof SolidWall) {break;}
 
 					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
@@ -1864,55 +1882,101 @@ public class Main extends Application {
 	}
 	
 	/** This function gets the next player move by reading buttons pressed*/
-	private int[] getNextPlayerMove(){
+	private int[] getNextPlayerMove(Player player){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
 		int yIndex = convertToIndex(player.getPosition()[1], false);
 		int[] delta = {0,0};
 		for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
 
 			if((player.getHeldButtons().getNFromTop(n) == Direction.UP) ) {
-				// If regular move...
-				if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
-					delta[1] = -(int)player.getSpeed();
-					player.pointModel(Direction.UP);
-					player.setPrevDirection(Direction.UP);
-					break;
-				} // If wrapping around screen...
-				else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
-					player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
+				if (player.getIsGhost()) {
+					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof SolidWall)) {
+						delta[1] = -(int)player.getSpeed();
+						player.setPrevDirection(Direction.UP);
+						break;
+					}
+					else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
+						player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
+					}
+				}
+				else {
+					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
+						delta[1] = -(int)player.getSpeed();
+						player.pointModel(Direction.UP);
+						player.setPrevDirection(Direction.UP);
+						break;
+					}
+					else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
+						player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
+					}
 				}
 			}
 			else if(player.getHeldButtons().getNFromTop(n) == Direction.DOWN) {
-				if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
-					delta[1] = (int)player.getSpeed();
-					player.pointModel(Direction.DOWN);
-					player.setPrevDirection(Direction.DOWN);
-					break;
+				if (player.getIsGhost()) {
+					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof SolidWall)) {
+						delta[1] = (int)player.getSpeed();
+						player.setPrevDirection(Direction.DOWN);
+						break;
+					}
 				}
-				else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
-					player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
+				else {
+					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
+						delta[1] = (int)player.getSpeed();
+						player.pointModel(Direction.DOWN);
+						player.setPrevDirection(Direction.DOWN);
+						break;
+					}
+					else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
+						player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
+					}
 				}
+				
 			}
 			else if(player.getHeldButtons().getNFromTop(n) == Direction.LEFT) {
-				if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
-					delta[0] = -(int)player.getSpeed();
-					player.pointModel(Direction.LEFT);
-					player.setPrevDirection(Direction.LEFT);
-					break;
+				if (player.getIsGhost()) {
+					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof SolidWall)) {
+						delta[0] = -(int)player.getSpeed();
+
+						player.setPrevDirection(Direction.LEFT);
+						break;
+					}
+					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
+					}
 				}
-				else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
-					player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
-				}
+				else {
+					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
+						delta[0] = -(int)player.getSpeed();
+						player.pointModel(Direction.LEFT);
+						player.setPrevDirection(Direction.LEFT);
+						break;
+					}
+					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
+					}
+				}			
 			}
 			else if(player.getHeldButtons().getNFromTop(n) == Direction.RIGHT) {
-				if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
-					delta[0] = (int)player.getSpeed();
-					player.pointModel(Direction.RIGHT);
-					player.setPrevDirection(Direction.RIGHT);
-					break;
+				if (player.getIsGhost()) {
+					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof SolidWall)) {
+						delta[0] = (int)player.getSpeed();
+						player.setPrevDirection(Direction.RIGHT);
+						break;
+					}
+					else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+						player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+					}
 				}
-				else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
-					player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+				else {
+					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
+						delta[0] = (int)player.getSpeed();
+						player.pointModel(Direction.RIGHT);
+						player.setPrevDirection(Direction.RIGHT);
+						break;
+					}
+					else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+						player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+					}
 				}
 			}
 		}
@@ -2011,7 +2075,7 @@ public class Main extends Application {
 				managePelletMagnet();
 			}
 			//Loop through the held movement keys in order of preference
-			delta = getNextPlayerMove();
+			delta = getNextPlayerMove(player);
 		}
 		else {
 			switch (player.getPrevDirection()) {

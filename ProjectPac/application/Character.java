@@ -6,7 +6,7 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
-public class Character extends LevelObject {
+public abstract class Character extends LevelObject {
 
 	protected double speed = 2;
 	private int[] prevPos; // Previous index in the level array
@@ -14,7 +14,6 @@ public class Character extends LevelObject {
 	private int[] startPosition = new int[2];
 	private double defaultSpeed;
 	protected Color regularColor;
-	private Shape mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (18),(0), 0.0,0.0, (18),(0), 18.0,18.0, -18.0,18.0 );
 	
 	public Character(Shape model, double speed) {
 		super(model);
@@ -65,37 +64,11 @@ public class Character extends LevelObject {
 	}
 	public void pointModel(Main.Direction dir) {
 		switch(dir) {
-			case UP:{ model.setRotate(270); mouth.setRotate(270); break;}
-			case DOWN:{ model.setRotate(90); mouth.setRotate(90); break;}
-			case LEFT:{ model.setRotate(180); mouth.setRotate(180); break;}
-			case RIGHT:{ model.setRotate(0); mouth.setRotate(0); break;}
+			case UP:{ model.setRotate(270);break;}
+			case DOWN:{ model.setRotate(90);break;}
+			case LEFT:{ model.setRotate(180); break;}
+			case RIGHT:{ model.setRotate(0); break;}
 		}
 	}
-	public void manageAnimation(int animationFrame, Shape baseModel) {
-		if (model instanceof Rectangle) {
-			return;
-		}
-		double xPos;
-		double yPos;
-		double rotate = model.getRotate();
-		if (animationFrame <= 18) {
-			xPos = 4*((5.3/18.0) * animationFrame + 12.7);
-			yPos = 6*((5.3/18.0) * animationFrame - 5.3);
-		}
-		else {
-			xPos = 4*((-5.3/18.0) * animationFrame + 23.3);
-			yPos = 6*((-5.3 / 18.0) * animationFrame + 5.3);
-		}
-		
-		mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos),(yPos), 0.0,0.0, (xPos),(-yPos), 18.0,18.0, -18.0,18.0 );
-		
-		Shape newModel = Shape.intersect(baseModel, mouth);
-		this.setModel(newModel);
-		model.setFill(regularColor);
-		model.setRotate(rotate);
-		
-		if (baseModel instanceof Circle){
-			model.setTranslateX(-(xPos/16)+Main.gridSquareSize/8-1);
-		}
-	}
+	
 }

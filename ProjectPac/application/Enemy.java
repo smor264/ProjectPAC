@@ -47,19 +47,25 @@ public class Enemy extends Character {
 		CHASE, // aiming at the player
 	}
 
-	public Enemy(Shape model, double speed) { // If we have an enemy model already
+	public Enemy(Shape model, double speed, Intelligence intelligence, Behaviour behaviour, Algorithm algorithm) { // If we have an enemy model already
 		super(model, speed);
 		nextMoves = new ArrayList<Main.Direction>();
-		intelligence = Intelligence.MODERATE;
-		behaviour = Behaviour.HUNTER;
-		algorithm = Algorithm.DIJKSTRA;
+		this.regularColor = (Color) model.getFill();
+		this.intelligence = intelligence;
+		this.behaviour = behaviour;
+		this.algorithm = algorithm;
+
+		if (behaviour == Behaviour.AMBUSHER) {
+			ambusherState = AmbusherState.RETREAT;
+		}
 	}
 
 	public Enemy(double speed, Color color) { // Otherwise make it a triangle
 		super(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), speed);
 		nextMoves = new ArrayList<Main.Direction>();
 		model.setFill(color);
-
+		
+		
 		intelligence = Intelligence.MODERATE;
 		behaviour = Behaviour.HUNTER;
 		algorithm = Algorithm.DIJKSTRA;

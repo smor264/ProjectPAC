@@ -26,7 +26,7 @@ public class AdjacencyMatrix{
 	public AdjacencyMatrix(Object[][] array) {
 		for (Integer i = 0; i < array.length; i++) {
 			for (Integer j = 0; j < array[0].length; j++) {
-				if (!(array[i][j] instanceof Wall)) {
+				if (!(array[i][j] instanceof SolidWall)) {
 					map.put(Arrays.toString(new Integer[] {i,j}), map.size());
 					reverseMap.put(map.size() - 1, Arrays.toString(new Integer[] {i,j}));
 				}
@@ -41,59 +41,59 @@ public class AdjacencyMatrix{
 		
 		for (Integer i = 0; i < array.length; i++) {
 			for (Integer j = 0; j < array[0].length; j++) { // Check to see if connected to neighbours
-				if (!(array[i][j] instanceof Wall)) {
-					if ((i == 0) && !(array[array.length-1][j] instanceof Wall)) { 
+				if (!(array[i][j] instanceof SolidWall)) {
+					if ((i == 0) && !(array[array.length-1][j] instanceof SolidWall)) { 
 						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
 						addEdge(new Integer[] {i,j}, new Integer[] {array.length-1, j});
 						
 						//Also check for (valid) regular neighbours
-						if (!(array[i+1][j] instanceof Wall)) {
+						if (!(array[i+1][j] instanceof SolidWall)) {
 							addEdge(new Integer[] {i, j}, new Integer[] {i+1, j});
 						}
 						continue;
 					}
-					else if (((i == array.length-1) && !(array[0][j] instanceof Wall))) {
+					else if (((i == array.length-1) && !(array[0][j] instanceof SolidWall))) {
 						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
 						addEdge(new Integer[] {i,j}, new Integer[] {array.length-1, j});
 						
 						//Also check for (valid) regular neighbours
-						if (!(array[i-1][j] instanceof Wall)) {
+						if (!(array[i-1][j] instanceof SolidWall)) {
 							addEdge(new Integer[] {i, j}, new Integer[] {i-1, j});
 						}
 						continue;
 					}
 					
-					if ((j == 0) && !(array[i][array[0].length-1] instanceof Wall)) {
+					if ((j == 0) && !(array[i][array[0].length-1] instanceof SolidWall)) {
 						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
 						addEdge(new Integer[] {i,j}, new Integer[] {i, array[0].length-1});
 						
 						//Also check for (valid) regular neighbours
-						if (!(array[i][j+1] instanceof Wall)) {
+						if (!(array[i][j+1] instanceof SolidWall)) {
 							addEdge(new Integer[] {i, j}, new Integer[] {i, j+1});
 						}
 						continue;
 					}
-					else if ((j == array[0].length-1) && !(array[i][0] instanceof Wall)) {
+					else if ((j == array[0].length-1) && !(array[i][0] instanceof SolidWall)) {
 						// If a non-wall piece is on the edge of the map, check if the side opposite is also free, if so, we can connect the two
 						addEdge(new Integer[] {i,j}, new Integer[] {i, array[0].length-1});
 						
 						//Also check for (valid) regular neighbours
-						if (!(array[i][j-1] instanceof Wall)) {
+						if (!(array[i][j-1] instanceof SolidWall)) {
 							addEdge(new Integer[] {i, j}, new Integer[] {i, j-1});
 						}
 						continue;
 					}
 					//Else, see if regular neighbours are connectable
-					if (!(array[i][j+1] instanceof Wall) && (j!= array[0].length-1)) {
+					if (!(array[i][j+1] instanceof SolidWall) && (j!= array[0].length-1)) {
 						addEdge(new Integer[] {i, j}, new Integer[] {i, j+1});
 					}
-					if (!(array[i][j-1] instanceof Wall) && (j != 0)) {
+					if (!(array[i][j-1] instanceof SolidWall) && (j != 0)) {
 						addEdge(new Integer[] {i, j}, new Integer[] {i, j-1});
 					}
-					if (!(array[i+1][j] instanceof Wall) && (i != array.length-1)) {
+					if (!(array[i+1][j] instanceof SolidWall) && (i != array.length-1)) {
 						addEdge(new Integer[] {i, j}, new Integer[] {i+1, j});
 					}
-					if (!(array[i-1][j] instanceof Wall) && (i != 0)) {
+					if (!(array[i-1][j] instanceof SolidWall) && (i != 0)) {
 						addEdge(new Integer[] {i, j}, new Integer[] {i-1, j});
 					}
 				}

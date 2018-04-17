@@ -2,6 +2,8 @@ package application;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
 
@@ -22,6 +24,8 @@ public class Player extends Character{
 	private int lives = 2;
 	private int maxLives = 2;
 	private int pickupRadius = 0;
+	private Shape mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (18),(0), 0.0,0.0, (18),(0), 18.0,18.0, -18.0,18.0 );
+
 	
 	
 	/**
@@ -86,7 +90,7 @@ public class Player extends Character{
 		super(model,speed);
 		this.isGhost = isGhost;
 		this.regularColor = color;
-		model.setFill(color);
+		this.model.setFill(color);
 	}
 
 	public boolean getIsGhost() {
@@ -237,6 +241,34 @@ public class Player extends Character{
 		case PELLETMAGNET:{pickupRadius = 2; break;}
 		case SUPERPELLETMAGNET:{pickupRadius = 3; break;}
 		default:{ throw new IllegalArgumentException("Only pelletMagnets are valid boosts for this!"); }
+		}
+	}
+	
+	public void manageAnimation(int animationFrame, Shape baseModel) {
+		if (isGhost) {
+			return;
+		}
+		double xPos;
+		double yPos;
+		double rotate = model.getRotate();
+		if (animationFrame <= 18) {
+			xPos = 4*((5.3/18.0) * animationFrame + 12.7);
+			yPos = 6*((5.3/18.0) * animationFrame - 5.3);
+		}
+		else {
+			xPos = 4*((-5.3/18.0) * animationFrame + 23.3);
+			yPos = 6*((-5.3 / 18.0) * animationFrame + 5.3);
+		}
+		
+		mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos),(yPos), 0.0,0.0, (xPos),(-yPos), 18.0,18.0, -18.0,18.0 );
+		
+		Shape newModel = Shape.intersect(baseModel, mouth);
+		this.setModel(newModel);
+		model.setFill(regularColor);
+		model.setRotate(rotate);
+		
+		if (baseModel instanceof Circle){
+			model.setTranslateX(-(xPos/16)+Main.gridSquareSize/8-1);
 		}
 	}
 }
