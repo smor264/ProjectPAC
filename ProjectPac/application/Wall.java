@@ -9,13 +9,13 @@ import javafx.scene.shape.Polygon;
 public class Wall extends LevelObject{
 
 	public static enum WallType {
-		single,
-		end,
-		straight,
-		corner,
-		tee,
-		cross,
-		solid,
+		SINGLE,
+		END,
+		STRAIGHT,
+		CORNER,
+		TEE,
+		CROSS,
+		SOLID,
 	}
 
 	WallType walltype;
@@ -26,26 +26,26 @@ public class Wall extends LevelObject{
 		this.orientation = orientation;
 		double w = this.width;
 		switch(walltype) {
-			case end: {
+			case END: {
 				Polygon shape = new Polygon();
 				shape.setFill(colour);
 				switch (orientation) {
-					case up:{
+					case UP:{
 						shape.getPoints().addAll(new Double[]{-w/4.0,-w/2.0, w/4.0,-w/2.0, w/4.0,w/4.0, w/4.0,w/2.0, w/4.0,w/4.0, w/2.0,w/4.0, w/4.0,w/4.0, -w/4.0,w/4.0});
 						super.model = shape;
 						break;
 					}
-					case down:{
+					case DOWN:{
 						shape.getPoints().addAll(new Double[] {-w/4.0,-w/4.0, w/4.0, -w/4.0, w/4.0, w/2.0, -w/4.0 , w/2.0, w/2.0,w/2.0, -w/4.0, w/2.0});
 						super.model = shape;
 						break;
 					}
-					case left:{
+					case LEFT:{
 						shape.getPoints().addAll(new Double[] {-w/2.0,-w/4.0, w/4.0,-w/4.0, w/4.0,w/4.0, w/4.0,w/2.0, w/4.0,w/4.0, w/2.0,w/4.0, w/4.0,w/4.0, -w/2.0,w/4.0});
 						super.model = shape;
 						break;
 					}
-					case right:{
+					case RIGHT:{
 
 						shape.getPoints().addAll(new Double[] {-w/4.0,-w/4.0, w/2.0, -w/4.0, w/2.0, w/4.0, -w/4.0, w/4.0, -w/4.0,w/2.0, -w/4.0,w/4.0});
 						super.model = shape;
@@ -54,18 +54,18 @@ public class Wall extends LevelObject{
 				}
 				break;
 			}
-			case straight:{
+			case STRAIGHT:{
 				switch (orientation) {
-					case up:
-					case down: {
+					case UP:
+					case DOWN: {
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/2.0, w/4.0, -w/2.0, w/2.0,-w/2.0, w/4.0,-w/2.0,  w/4.0, w/2.0, -w/4.0, w/2.0});
 						super.model = shape;
 						break;
 					}
-					case left:
-					case right: {
+					case LEFT:
+					case RIGHT: {
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/2.0,-w/4.0, w/2.0,-w/4.0, w/2.0,w/4.0, w/2.0,w/2.0, w/2.0,w/4.0, -w/2.0,w/4.0});
@@ -75,30 +75,30 @@ public class Wall extends LevelObject{
 				}
 				break;
 			}
-			case tee:{
+			case TEE:{
 				switch (orientation) {
-					case up:{
+					case UP:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/2.0, w/4.0,-w/2.0, w/4.0,-w/4.0, w/2.0,-w/4.0, w/2.0,w/4.0, w/2.0, w/2.0,w/2.0,w/4.0, -w/2.0, w/4.0, -w/2.0, -w/4.0, -w/4.0, -w/4.0});
 						super.model = shape;
 						break;
 					}
-					case down:{
+					case DOWN:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/2.0, -w/4.0, w/2.0, -w/4.0, w/2.0, w/4.0, w/4.0, w/4.0, w/4.0, w/2.0, -w/4.0, w/2.0, -w/4.0, w/4.0, -w/2.0, w/4.0});
 						super.model = shape;
 						break;
 					}
-					case left:{
+					case LEFT:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/4.0, -w/4.0,-w/2.0, w/4.0,-w/2.0, w/4.0,w/2.0, w/2.0,w/2.0, w/4.0,w/2.0, -w/4.0,w/2.0, -w/4.0,w/4.0, -w/2.0,w/4.0, -w/2.0,-w/4.0});
 						super.model = shape;
 						break;
 					}
-					case right:{
+					case RIGHT:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/2.0, w/4.0, -w/2.0, w/4.0, -w/4.0, w/2.0, -w/4.0, w/2.0, w/4.0, w/4.0, w/4.0, w/4.0, w/2.0, -w/4.0, w/2.0});
@@ -108,14 +108,14 @@ public class Wall extends LevelObject{
 				}
 				break;
 			}
-			case cross:{
+			case CROSS:{
 				Polygon shape = new Polygon();
 				shape.setFill(colour);
 				shape.getPoints().addAll(new Double [] {-w/4.0,-w/2.0, w/4.0, -w/2.0, w/4.0, -w/4.0, w/2.0, -w/4.0, w/2.0, w/4.0, w/4.0, w/4.0, w/4.0, w/2.0, -w/4.0, w/2.0, -w/4.0, w/4.0, -w/2.0, w/4.0, -w/2.0, -w/4.0, -w/4.0, -w/4.0});
 				super.model = shape;
 				break;
 			}
-			case single:{
+			case SINGLE:{
 				Polygon shape = new Polygon();
 				shape.setFill(colour);
 				shape.getPoints().addAll(new Double [] {-w/4.0,-w/4.0, w/4.0,-w/4.0, w/4.0,w/4.0, w/2.0,w/2.0, w/4.0,w/4.0, -w/4.0,w/4.0});
@@ -123,30 +123,30 @@ public class Wall extends LevelObject{
 				break;
 			}
 
-			case corner:{
+			case CORNER:{
 				switch (orientation) {
-					case left:{
+					case LEFT:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/2.0, w/4.0,-w/2.0, w/4.0,-w/4.0, w/2.0, -w/4.0, w/2.0, w/4.0, -w/4.0, w/4.0, -w/4.0,w/2.0,-w/4.0,w/4.0});
 						super.model = shape;
 						break;
 					}
-					case right:{
+					case RIGHT:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/4.0, -w/4.0,-w/2.0, w/4.0,-w/2.0, w/2.0,-w/2.0, w/4.0,-w/2.0, w/4.0,w/4.0, w/4.0, w/2.0, w/4.0,w/4.0, -w/2.0,w/4.0, -w/2.0,-w/4.0});
 						super.model = shape;
 						break;
 					}
-					case up:{
+					case UP:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/4.0,-w/4.0, w/2.0,-w/4.0, w/2.0,w/4.0, w/4.0,w/4.0, w/4.0,w/2.0, -w/4.0,w/2.0});
 						super.model = shape;
 						break;
 					}
-					case down:{
+					case DOWN:{
 						Polygon shape = new Polygon();
 						shape.setFill(colour);
 						shape.getPoints().addAll(new Double [] {-w/2.0,-w/4.0, w/4.0,-w/4.0, w/2.0,-w/4.0, w/4.0,-w/4.0, w/4.0,w/2.0, -w/4.0,w/2.0, -w/4.0,w/4.0, -w/2.0,w/4.0});
@@ -158,7 +158,7 @@ public class Wall extends LevelObject{
 			}
 
 
-			case solid:{
+			case SOLID:{
 				Rectangle shape = new Rectangle(w,w, colour);
 				super.model = shape;
 				break;

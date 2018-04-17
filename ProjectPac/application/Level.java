@@ -59,7 +59,7 @@ public class Level {
 							wall = Color.rgb(Integer.parseInt(r, 16), Integer.parseInt(g, 16), Integer.parseInt(b, 16));
 							break;
 						}
-						default: break;
+						default: return;
 					}
 
 				}

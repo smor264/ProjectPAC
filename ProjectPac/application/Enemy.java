@@ -19,41 +19,40 @@ public class Enemy extends Character {
 	private int ambushTimer = 0;
 
 	public static enum Intelligence {
-		random, 	// makes correct choice 25% of the time
-		dumb,		// makes correct choice 50% of the time
-		moderate, 	// makes correct choice 65% of the time
-		smart,		// makes correct choice 85% of the time
-		perfect,	// makes correct choice 100% of the time
+		RANDOM, 	// makes correct choice 25% of the time
+		DUMB,		// makes correct choice 50% of the time
+		MODERATE, 	// makes correct choice 65% of the time
+		SMART,		// makes correct choice 85% of the time
+		PERFECT,	// makes correct choice 100% of the time
 	}
 
 	public static enum Behaviour {
-		indecisive, // type varies between other options e.g hunter -> ambusher -> scared -> etc
-		hunter, // always chases the player
-		ambusher, //tries to end up in front of the player
-		guard, // guards a specific tile, pursues player if within x blocks
-		patrol, // moves between a set of tiles, chases the player if they get too close
-		scared,	// moves randomly(?), but runs away if too close to the player
+		HUNTER, // always chases the player
+		AMBUSHER, //tries to end up in front of the player
+		GUARD, // guards a specific tile, pursues player if within x blocks
+		/*NOT FULLY IMPLEMENTED*/ patrol, // Ran out of time :( moves between an array of tiles, chases the player if they get too close
+		SCARED,	// moves randomly(?), but runs away if too close to the player
 	}
 	public static enum Algorithm {
-		euclidean, // moves in the direction that reduces the euclidean distance to the player the most, can run into dead ends
-		bfs, // Uses breadth-first search to find 'a' path
-		dfs, // Uses depth first search to find a not great path
-		dijkstra, // Uses dijkstra's to calculate shortest path
+		EUCLIDEAN, // moves in the direction that reduces the euclidean distance to the player the most, can run into dead ends
+		BFS, // Uses breadth-first search to find 'a' path
+		DFS, // Uses depth first search to find a not great path
+		DIJKSTRA, // Uses dijkstra's to calculate shortest path
 	}
 
 	public static enum AmbusherState {
-		reposition1, // selecting a random position on the map
-		reposition2, // moving to that position
-		ambush, //aiming ahead of the player
-		chase, // aiming at the player
+		RETREAT, // selecting a random position on the map
+		REPOSITION, // moving to that position
+		AMBUSH, //aiming ahead of the player
+		CHASE, // aiming at the player
 	}
 
 	public Enemy(Shape model, double speed) { // If we have an enemy model already
 		super(model, speed);
 		nextMoves = new ArrayList<Main.Direction>();
-		intelligence = Intelligence.moderate;
-		behaviour = Behaviour.hunter;
-		algorithm = Algorithm.dijkstra;
+		intelligence = Intelligence.MODERATE;
+		behaviour = Behaviour.HUNTER;
+		algorithm = Algorithm.DIJKSTRA;
 	}
 
 	public Enemy(double speed, Color color) { // Otherwise make it a triangle
@@ -61,9 +60,9 @@ public class Enemy extends Character {
 		nextMoves = new ArrayList<Main.Direction>();
 		model.setFill(color);
 
-		intelligence = Intelligence.moderate;
-		behaviour = Behaviour.hunter;
-		algorithm = Algorithm.dijkstra;
+		intelligence = Intelligence.MODERATE;
+		behaviour = Behaviour.HUNTER;
+		algorithm = Algorithm.DIJKSTRA;
 	}
 
 	public Enemy(double speed, Color color, Intelligence intelligence, Behaviour behaviour, Algorithm algorithm) { // Otherwise make it a triangle
@@ -75,8 +74,8 @@ public class Enemy extends Character {
 		this.behaviour = behaviour;
 		this.algorithm = algorithm;
 
-		if (behaviour == Behaviour.ambusher) {
-			ambusherState = AmbusherState.reposition1;
+		if (behaviour == Behaviour.AMBUSHER) {
+			ambusherState = AmbusherState.RETREAT;
 		}
 	}
 
@@ -88,11 +87,11 @@ public class Enemy extends Character {
 		double lowerBound;
 
 		switch(intelligence) {
-			case random:{lowerBound = 0.25; break;}
-			case dumb:{lowerBound = 0.50; break;}
-			case moderate:{lowerBound = 0.65; break;}
-			case smart:{lowerBound = 0.85; break;}
-			case perfect:{return rightMove;}
+			case RANDOM:{lowerBound = 0.25; break;}
+			case DUMB:{lowerBound = 0.50; break;}
+			case MODERATE:{lowerBound = 0.65; break;}
+			case SMART:{lowerBound = 0.85; break;}
+			case PERFECT:{return rightMove;}
 			default:{throw new IllegalArgumentException("Invalid intelligence value");}
 		}
 
@@ -152,23 +151,23 @@ public class Enemy extends Character {
 	 * */
 	public void manageAmbusherFSM() {
 		switch(ambusherState) {
-			case ambush:{
+			case AMBUSH:{
 				if (nextMoves.size() < 6 || ambushTimer > 30) {
 					//If close to the player, stop trying to cut them off and just chase
 					System.out.println("Chasing the player!");
 					ambushTimer = 0;
-					ambusherState = AmbusherState.chase;
+					ambusherState = AmbusherState.CHASE;
 				}
 				else {
 					ambushTimer++;
 				}
 				break;
 			}
-			case chase:{
+			case CHASE:{
 				if (chaseTimer >= 10) {
 					//signal to pick a random spot on the map to move to so you might be able to ambush
 					System.out.println("Choosing a random position to move to...");
-					ambusherState = AmbusherState.reposition1;
+					ambusherState = AmbusherState.RETREAT;
 					chaseTimer = 0;
 				}
 				else {
@@ -177,16 +176,16 @@ public class Enemy extends Character {
 				}
 				break;
 			}
-			case reposition1:{
+			case RETREAT:{
 				/*We've chosen a random position to move to in the datapath section*/
 				System.out.println("Moving to selected random location...");
-				ambusherState = AmbusherState.reposition2;
+				ambusherState = AmbusherState.REPOSITION;
 				break;
 			}
-			case reposition2:{
+			case REPOSITION:{
 				if (nextMoves.size() == 0){
 					System.out.println("Time to ambush!");
-					ambusherState = AmbusherState.ambush;
+					ambusherState = AmbusherState.AMBUSH;
 				}
 			}
 			default:{break;}

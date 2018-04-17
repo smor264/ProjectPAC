@@ -65,10 +65,10 @@ public class Character extends LevelObject {
 	}
 	public void pointModel(Main.Direction dir) {
 		switch(dir) {
-			case up:{ model.setRotate(270); mouth.setRotate(270); break;}
-			case down:{ model.setRotate(90); mouth.setRotate(90); break;}
-			case left:{ model.setRotate(180); mouth.setRotate(180); break;}
-			case right:{ model.setRotate(0); mouth.setRotate(0); break;}
+			case UP:{ model.setRotate(270); mouth.setRotate(270); break;}
+			case DOWN:{ model.setRotate(90); mouth.setRotate(90); break;}
+			case LEFT:{ model.setRotate(180); mouth.setRotate(180); break;}
+			case RIGHT:{ model.setRotate(0); mouth.setRotate(0); break;}
 		}
 	}
 	public void manageAnimation(int animationFrame, Shape baseModel) {

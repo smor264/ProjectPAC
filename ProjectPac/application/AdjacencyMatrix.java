@@ -328,18 +328,18 @@ public class AdjacencyMatrix{
 			if (coordPath.get(i)[0] == coordPath.get(i+1)[0]) { 
 				//If we need to wrap around the screen...
 				if (coordPath.get(i)[1] == 0 && coordPath.get(i+1)[1] == dimensions[0] - 1) {
-					directionPath.add(Main.Direction.left); // Wrap right
+					directionPath.add(Main.Direction.LEFT); // Wrap right
 				}
 				else if (coordPath.get(i+1)[1] == 0 && coordPath.get(i)[1] == dimensions[0] - 1) {
-					directionPath.add(Main.Direction.right); // Wrap left
+					directionPath.add(Main.Direction.RIGHT); // Wrap left
 				}
 				
 				//Otherwise regular movements
 				else if (coordPath.get(i)[1] < coordPath.get(i+1)[1]) {
-					directionPath.add(Main.Direction.right);
+					directionPath.add(Main.Direction.RIGHT);
 				}
 				else if (coordPath.get(i)[1] > coordPath.get(i+1)[1]) {
-					directionPath.add(Main.Direction.left);
+					directionPath.add(Main.Direction.LEFT);
 				}
 				else {
 					throw new ArithmeticException("Path involves not moving!");
@@ -350,18 +350,18 @@ public class AdjacencyMatrix{
 			else if (coordPath.get(i)[1] == coordPath.get(i+1)[1]) { 
 				//If we need to wrap around the screen...
 				if (coordPath.get(i)[0] == 0 && coordPath.get(i+1)[0] == dimensions[1] - 1) {
-					directionPath.add(Main.Direction.up); // Wrap down to the bottom
+					directionPath.add(Main.Direction.UP); // Wrap down to the bottom
 				}
 				else if (coordPath.get(i+1)[0] == 0 && coordPath.get(i)[0] == dimensions[1] - 1) {
-					directionPath.add(Main.Direction.down); // Wrap up to the top
+					directionPath.add(Main.Direction.DOWN); // Wrap up to the top
 				}
 				
 				//Otherwise regular movements
 				else if (coordPath.get(i)[0] < coordPath.get(i+1)[0]) {
-					directionPath.add(Main.Direction.down);
+					directionPath.add(Main.Direction.DOWN);
 				}
 				else if (coordPath.get(i)[0] > coordPath.get(i+1)[0]) {
-					directionPath.add(Main.Direction.up);
+					directionPath.add(Main.Direction.UP);
 				}
 				else {
 					throw new ArithmeticException("Path involves not moving!");

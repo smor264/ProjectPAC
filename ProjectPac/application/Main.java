@@ -98,21 +98,23 @@ public class Main extends Application {
 
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
-	//private boolean playerCanEatGhosts = false;
+	
+	
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
+	boolean isBoostActive = false;
+	int boostDuration;
+	
 	private int ateGhostScore = 200; //Score given for eating a ghost
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
 
 	private boolean playerIsWallJumping = false; // This should go in player eventually
-	boolean isBoostActive = false;
-	int boostDuration;
+	
 	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
 	public int changeColor = 0;
 
 	SoundController sound = new SoundController();
-	int pelletPickupSize = 0; // goes in player eventually
 
 	Laser laserFactory = new Laser();
 
@@ -211,30 +213,30 @@ public class Main extends Application {
     private Charset utf8 = StandardCharsets.UTF_8;
     private String baseSaveData = "Player1\r\n110000\r\n00000000000";
 
-	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
-	public PlayerCharacter playerCharacter = PlayerCharacter.SnacTheSnake;
+	
+	public PlayerCharacter playerCharacter = PlayerCharacter.SNACTHESNAKE;
 
 	public enum GameMode {
-		SinglePlayer,
-		TwoPlayer,
-		ThreePlayer;
+		SINGLEPLAYER,
+		TWOPLAYER,
+		THREEPLAYER;
 	}
 
 	public GameMode currentGameMode;
-
-
+	
+	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
+	private static Polygon mouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
 	/**
 	 * A list of all characters that the player can use.
-	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
+	 * Each PlayerCharacter has a model (Shape), colour (Color), an ability (Ability) and a speed (int)
 	 * */
-	private static Polygon pacManMouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
 	public enum PlayerCharacter {
-		PacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.YELLOW, Player.Ability.eatGhosts, 2),
-		MsPacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.LIGHTPINK, Player.Ability.eatGhosts, 2),
-		PacKid (Shape.intersect(new Circle(gridSquareSize/3), pacManMouth), Color.GREENYELLOW, Player.Ability.wallJump, 2),
-		GlitchTheGhost (glitchTheGhostModel, null, Player.Ability.eatSameColor, 2),
-		SnacTheSnake (Shape.intersect(new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2), pacManMouth), Color.SEAGREEN, Player.Ability.snake, 3),
-		Robot (Shape.intersect(new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0), pacManMouth), Color.DARKGREY , Player.Ability.gun, 2);
+		PACMAN (Shape.intersect(new Circle(gridSquareSize/2), mouth), Color.YELLOW, Player.Ability.EATGHOSTS, 2),
+		MSPACMAN (Shape.intersect(new Circle(gridSquareSize/2), mouth), Color.LIGHTPINK, Player.Ability.EATGHOSTS, 2),
+		PACKID (Shape.intersect(new Circle(gridSquareSize/3), mouth), Color.GREENYELLOW, Player.Ability.WALLJUMP, 2),
+		GLITCHTHEGHOST (glitchTheGhostModel, null, Player.Ability.EATSAMECOLOR, 2),
+		SNACTHESNAKE (Shape.intersect(new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2), mouth), Color.SEAGREEN, Player.Ability.SNAKE, 3),
+		ROBOT (Shape.intersect(new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0), mouth), Color.DARKGREY , Player.Ability.LASER, 2);
 
 		private final Shape model;
 		private final Player.Ability ability;
@@ -261,10 +263,10 @@ public class Main extends Application {
 	 * A list of all valid directions characters can move
 	 * */
 	public static enum Direction {
-		up,
-		down,
-		left,
-		right,
+		UP,
+		DOWN,
+		LEFT,
+		RIGHT,
 	}
 
 	/**
@@ -287,10 +289,12 @@ public class Main extends Application {
 		System.out.print(str); // because I'm tired of writing System.out.print
 	}
 
+	/** Converts a position value (pixel position on screen) to an index (tile position in level)*/
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
 	}
-
+	
+	/** Converts an index value (tile posititon in level) to a position (pixel position on screen) */
 	private double convertToPosition(int index, boolean isXCoord) {
 		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
 	}
@@ -324,13 +328,15 @@ public class Main extends Application {
 		return true;
 	}
 
-	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
+	/** 
+	 * Places LevelObjects (walls, pickups, enemies, player) in the level*/
+	private void placeLevelObject(LevelObject obj, int x, int y) {
 		currentLevel.getChildren().add(obj.getModel());
 		obj.moveTo(convertToPosition(x, true), convertToPosition(y, false));
 		levelObjectArray[y][x] = obj;
-		
 	}
 
+	/**Resets LevelObjects to their initial values*/
 	private void restartLevel() {
 		int playerStartXPos = player.getStartIndex()[0];
 		int playerStartYPos = player.getStartIndex()[1];
@@ -459,8 +465,8 @@ public class Main extends Application {
 	/**
 	 * Loads the next level, clears previous level
 	 * @param primaryStage
-	 * @param newLevel
-	 * @return
+	 * @param newLevel 
+	 * @return true
 	 */
 	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
 		hidePostLevelScreen();
@@ -477,7 +483,7 @@ public class Main extends Application {
 	}
 
 	/**
-	 * Stops the gameLoop and handles game over UI
+	 * Stops the gameLoop and hands game over UI
 	 */
 	private void gameOver() {
 
@@ -632,7 +638,7 @@ public class Main extends Application {
 				if (array[yPos][xPos] == 1 && array[yPos][xPos+1] == 1 && array[yPos+1][xPos] == 1 && array[yPos+1][xPos+1] == 1) {
 					double xAvg = (convertToPosition(xPos+1, true) +convertToPosition(xPos+2, true))/2.0 - Main.gridSquareSize/4;
 					double yAvg = (convertToPosition(yPos+1, false) +convertToPosition(yPos+2, false))/2.0 - Main.gridSquareSize/4;
-					Wall wall = new Wall(Wall.WallType.single, Direction.up, level.getWallColor());
+					Wall wall = new Wall(Wall.WallType.SINGLE, Direction.UP, level.getWallColor());
 					wall.moveTo(xAvg, yAvg);
 					currentLevel.getChildren().add(wall.getModel());
 				}
@@ -646,7 +652,7 @@ public class Main extends Application {
 
 
 		//For multiplayer, replaces AI with playable ghosts
-		if(currentGameMode != GameMode.SinglePlayer) {
+		if(currentGameMode != GameMode.SINGLEPLAYER) {
 			for(int i = 0; i < currentGameMode.ordinal(); i++) {
 				Player playerGhost = new Player(new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0), playerCharacter.speed(), true,enemyColors[i]);
 				playerList.add(playerGhost);
@@ -690,12 +696,12 @@ public class Main extends Application {
 
 	public void initCharList() {
 		if(charList.isEmpty()) {
-		charList.add(PlayerCharacter.PacMan);
-		charList.add(PlayerCharacter.MsPacMan);
-		charList.add(PlayerCharacter.PacKid);
-		charList.add(PlayerCharacter.Robot);
-		charList.add(PlayerCharacter.SnacTheSnake);
-		charList.add(PlayerCharacter.GlitchTheGhost);
+		charList.add(PlayerCharacter.PACMAN);
+		charList.add(PlayerCharacter.MSPACMAN);
+		charList.add(PlayerCharacter.PACKID);
+		charList.add(PlayerCharacter.ROBOT);
+		charList.add(PlayerCharacter.SNACTHESNAKE);
+		charList.add(PlayerCharacter.GLITCHTHEGHOST);
 		}
 	}
 
@@ -715,7 +721,7 @@ public class Main extends Application {
 		Button threePlayerButton = (Button) launchScene.lookup("#threePlayerButton");
 
 		twoPlayerButton.setOnAction(e -> {
-			currentGameMode = GameMode.TwoPlayer;
+			currentGameMode = GameMode.TWOPLAYER;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 
 			println("TwoPlayer Selected!");
@@ -723,7 +729,7 @@ public class Main extends Application {
 		});
 
 		threePlayerButton.setOnAction(e -> {
-			currentGameMode = GameMode.ThreePlayer;
+			currentGameMode = GameMode.THREEPLAYER;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 			println("ThreePlayer Selected");
 			game(primaryStage);
@@ -742,7 +748,7 @@ public class Main extends Application {
 		playButton.setDefaultButton(true);
 		playButton.setOnAction(e -> {
 			readFromSaveFile(saveFile);
-			currentGameMode = GameMode.SinglePlayer;
+			currentGameMode = GameMode.SINGLEPLAYER;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 			game(primaryStage);
 			});
@@ -767,17 +773,6 @@ public class Main extends Application {
 			}
 		}
 	}
-
-	/*private void toLaunchScreen(Stage primaryStage) {
-		gameLoop.stop();
-		currentLevel.getChildren().clear();
-		readFromSaveFile(saveFile);
-		//start(primaryStage);
-		primaryStage.setScene(launchScene);
-		primaryStage.show();
-
-	}
-	*/
 
 	/**
 	 * Loads , displays, and runs the game itself
@@ -819,21 +814,21 @@ public class Main extends Application {
 			public void handle(KeyEvent event) {
 				boolean inverted = player.getControlsInverted();
 				switch(currentGameMode) {
-				case SinglePlayer: {
+				case SINGLEPLAYER: {
 					switch (event.getCode()) {
 					case W:
 					case UP: {
-						player.getHeldButtons().append( (inverted ? Direction.down: Direction.up) ); break;
+						player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;
 					}
 
 					case S:
-					case DOWN: { player.getHeldButtons().append( (inverted ? Direction.up: Direction.down) ); break;}
+					case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
 
 					case A:
-					case LEFT: { player.getHeldButtons().append(inverted ? Direction.right : Direction.left); break;}
+					case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
 
 					case D:
-					case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
+					case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
 
 					case C :{ if (currentGameTick >= 240) {usePlayerBoost();} break; }
 					case V:{ if (currentGameTick >= 240) {usePlayerAbility(false);} break; }
@@ -870,20 +865,20 @@ public class Main extends Application {
 					}
 					break;
 				}
-					case TwoPlayer: {
+					case TWOPLAYER: {
 						switch (event.getCode()) {
-						case W: {playerList.get(1).getHeldButtons().append(Direction.up);break;}
-						case UP: {player.getHeldButtons().append( (inverted ? Direction.down: Direction.up) ); break;
+						case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
+						case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;
 						}
 
-						case S: {playerList.get(1).getHeldButtons().append(Direction.down);break;}
-						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.up: Direction.down) ); break;}
+						case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
+						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
 
-						case A: {playerList.get(1).getHeldButtons().append(Direction.left);break;}
-						case LEFT: { player.getHeldButtons().append(inverted ? Direction.right : Direction.left); break;}
+						case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
+						case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
 
-						case D: {playerList.get(1).getHeldButtons().append(Direction.right);break;}
-						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
+						case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
+						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
 						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
 						case ESCAPE:{ closeGame(primaryStage); break;}
@@ -900,23 +895,23 @@ public class Main extends Application {
 							}
 						}
 						break;}
-					case ThreePlayer: {
+					case THREEPLAYER: {
 						switch (event.getCode()) {
-						case W: {playerList.get(1).getHeldButtons().append(Direction.up);break;}
-						case UP: {player.getHeldButtons().append( (inverted ? Direction.down: Direction.up) ); break;}
-						case I: {playerList.get(2).getHeldButtons().append(Direction.up);break;}
+						case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
+						case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
+						case I: {playerList.get(2).getHeldButtons().append(Direction.UP);break;}
 
-						case S: {playerList.get(1).getHeldButtons().append(Direction.down);break;}
-						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.up: Direction.down) ); break;}
-						case K: {playerList.get(2).getHeldButtons().append(Direction.down);break;}
+						case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
+						case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
+						case K: {playerList.get(2).getHeldButtons().append(Direction.DOWN);break;}
 
-						case A: {playerList.get(1).getHeldButtons().append(Direction.left);break;}
-						case LEFT: { player.getHeldButtons().append(inverted ? Direction.right : Direction.left); break;}
-						case J: {playerList.get(2).getHeldButtons().append(Direction.left);break;}
+						case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
+						case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
+						case J: {playerList.get(2).getHeldButtons().append(Direction.LEFT);break;}
 
-						case D: {playerList.get(1).getHeldButtons().append(Direction.right);break;}
-						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
-						case L: {playerList.get(2).getHeldButtons().append(Direction.right);break;}
+						case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
+						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
+						case L: {playerList.get(2).getHeldButtons().append(Direction.RIGHT);break;}
 						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
 						case ESCAPE:{ closeGame(primaryStage); break;}
@@ -947,58 +942,58 @@ public class Main extends Application {
 			public void handle(KeyEvent event) {
 				boolean inverted = player.getControlsInverted();
 				switch (currentGameMode) {
-					case SinglePlayer:
+					case SINGLEPLAYER:
 						switch (event.getCode()) {
 						case W:
-						case UP: { player.getHeldButtons().remove((inverted ? Direction.down: Direction.up)); break; }
+						case UP: { player.getHeldButtons().remove((inverted ? Direction.DOWN: Direction.UP)); break; }
 
 						case S:
-						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.up: Direction.down)); break; }
+						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.UP: Direction.DOWN)); break; }
 
 						case A:
-						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.right: Direction.left)); break; }
+						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.RIGHT: Direction.LEFT)); break; }
 
 						case D:
-						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.left: Direction.right)); break; }
+						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.LEFT: Direction.RIGHT)); break; }
 
 						default: break;
 						}
 						break;
-					case TwoPlayer:
+					case TWOPLAYER:
 						switch (event.getCode()) {
-						case W: { playerList.get(1).getHeldButtons().remove(Direction.up); break; }
-						case UP: { player.getHeldButtons().remove((inverted ? Direction.down: Direction.up)); break; }
+						case W: { playerList.get(1).getHeldButtons().remove(Direction.UP); break; }
+						case UP: { player.getHeldButtons().remove((inverted ? Direction.DOWN: Direction.UP)); break; }
 
-						case S: { playerList.get(1).getHeldButtons().remove(Direction.down); break; }
-						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.up: Direction.down)); break; }
+						case S: { playerList.get(1).getHeldButtons().remove(Direction.DOWN); break; }
+						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.UP: Direction.DOWN)); break; }
 
-						case A: { playerList.get(1).getHeldButtons().remove(Direction.left); break; }
-						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.right: Direction.left)); break; }
+						case A: { playerList.get(1).getHeldButtons().remove(Direction.LEFT); break; }
+						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.RIGHT: Direction.LEFT)); break; }
 
-						case D: { playerList.get(1).getHeldButtons().remove(Direction.right); break; }
-						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.left: Direction.right)); break; }
+						case D: { playerList.get(1).getHeldButtons().remove(Direction.RIGHT); break; }
+						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.LEFT: Direction.RIGHT)); break; }
 
 						default: break;
 						}
 						break;
 
-					case ThreePlayer:
+					case THREEPLAYER:
 						switch (event.getCode()) {
-						case W: { playerList.get(1).getHeldButtons().remove(Direction.up); break; }
-						case UP: { player.getHeldButtons().remove((inverted ? Direction.down: Direction.up)); break; }
-						case I: { playerList.get(2).getHeldButtons().remove(Direction.up); break; }
+						case W: { playerList.get(1).getHeldButtons().remove(Direction.UP); break; }
+						case UP: { player.getHeldButtons().remove((inverted ? Direction.DOWN: Direction.UP)); break; }
+						case I: { playerList.get(2).getHeldButtons().remove(Direction.UP); break; }
 
-						case S: { playerList.get(1).getHeldButtons().remove(Direction.down); break; }
-						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.up: Direction.down)); break; }
-						case K: { playerList.get(2).getHeldButtons().remove(Direction.down); break; }
+						case S: { playerList.get(1).getHeldButtons().remove(Direction.DOWN); break; }
+						case DOWN: { player.getHeldButtons().remove((inverted ? Direction.UP: Direction.DOWN)); break; }
+						case K: { playerList.get(2).getHeldButtons().remove(Direction.DOWN); break; }
 
-						case A: { playerList.get(1).getHeldButtons().remove(Direction.left); break; }
-						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.right: Direction.left)); break; }
-						case J: { playerList.get(2).getHeldButtons().remove(Direction.left); break; }
+						case A: { playerList.get(1).getHeldButtons().remove(Direction.LEFT); break; }
+						case LEFT: { player.getHeldButtons().remove((inverted ? Direction.RIGHT: Direction.LEFT)); break; }
+						case J: { playerList.get(2).getHeldButtons().remove(Direction.LEFT); break; }
 
-						case D: { playerList.get(1).getHeldButtons().remove(Direction.right); break; }
-						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.left: Direction.right)); break; }
-						case L: { playerList.get(2).getHeldButtons().remove(Direction.right); break; }
+						case D: { playerList.get(1).getHeldButtons().remove(Direction.RIGHT); break; }
+						case RIGHT: { player.getHeldButtons().remove((inverted ? Direction.LEFT: Direction.RIGHT)); break; }
+						case L: { playerList.get(2).getHeldButtons().remove(Direction.RIGHT); break; }
 
 						default: break;
 						}
@@ -1025,7 +1020,7 @@ public class Main extends Application {
 						}
 						int[] delta = {0,0};
 
-						if (player.getAbility() == Player.Ability.eatSameColor) {
+						if (player.getAbility() == Player.Ability.EATSAMECOLOR) {
 							if(currentGameTick%(2*60) == 0) {
 								println("Time to change!");
 								if(changeColor < enemyColors.length-1) { changeColor++; println("Colour Change!" + Integer.toString(changeColor));}
@@ -1041,10 +1036,10 @@ public class Main extends Application {
 							manageAnimation(playerList.get(i));
 						}
 
-						if (player.getAbility() == Player.Ability.snake) {
+						if (player.getAbility() == Player.Ability.SNAKE) {
 							manageSnake();
 						}
-						else if (player.getAbility() == Player.Ability.eatGhosts && player.isAbilityActive()) {
+						else if (player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive()) {
 							manageEatGhosts();
 						}
 
@@ -1057,10 +1052,10 @@ public class Main extends Application {
 
 						if (isBoostActive){
 							if (waitingForGridAlignment && isGridAligned(player)) {
-								if (player.getBoost() == Player.Boost.dash) {
+								if (player.getBoost() == Player.Boost.DASH) {
 									player.setTempSpeed(4);
 								}
-								else if (player.getBoost() == Player.Boost.superDash) {
+								else if (player.getBoost() == Player.Boost.SUPERDASH) {
 									player.setTempSpeed(6);
 								}
 								waitingForGridAlignment = false;
@@ -1127,16 +1122,16 @@ public class Main extends Application {
 			return;
 		}
 		Shape baseModel;
-		if (playerCharacter == PlayerCharacter.SnacTheSnake){
+		if (playerCharacter == PlayerCharacter.SNACTHESNAKE){
 			baseModel = new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2);
 		}
-		else if (playerCharacter == PlayerCharacter.Robot){
+		else if (playerCharacter == PlayerCharacter.ROBOT){
 			baseModel = new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0);
 		}
-		else if (playerCharacter == PlayerCharacter.PacMan || playerCharacter == PlayerCharacter.MsPacMan ){
+		else if (playerCharacter == PlayerCharacter.PACMAN || playerCharacter == PlayerCharacter.MSPACMAN ){
 			baseModel = new Circle(gridSquareSize/2.0);
 		}
-		else if (playerCharacter == PlayerCharacter.PacKid){
+		else if (playerCharacter == PlayerCharacter.PACKID){
 			baseModel = new Circle(gridSquareSize/3.0);
 		}
 		else {
@@ -1151,11 +1146,11 @@ public class Main extends Application {
 		
 		switch (player.getPrevDirection()){
 			default:
-			case up:
-			case down:{ 
+			case UP:
+			case DOWN:{ 
 				animationFrame = (int) (player.getPosition()[1] - levelOffsetY) % (gridSquareSize); break;}			
-			case left:
-			case right:{
+			case LEFT:
+			case RIGHT:{
 				animationFrame = (int) (player.getPosition()[0] - levelOffsetX) % (gridSquareSize); break;}
 		}
 		currentLevel.getChildren().remove(player.getModel());
@@ -1182,7 +1177,8 @@ public class Main extends Application {
 		} while ( validMove == false );
 		return new Integer[] {randXIndex, randYIndex};
 	}
-
+	
+	/**Checks to see if a Character is aligned with the tile grid, or if it is currently moving between tiles*/
 	private boolean isGridAligned(Character character) {
 		if ( ((character.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((character.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
 			return true;
@@ -1208,7 +1204,7 @@ public class Main extends Application {
 		}
 
 
-		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.random);} );
+		randomBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.RANDOM);} );
 
 		postLevelOverlay.relocate((windowWidth/2)-500, (windowHeight/2)-200);
 		postLevelBackground.setArcHeight(100);
@@ -1330,32 +1326,32 @@ public class Main extends Application {
 
 
 			pacmanSelect.setStyle("-fx-border-color: black");
-			pacmanSelect.getChildren().add(PlayerCharacter.PacMan.model());
+			pacmanSelect.getChildren().add(PlayerCharacter.PACMAN.model());
 
-			msPacmanSelect.getChildren().add(PlayerCharacter.MsPacMan.model());
+			msPacmanSelect.getChildren().add(PlayerCharacter.MSPACMAN.model());
 			msPacmanSelect.setStyle("-fx-border-color: black");
 
-			packidSelect.getChildren().add(PlayerCharacter.PacKid.model());
+			packidSelect.getChildren().add(PlayerCharacter.PACKID.model());
 			packidSelect.setStyle("-fx-border-color: black");
 
-			robotSelect.getChildren().add(PlayerCharacter.Robot.model());
+			robotSelect.getChildren().add(PlayerCharacter.ROBOT.model());
 			robotSelect.setStyle("-fx-border-color: black");
 
-			snacSelect.getChildren().add(PlayerCharacter.SnacTheSnake.model());
+			snacSelect.getChildren().add(PlayerCharacter.SNACTHESNAKE.model());
 			snacSelect.setStyle("-fx-border-color: black");
 
-			glitchSelect.getChildren().add(PlayerCharacter.GlitchTheGhost.model());
+			glitchSelect.getChildren().add(PlayerCharacter.GLITCHTHEGHOST.model());
 			glitchSelect.setStyle("-fx-border-color: black");
 
 			currentCharacter.setText("Pacman");
-			playerCharacter = PlayerCharacter.PacMan;
+			playerCharacter = PlayerCharacter.PACMAN;
 
 			pacmanSelect.setOnMousePressed(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
 					if (charList.get(0).isUnlocked) {
 					currentCharacter.setText("Pacman");
-					playerCharacter = PlayerCharacter.PacMan;
+					playerCharacter = PlayerCharacter.PACMAN;
 					}
 				}
 			});
@@ -1365,7 +1361,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					if (charList.get(1).isUnlocked) {
 					currentCharacter.setText("msPacman");
-					playerCharacter = PlayerCharacter.MsPacMan;
+					playerCharacter = PlayerCharacter.MSPACMAN;
 					}
 				}
 			});
@@ -1374,7 +1370,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					if (charList.get(2).isUnlocked) {
 						currentCharacter.setText("Packid");
-						playerCharacter = PlayerCharacter.PacKid;
+						playerCharacter = PlayerCharacter.PACKID;
 					}
 				}
 			});
@@ -1383,7 +1379,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					if (charList.get(3).isUnlocked) {
 					currentCharacter.setText("Robot");
-					playerCharacter = PlayerCharacter.Robot;
+					playerCharacter = PlayerCharacter.ROBOT;
 					}
 				}
 			});
@@ -1392,7 +1388,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					if (charList.get(4).isUnlocked) {
 					currentCharacter.setText("Snac The Snake");
-					playerCharacter = PlayerCharacter.SnacTheSnake;
+					playerCharacter = PlayerCharacter.SNACTHESNAKE;
 					}
 				}
 			});
@@ -1401,7 +1397,7 @@ public class Main extends Application {
 				public void handle(MouseEvent event) {
 					if (charList.get(5).isUnlocked) {
 					currentCharacter.setText("Glitch");
-					playerCharacter = PlayerCharacter.GlitchTheGhost;
+					playerCharacter = PlayerCharacter.GLITCHTHEGHOST;
 					}
 				}
 			});
@@ -1437,7 +1433,7 @@ public class Main extends Application {
 
 		// Is this enemy colliding with the player?
 		if ((Math.abs(enemy.getPosition()[0] - player.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - player.getPosition()[1]) < gridSquareSize/2)) {
-			if ((player.isAbilityActive() && player.getAbility() == Player.Ability.eatGhosts) || (player.getAbility() == Player.Ability.eatSameColor && enemy.model.getFill() == player.model.getFill()) ) {
+			if ((player.isAbilityActive() && player.getAbility() == Player.Ability.EATGHOSTS) || (player.getAbility() == Player.Ability.EATSAMECOLOR && enemy.model.getFill() == player.model.getFill()) ) {
 				enemyKilled(enemy);
 				sound.ghostEaten();
 			}
@@ -1450,7 +1446,7 @@ public class Main extends Application {
 				sound.playerEaten();
 				throw new PlayerCaughtException(); }
 		}
-		if (player.getAbility() == Player.Ability.snake) {
+		if (player.getAbility() == Player.Ability.SNAKE) {
 			for (SnakePiece snakePiece : snakePieces) {
 				if ((Math.abs(enemy.getPosition()[0] - snakePiece.getPosition()[0]) < gridSquareSize/2) && (Math.abs(enemy.getPosition()[1] - snakePiece.getPosition()[1]) < gridSquareSize/2)) {
 					sound.playerEaten();
@@ -1470,7 +1466,7 @@ public class Main extends Application {
 			//Enemies aren't stored in levelObjectArray because they would overwrite pellets as they move, plus they don't need to be.
 
 			//The beginning of more AI decisions goes here
-			if (player.getAbility() == Player.Ability.eatGhosts && player.isAbilityActive() ) {
+			if (player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive() ) {
 				//Take the direction that maximises euclidean distance to the player
 				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 			}
@@ -1503,13 +1499,13 @@ public class Main extends Application {
 			}
 			else {
 				switch(enemy.getBehaviour()) {
-					case hunter: {
+					case HUNTER: {
 						chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						break;
 					}
-					case ambusher: {
+					case AMBUSHER: {
 						switch (enemy.getAmbusherState()) {
-							case reposition1:{
+							case RETREAT:{
 								/* If it's now time to ambush, pick a random spot on the map to move to, from there we can try to cut the player off */
 								//println("Choosing a random position to move to...");
 								Random rand = new Random();
@@ -1533,22 +1529,22 @@ public class Main extends Application {
 								enemy.manageAmbusherFSM();
 								break;
 							}
-							case reposition2:{
+							case REPOSITION:{
 
 								enemy.manageAmbusherFSM();
 								break;
 							}
-							case ambush:{
+							case AMBUSH:{
 								//If far away, try to cut the player off
 								//use player direction to aim ahead of the player
 								//println("Time to ambush!");
 								int[] del = {0,0};
 								if (player.getPrevDirection() != null) {
 									switch (player.getPrevDirection()) {
-										case up:    {del[1] = -3; break;}
-										case down:  {del[1] = 3; break;}
-										case left:  {del[0] = -3; break;}
-										case right: {del[0] = 3; break;}
+										case UP:    {del[1] = -3; break;}
+										case DOWN:  {del[1] = 3; break;}
+										case LEFT:  {del[0] = -3; break;}
+										case RIGHT: {del[0] = 3; break;}
 										default:    {break;}
 									}
 								}
@@ -1568,7 +1564,7 @@ public class Main extends Application {
 								enemy.manageAmbusherFSM();
 								break;
 							}
-							case chase:{
+							case CHASE:{
 								//println("Chasing the player...");
 								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 								enemy.manageAmbusherFSM();
@@ -1579,17 +1575,18 @@ public class Main extends Application {
 						}
 						break;
 					}
-					case guard: {
+					case GUARD: {
 						int guardRadius = 10;
-						int guardYIndex = 5;
-						int guardXIndex = 6;
-						if (AdjacencyMatrix.calcDistance(new Integer[] {guardYIndex, guardXIndex}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+						//int guardYIndex = 5;
+						//int guardXIndex = 6;
+						Integer[] guardIndexes = findRandomValidIndexes();
+						if (AdjacencyMatrix.calcDistance(new Integer[] {guardIndexes[1], guardIndexes[0]}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
 							// Is the player near my guard point? Chase them!
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						}
-						else if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex}) > guardRadius) {
+						else if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1], guardIndexes[0]}) > guardRadius) {
 							// Am I far from my guard point? Move closer
-							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex, guardXIndex});
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1], guardIndexes[0]});
 						}
 						else {
 							//I am near my guard point and the player is not. Do a random move?
@@ -1606,24 +1603,20 @@ public class Main extends Application {
 								randomXCoord = random.nextInt(2*guardRadius) - guardRadius; // random index from (-guardRadius) to (guardRadius)
 								randomYCoord = random.nextInt(2*guardRadius) - guardRadius;
 								try{
-									if (levelObjectArray[guardYIndex - randomYCoord][guardXIndex - randomXCoord] instanceof Wall) {
+									if (levelObjectArray[guardIndexes[1] - randomYCoord][guardIndexes[0] - randomXCoord] instanceof Wall) {
 										validMove = false;
-										//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is a wall, retrying...");
 									}
 								}
 								catch(ArrayIndexOutOfBoundsException e) {
 									validMove = false;
-									//println((guardXIndex - randomXCoord) +", " + (guardYIndex - randomYCoord) + " is outside the level bounds, retrying...");
 								}
 
 							} while (!validMove);
-							//println("Looks like I'm gonna check out " + (guardXIndex - randomXCoord) + ", " + (guardYIndex - randomYCoord));
-							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardYIndex - randomYCoord, guardXIndex - randomXCoord});
+							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1] - randomYCoord, guardIndexes[0] - randomXCoord});
 						}
 						break;
 					}
-					case indecisive: {break;}
-					case patrol: {
+					/*case patrol: {
 						int aggroRadius = 4;
 						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) < aggroRadius) {
 							//If close to the player, chase
@@ -1633,8 +1626,8 @@ public class Main extends Application {
 							//move between points
 						}
 						break;
-					}
-					case scared: {
+					}*/
+					case SCARED: {
 						int scaredRadius = 1;
 						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
 							//If the player is far away
@@ -1665,7 +1658,7 @@ public class Main extends Application {
 			}
 
 			switch (next) {
-				case up: {
+				case UP: {
 					//If wrapping around level...
 					if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(levelObjectArray.length-1, false));
@@ -1677,8 +1670,8 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[1] = -(int)enemy.getSpeed();
-					enemy.setPrevDirection(Direction.up); break;}
-				case down:{
+					enemy.setPrevDirection(Direction.UP); break;}
+				case DOWN:{
 					//If wrapping around level...
 					if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
 						enemy.moveTo(convertToPosition(xIndex, true), convertToPosition(0, false));
@@ -1690,8 +1683,8 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[1] = (int)enemy.getSpeed();
-					enemy.setPrevDirection(Direction.down); break;}
-				case left:{
+					enemy.setPrevDirection(Direction.DOWN); break;}
+				case LEFT:{
 					//If wrapping around level...
 					if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
 						enemy.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
@@ -1703,8 +1696,8 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[0] = -(int)enemy.getSpeed();
-					enemy.setPrevDirection(Direction.left); break;}
-				case right:{
+					enemy.setPrevDirection(Direction.LEFT); break;}
+				case RIGHT:{
 					//If wrapping around level...
 					if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
 						enemy.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
@@ -1716,7 +1709,7 @@ public class Main extends Application {
 
 					//Otherwise, regular move...
 					delta[0] = (int)enemy.getSpeed();
-					enemy.setPrevDirection(Direction.right); break;}
+					enemy.setPrevDirection(Direction.RIGHT); break;}
 				default:{ throw new IllegalArgumentException("No move to make!");}
 
 			}
@@ -1724,10 +1717,10 @@ public class Main extends Application {
 		}
 		else { // Otherwise continue moving until you're aligned with the grid
 			switch(enemy.getPrevDirection()) {
-				case up:{ delta[1] = -(int)enemy.getSpeed(); break;}
-				case down:{ delta[1] = (int)enemy.getSpeed(); break;}
-				case left:{ delta[0] = -(int)enemy.getSpeed(); break;}
-				case right:{ delta[0] = (int)enemy.getSpeed(); break;}
+				case UP:{ delta[1] = -(int)enemy.getSpeed(); break;}
+				case DOWN:{ delta[1] = (int)enemy.getSpeed(); break;}
+				case LEFT:{ delta[0] = -(int)enemy.getSpeed(); break;}
+				case RIGHT:{ delta[0] = (int)enemy.getSpeed(); break;}
 				default: { throw new IllegalArgumentException("prevDirection is undefined");}
 			}
 		}
@@ -1735,28 +1728,29 @@ public class Main extends Application {
 		return delta;
 	}
 
+	/**This function sets an enemy's next moves based on their algorithm attribute*/
 	private void chooseMoveFromAlgorithm(Enemy enemy, Integer[] source, Integer[] destination) {
 		try {
 			switch (enemy.getAlgorithm()) {
-				case bfs:{
+				case BFS:{
 					// set next moves to be the directions from enemy to player
 					enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
 					break;
 				}
-				case dfs:{
+				case DFS:{
 					// Since DFS's paths are so windy, we actually need to let them complete before repathing
 					if (enemy.getPathLength() == 0) {
 						enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
 					}
 					break;
 				}
-				case dijkstra:{
+				case DIJKSTRA:{
 					//System.out.println(targetXIndex + ", " + targetYIndex);
 					enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
 					break;
 				}
 
-				case euclidean:{
+				case EUCLIDEAN:{
 					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
 					//println("euc");
 					break;
@@ -1769,6 +1763,7 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
+	
 	/** this function is in charge of stopping other snakePieces if the player stops moving*/
 	private void manageSnakePieceMovement(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
@@ -1781,7 +1776,7 @@ public class Main extends Application {
 			for (int i = 0; i < player.getHeldButtons().size(); i++) {
 				boolean valid = true;
 				switch(player.getHeldButtons().getNFromTop(i)) {
-					case up:{
+					case UP:{
 						try {
 							if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {
 								valid = false;
@@ -1789,7 +1784,7 @@ public class Main extends Application {
 							}
 						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
 					}
-					case down:{
+					case DOWN:{
 						try {
 							if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {
 								valid = false;
@@ -1797,7 +1792,7 @@ public class Main extends Application {
 							}
 						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
 					}
-					case left:{
+					case LEFT:{
 						try {
 							if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {
 								valid = false;
@@ -1805,7 +1800,7 @@ public class Main extends Application {
 							}
 						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
 					}
-					case right:{
+					case RIGHT:{
 						try {
 							if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {
 								valid = false;
@@ -1841,7 +1836,7 @@ public class Main extends Application {
 
 		pelletsRemaining--;
 
-		if (player.getAbility() == Player.Ability.snake) {
+		if (player.getAbility() == Player.Ability.SNAKE) {
 			if (player.incrementPelletCounter()) {
 				//println("Spawning new snake bit");
 				SnakePiece newPiece;
@@ -1875,45 +1870,45 @@ public class Main extends Application {
 		int[] delta = {0,0};
 		for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
 
-			if((player.getHeldButtons().getNFromTop(n) == Direction.up) ) {
+			if((player.getHeldButtons().getNFromTop(n) == Direction.UP) ) {
 				// If regular move...
 				if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 					delta[1] = -(int)player.getSpeed();
-					player.pointModel(Direction.up);
-					player.setPrevDirection(Direction.up);
+					player.pointModel(Direction.UP);
+					player.setPrevDirection(Direction.UP);
 					break;
 				} // If wrapping around screen...
 				else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
 					player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
 				}
 			}
-			else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.DOWN) {
 				if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
 					delta[1] = (int)player.getSpeed();
-					player.pointModel(Direction.down);
-					player.setPrevDirection(Direction.down);
+					player.pointModel(Direction.DOWN);
+					player.setPrevDirection(Direction.DOWN);
 					break;
 				}
 				else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
 					player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
 				}
 			}
-			else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.LEFT) {
 				if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
 					delta[0] = -(int)player.getSpeed();
-					player.pointModel(Direction.left);
-					player.setPrevDirection(Direction.left);
+					player.pointModel(Direction.LEFT);
+					player.setPrevDirection(Direction.LEFT);
 					break;
 				}
 				else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
 					player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
 				}
 			}
-			else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.RIGHT) {
 				if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
 					delta[0] = (int)player.getSpeed();
-					player.pointModel(Direction.right);
-					player.setPrevDirection(Direction.right);
+					player.pointModel(Direction.RIGHT);
+					player.setPrevDirection(Direction.RIGHT);
 					break;
 				}
 				else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
@@ -1928,38 +1923,39 @@ public class Main extends Application {
 	private void managePelletMagnet(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
 		int yIndex = convertToIndex(player.getPosition()[1], false);
+		int pickupRadius = player.getPickupRadius();
 		
-		 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
-			 for (int j = -pelletPickupSize ; j <= pelletPickupSize; j++){
-				 try{
-					 if (AdjacencyMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pelletPickupSize) {
-						 if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
-							 if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
-								 usePlayerAbility(true);
-								 sound.powerPelletPickup();
-							 }
-							 else {
-								 sound.pelletPickup();
-							 }
-							 player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
-							 currentScoreText.setText(player.getScoreString());
-							 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
-							 levelObjectArray[yIndex + j][xIndex + i] = null;
-							 pelletsRemaining--;
-						 }
-					 }
-				 }
-				 catch(ArrayIndexOutOfBoundsException e) {}
-			 }
-		 }
-	}
+		for (int i = -pickupRadius; i <= pickupRadius; i++){
+			for (int j = -pickupRadius ; j <= pickupRadius; j++){
+				try{
+					if (AdjacencyMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pickupRadius) {
+						if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
+							if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
+								usePlayerAbility(true);
+								sound.powerPelletPickup();
+							}
+							else {
+								sound.pelletPickup();
+							}
+							player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
+							currentScoreText.setText(player.getScoreString());
+							currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
+							levelObjectArray[yIndex + j][xIndex + i] = null;
+							pelletsRemaining--;
+						}
+					}
+				}
+				catch(ArrayIndexOutOfBoundsException e) {}
+			}
+		}
+	}	
 	
 	private int[] calculatePlayerMovement(Player player) throws LevelCompleteException, PlayerCaughtException{
 		int[] delta = {0,0};
 		// Is this playerGhost colliding with the player?
-		if(player != playerList.get(0)) {
+		if(player.getIsGhost()) {
 			if ((Math.abs(player.getPosition()[0] - playerList.get(0).getPosition()[0]) < gridSquareSize/2) && (Math.abs(player.getPosition()[1] - playerList.get(0).getPosition()[1]) < gridSquareSize/2)) {
-				if ((playerList.get(0).isAbilityActive() && playerList.get(0).getAbility() == Player.Ability.eatGhosts) || (playerList.get(0).getAbility() == Player.Ability.eatSameColor && player.model.getFill() == player.model.getFill()) ) {
+				if ((playerList.get(0).isAbilityActive() && playerList.get(0).getAbility() == Player.Ability.EATGHOSTS) || (playerList.get(0).getAbility() == Player.Ability.EATSAMECOLOR && player.getModel().getFill() == player.getModel().getFill()) ) {
 					enemyKilled(player);
 				}
 				else if (player.getShield() != null){
@@ -1982,16 +1978,16 @@ public class Main extends Application {
 				}
 
 				switch (player.getPrevDirection()) {
-					case up: {delta[1] = -(int)player.getSpeed(); break;}
-					case down: {delta[1] = (int)player.getSpeed(); break;}
-					case left: {delta[0] = -(int)player.getSpeed(); break;}
-					case right: {delta[0] = (int)player.getSpeed(); break;}
+					case UP: {delta[1] = -(int)player.getSpeed(); break;}
+					case DOWN: {delta[1] = (int)player.getSpeed(); break;}
+					case LEFT: {delta[0] = -(int)player.getSpeed(); break;}
+					case RIGHT: {delta[0] = (int)player.getSpeed(); break;}
 					default: {break;}
 				}
 			}
 
 			//This bit is for the snake player, who needs to stop all his other pieces if he stops
-			if (player.getAbility() == Player.Ability.snake) {
+			if (player.getAbility() == Player.Ability.SNAKE) {
 				manageSnakePieceMovement();
 			}
 
@@ -2011,7 +2007,7 @@ public class Main extends Application {
 
 			player.setPrevIndex(xIndex, yIndex);
 			
-			if (isBoostActive && ( player.getBoost() == Player.Boost.superPelletMagnet ||  player.getBoost() == Player.Boost.pelletMagnet)){
+			if (isBoostActive && ( player.getBoost() == Player.Boost.SUPERPELLETMAGNET ||  player.getBoost() == Player.Boost.PELLETMAGNET)){
 				managePelletMagnet();
 			}
 			//Loop through the held movement keys in order of preference
@@ -2019,10 +2015,10 @@ public class Main extends Application {
 		}
 		else {
 			switch (player.getPrevDirection()) {
-				case up: {delta[1] = -(int)player.getSpeed(); break;}
-				case down: {delta[1] = (int)player.getSpeed(); break;}
-				case left: {delta[0] = -(int)player.getSpeed(); break;}
-				case right: {delta[0] = (int)player.getSpeed(); break;}
+				case UP: {delta[1] = -(int)player.getSpeed(); break;}
+				case DOWN: {delta[1] = (int)player.getSpeed(); break;}
+				case LEFT: {delta[0] = -(int)player.getSpeed(); break;}
+				case RIGHT: {delta[0] = (int)player.getSpeed(); break;}
 				default: {break;}
 			}
 		}
@@ -2062,70 +2058,70 @@ public class Main extends Application {
 
 		switch(numNeighbours) {
 			case (4):{
-				type[0] = Wall.WallType.cross;
-				type[1] = Direction.up;
+				type[0] = Wall.WallType.CROSS;
+				type[1] = Direction.UP;
 				break;
 			}
 			case (3): {
-				type[0] = Wall.WallType.tee;
+				type[0] = Wall.WallType.TEE;
 				if (!northNeighbour) {
-					type[1] = Direction.down;}
+					type[1] = Direction.DOWN;}
 				else if (!southNeighbour) {
-					type[1] = Direction.up;
+					type[1] = Direction.UP;
 				}
 				else if (!leftNeighbour) {
-					type[1] = Direction.right;
+					type[1] = Direction.RIGHT;
 				}
 				else {
-					type[1] = Direction.left;
+					type[1] = Direction.LEFT;
 				}
 				break;
 			}
 			case (2): {
 				if (northNeighbour && southNeighbour) {
-					type[0] = Wall.WallType.straight;
-					type[1] = Direction.up;
+					type[0] = Wall.WallType.STRAIGHT;
+					type[1] = Direction.UP;
 				}
 				else if (leftNeighbour && rightNeighbour) {
-					type[0] = Wall.WallType.straight;
-					type[1] = Direction.right;
+					type[0] = Wall.WallType.STRAIGHT;
+					type[1] = Direction.RIGHT;
 				}
 				else {
-					type[0] = Wall.WallType.corner;
+					type[0] = Wall.WallType.CORNER;
 					if (southNeighbour && rightNeighbour) {
-						type[1] = Direction.up;
+						type[1] = Direction.UP;
 					}
 					else if (leftNeighbour && southNeighbour) {
-						type[1] = Direction.down;
+						type[1] = Direction.DOWN;
 					}
 					else if (northNeighbour && leftNeighbour) {
-						type[1] = Direction.right;
+						type[1] = Direction.RIGHT;
 					}
 					else {
-						type[1] = Direction.left;
+						type[1] = Direction.LEFT;
 					}
 				}
 				break;
 			}
 			case (1): {
-				type[0] = Wall.WallType.end;
+				type[0] = Wall.WallType.END;
 				if (northNeighbour) {
-					type[1] = Direction.up;
+					type[1] = Direction.UP;
 				}
 				else if (southNeighbour) {
-					type[1] = Direction.down;
+					type[1] = Direction.DOWN;
 				}
 				else if (leftNeighbour) {
-					type[1] = Direction.left;
+					type[1] = Direction.LEFT;
 				}
 				else {
-					type[1] = Direction.right;
+					type[1] = Direction.RIGHT;
 				}
 				break;
 			}
 			case(0): {
-				type[0] = Wall.WallType.single;
-				type[1] = Direction.up;
+				type[0] = Wall.WallType.SINGLE;
+				type[1] = Direction.UP;
 				break;
 			}
 			default: {throw new UnsupportedOperationException();}
@@ -2144,10 +2140,10 @@ public class Main extends Application {
 			num = num/2;
 		}
 		switch (twoExponent) {
-			case 0: {array[0] = Enemy.Intelligence.dumb; break;}
-			case 1: {array[0] = Enemy.Intelligence.moderate; break;}
-			case 2: {array[0] = Enemy.Intelligence.smart; break;}
-			case 3: {array[0] = Enemy.Intelligence.perfect; break;}
+			case 0: {array[0] = Enemy.Intelligence.DUMB; break;}
+			case 1: {array[0] = Enemy.Intelligence.MODERATE; break;}
+			case 2: {array[0] = Enemy.Intelligence.SMART; break;}
+			case 3: {array[0] = Enemy.Intelligence.PERFECT; break;}
 		}
 
 		int threeExponent = 0;
@@ -2156,11 +2152,11 @@ public class Main extends Application {
 			num = num/3;
 		}
 		switch (threeExponent) {
-			case 0: {array[1] = Enemy.Behaviour.hunter; break;}
-			case 1: {array[1] = Enemy.Behaviour.ambusher; break;}
-			case 2: {array[1] = Enemy.Behaviour.guard; break;}
+			case 0: {array[1] = Enemy.Behaviour.HUNTER; break;}
+			case 1: {array[1] = Enemy.Behaviour.AMBUSHER; break;}
+			case 2: {array[1] = Enemy.Behaviour.GUARD; break;}
 			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
-			case 4: {array[1] = Enemy.Behaviour.scared; break;}
+			case 4: {array[1] = Enemy.Behaviour.SCARED; break;}
 		}
 
 		int fiveExponent = 0;
@@ -2169,19 +2165,22 @@ public class Main extends Application {
 			num = num/5;
 		}
 		switch (fiveExponent) {
-			case 0: {array[2] = Enemy.Algorithm.dijkstra; break;}
-			case 1: {array[2] = Enemy.Algorithm.euclidean; break;}
-			case 2: {array[2] = Enemy.Algorithm.bfs; break;}
-			case 3: {array[2] = Enemy.Algorithm.dfs; break;}
+			case 0: {array[2] = Enemy.Algorithm.DIJKSTRA; break;}
+			case 1: {array[2] = Enemy.Algorithm.EUCLIDEAN; break;}
+			case 2: {array[2] = Enemy.Algorithm.BFS; break;}
+			case 3: {array[2] = Enemy.Algorithm.DFS; break;}
 		}
 
 		return array;
 	}
 
+	/**
+	 * This function controls the players ability usage. 
+	 * A boolean parameter shows if this is being activated from the user pressing the ability button, or from a power pellet being collected*/
 	private void usePlayerAbility(boolean fromPickup) {
 		if (fromPickup == false) {
 			switch (player.getAbility()) {
-				case gun:{
+				case LASER:{
 					if (player.getAbilityCharges() == 0) {
 						return;
 					}
@@ -2191,7 +2190,7 @@ public class Main extends Application {
 
 					break;
 				}
-				case wallJump:{
+				case WALLJUMP:{
 					if (player.getAbilityCharges() == 0) {
 						return;
 					}
@@ -2205,7 +2204,7 @@ public class Main extends Application {
 		}
 		else {
 			switch (player.getAbility()) {
-				case eatGhosts: {
+				case EATGHOSTS: {
 					player.setAbilityActive(true);
 					playerPowerUpTimer = playerPowerUpDuration;
 					for (Enemy enemy : enemyList) {
@@ -2218,8 +2217,8 @@ public class Main extends Application {
 						playerList.get(i).setSpeed(1);
 					}
 				}
-				case gun:
-				case wallJump: {player.incrementAbilityCharges(); break;}
+				case LASER:
+				case WALLJUMP: {player.incrementAbilityCharges(); break;}
 
 				default: {break;}
 			}
@@ -2240,10 +2239,10 @@ public class Main extends Application {
 				int[] delta = {0,0};
 
 				switch(player.getHeldButtons().getTop()) {
-					case up:{delta[1] = -2; break;}
-					case down:{delta[1] = 2; break;}
-					case left:{delta[0] = -2; break;}
-					case right:{delta[0] = 2; break;}
+					case UP:{delta[1] = -2; break;}
+					case DOWN:{delta[1] = 2; break;}
+					case LEFT:{delta[0] = -2; break;}
+					case RIGHT:{delta[0] = 2; break;}
 				}
 
 				if(levelObjectArray[yIndex + delta[1]][xIndex + delta[0]] instanceof Wall) {
@@ -2255,14 +2254,9 @@ public class Main extends Application {
 					player.decrementAbilityCharges();
 					sound.wallJump();
 				}
-
 			}
-			catch (ArrayIndexOutOfBoundsException e)  {
-
-			}
+			catch (ArrayIndexOutOfBoundsException e)  {;	}
 		}
-
-
 	}
 
 	private void fireLaser() {
@@ -2279,21 +2273,21 @@ public class Main extends Application {
 		if (player.getHeldButtons().isEmpty()) {
 			switch (player.getPrevDirection()) {
 			default:
-			case up:
-			case down: {isHorizontal = false; break;}
+			case UP:
+			case DOWN: {isHorizontal = false; break;}
 
-			case left:
-			case right: {isHorizontal = true; break;}
+			case LEFT:
+			case RIGHT: {isHorizontal = true; break;}
 			}
 		}
 		else {
 			switch(player.getHeldButtons().getTop()) {
 				default:
-				case up:
-				case down:{isHorizontal = false; break;}
+				case UP:
+				case DOWN:{isHorizontal = false; break;}
 
-				case left:
-				case right: {isHorizontal = true; break;}
+				case LEFT:
+				case RIGHT: {isHorizontal = true; break;}
 			}
 		}
 
@@ -2420,11 +2414,11 @@ public class Main extends Application {
 			Direction direction = heldKeys.getNFromTop(heldKeys.size() - (i + 1));
 			Direction newDirection;
 			switch (direction){
-				case up:{newDirection = Direction.down; break;}
-				case down:{newDirection = Direction.up; break;}
-				case left:{newDirection = Direction.right; break;}
-				case right:{newDirection = Direction.left; break;}
-				default:{newDirection = Direction.up; break;}
+				case UP:{newDirection = Direction.DOWN; break;}
+				case DOWN:{newDirection = Direction.UP; break;}
+				case LEFT:{newDirection = Direction.RIGHT; break;}
+				case RIGHT:{newDirection = Direction.LEFT; break;}
+				default:{newDirection = Direction.UP; break;}
 			}
 			newHeldKeys.append(newDirection);
 		}
@@ -2437,28 +2431,28 @@ public class Main extends Application {
 		}
 		else {
 			switch (player.getBoost()){
-				case timeSlow:{slowTime(false); break;}
-				case superTimeSlow:{slowTime(true); break;}
+				case TIMESLOW:{slowTime(false); break;}
+				case SUPERTIMESLOW:{slowTime(true); break;}
 
 				/*We may end up misaligned if we change speed whilst not aligned with the grid, so set a flag and do it when we are aligned.*/
-				case dash:
-				case superDash:{ waitingForGridAlignment = true; break;}
+				case DASH:
+				case SUPERDASH:{ waitingForGridAlignment = true; break;}
 
-				case pelletMagnet:{ pelletPickupSize = 2; break;}
-				case superPelletMagnet:{ pelletPickupSize = 3; break;}
+				case PELLETMAGNET:
+				case SUPERPELLETMAGNET:{ player.setPickupRadius(player.getBoost()); break;}
 
-				case invisibility:
-				case superInvisibility: {player.setInvisible(true); break;}
+				case INVISIBILITY:
+				case SUPERINVISIBILITY: {player.setInvisible(true); break;}
 
-				case shield: {player.setShield(createShield(Color.BLUE)); break;}
-				case superShield: {player.setShield(createShield(Color.BLUE)); break;}
+				case SHIELD: {player.setShield(createShield(Color.BLUE)); break;}
+				case SUPERSHIELD: {player.setShield(createShield(Color.BLUE)); break;}
 
-				case invertControls:{
+				case INVERTCONTROLS:{
 					player.setControlsInverted(true);
 					invertHeldKeys();
 					break;
 				}
-				case randomTeleport:{
+				case RANDOMTELEPORT:{
 					Integer[] pos;
 					double minDist;
 					double dist;
@@ -2477,7 +2471,7 @@ public class Main extends Application {
 					player.moveTo(convertToPosition(pos[0], true), convertToPosition(pos[1], false));
 					break;
 				}
-				case random: {
+				case RANDOM: {
 					Random rand = new Random();
 					int val = rand.nextInt(Player.Boost.values().length - 1);
 					player.setBoost(Player.Boost.values()[val]);
@@ -2503,8 +2497,8 @@ public class Main extends Application {
 
 	private void disableBoost(){
 		switch(player.getBoost()){
-			case timeSlow:
-			case superTimeSlow:{
+			case TIMESLOW:
+			case SUPERTIMESLOW:{
 				for (Enemy enemy : enemyList){
 					enemy.resetSpeed();
 					int[] delta = {0,0};
@@ -2523,20 +2517,20 @@ public class Main extends Application {
 				break;
 			}
 
-			case dash:
-			case superDash:{player.resetSpeed(); break;}
+			case DASH:
+			case SUPERDASH:{player.resetSpeed(); break;}
 
-			case pelletMagnet:
-			case superPelletMagnet:{pelletPickupSize = 0; break;}
+			case PELLETMAGNET:
+			case SUPERPELLETMAGNET:{player.resetPickupRadius(); break;}
 
-			case invisibility:
-			case superInvisibility: {player.setInvisible(false); break;}
+			case INVISIBILITY:
+			case SUPERINVISIBILITY: {player.setInvisible(false); break;}
 
-			case shield:
-			case superShield:  {deleteShield(); break;}
+			case SHIELD:
+			case SUPERSHIELD:  {deleteShield(); break;}
 
-			case randomTeleport:{ break; }
-			case invertControls:{
+			case RANDOMTELEPORT:{ break; }
+			case INVERTCONTROLS:{
 				invertHeldKeys();
 				player.setControlsInverted(false);
 				break;
@@ -2550,7 +2544,7 @@ public class Main extends Application {
 			enemy.setTempSpeed(1);
 		}
 		isBoostActive = true;
-		boostDuration = (isSuper ? Player.Boost.superTimeSlow : Player.Boost.timeSlow).duration();
+		boostDuration = (isSuper ? Player.Boost.SUPERTIMESLOW : Player.Boost.TIMESLOW).duration();
 	}
 
 	private void manageEatGhosts() {
@@ -2593,7 +2587,7 @@ public class Main extends Application {
 			Direction move = snakePiece.dequeueMove();
 			if (move != null) {
 				switch(move) {
-					case up:{
+					case UP:{
 						if (isGridAligned(snakePiece)) {
 							if (snakePiece.getPrevIndex()[1] == 0) {
 								//Wrap around
@@ -2603,7 +2597,7 @@ public class Main extends Application {
 						snakePiece.moveBy(0, (int)-snakePiece.getSpeed());
 						break;
 					}
-					case down:{
+					case DOWN:{
 						if (isGridAligned(snakePiece)) {
 							if (snakePiece.getPrevIndex()[1] == levelObjectArray.length - 1) {
 								//Wrap around
@@ -2613,7 +2607,7 @@ public class Main extends Application {
 						snakePiece.moveBy(0, (int)snakePiece.getSpeed());
 						break;
 					}
-					case left:{
+					case LEFT:{
 						if (isGridAligned(snakePiece)) {
 							if (snakePiece.getPrevIndex()[0] == 0) {
 								//Wrap around
@@ -2623,7 +2617,7 @@ public class Main extends Application {
 						snakePiece.moveBy((int)-snakePiece.getSpeed(), 0);
 						break;
 					}
-					case right:{
+					case RIGHT:{
 						if (isGridAligned(snakePiece)) {
 							if (snakePiece.getPrevIndex()[0] == levelObjectArray[0].length - 1) {
 								//Wrap around

@@ -12,7 +12,7 @@ public class Player extends Character{
 	private int abilityCharges = 0;
 	private Ability ability;
 	private int pelletsEaten = 0; // Used exclusively for the snake PlayerCharacter
-	private Boost currentBoost = Boost.random;
+	private Boost currentBoost = Boost.RANDOM;
 	private int boostCharges = 2;
 	private boolean isAbilityActive = false;
 	private boolean isInvisible = false;
@@ -21,15 +21,18 @@ public class Player extends Character{
 	private boolean isGhost = false;
 	private int lives = 2;
 	private int maxLives = 2;
+	private int pickupRadius = 0;
+	
+	
 	/**
 	 * PlayerCharacter-specific special actions
 	 * */
 	public static enum Ability {
-		eatGhosts ("Ghost Chomp"),
-		wallJump ("Wall Jump"),
-		gun ("Anti-Ghost Laser"),
-		eatSameColor ("@%t#^g&"),
-		snake ("Snake");
+		EATGHOSTS ("Ghost Chomp"),
+		WALLJUMP ("Wall Jump"),
+		LASER ("Anti-Ghost Laser"),
+		EATSAMECOLOR ("@%t#^g&"),
+		SNAKE ("Snake");
 
 		private final String text;
 
@@ -43,24 +46,24 @@ public class Player extends Character{
 	 * Special actions usable by any PlayerCharacter
 	 * */
 	public static enum Boost {
-		timeSlow (6, "Time Slow"),
-		superTimeSlow (10, "Super Time Slow!"),
+		TIMESLOW (6, "Time Slow"),
+		SUPERTIMESLOW (10, "Super Time Slow!"),
 
-		dash (2, "Dash"),
-		superDash (2, "Super Dash!"),
+		DASH (2, "Dash"),
+		SUPERDASH (2, "Super Dash!"),
 
-		pelletMagnet (6, "Pellet Magnet"),
-		superPelletMagnet (6, "Super Pellet Magnet!"),
+		PELLETMAGNET (6, "Pellet Magnet"),
+		SUPERPELLETMAGNET (6, "Super Pellet Magnet!"),
 
-		invisibility (6, "Invisibility"),
-		superInvisibility (8, "Super Invisibility!"),
+		INVISIBILITY (6, "Invisibility"),
+		SUPERINVISIBILITY (8, "Super Invisibility!"),
 
-		shield (20, "Shield"),
-		superShield(40, "Super Shield!"),
+		SHIELD (20, "Shield"),
+		SUPERSHIELD(40, "Super Shield!"),
 
-		invertControls (6, "Inverted Controls!"),
-		randomTeleport (6, "Randomly Teleported!"),
-		random (null, "Random?!");
+		INVERTCONTROLS (6, "Inverted Controls!"),
+		RANDOMTELEPORT (6, "Randomly Teleported!"),
+		RANDOM (null, "Random?!");
 
 		private Integer duration;
 		private String name;
@@ -221,5 +224,19 @@ public class Player extends Character{
 	public void decrementLives(){
 		lives--;
 	}
-
+	
+	public int getPickupRadius() {
+		return pickupRadius;
+	}
+	public void resetPickupRadius() {
+		pickupRadius = 0;
+	}
+	
+	public void setPickupRadius(Boost boost) {
+		switch (boost) {
+		case PELLETMAGNET:{pickupRadius = 2; break;}
+		case SUPERPELLETMAGNET:{pickupRadius = 3; break;}
+		default:{ throw new IllegalArgumentException("Only pelletMagnets are valid boosts for this!"); }
+		}
+	}
 }

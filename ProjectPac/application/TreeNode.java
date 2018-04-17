@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.scene.Node;
-
+	
+/**
+ * The TreeNode class represents a node on a tree structure. 
+ * Each node contains some data, a list of parents, and a list of children.
+ * **/
 public class TreeNode<T> {
 	T data;
 	List<TreeNode<T>> parents;
@@ -71,8 +75,9 @@ public class TreeNode<T> {
 	}
 
 	public boolean isLeaf() {
-		return (children.isEmpty() ? true : false);
+		return children.isEmpty();
 	}
+	
 	public T getData() {
 		return data;
 	}
