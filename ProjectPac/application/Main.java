@@ -98,19 +98,19 @@ public class Main extends Application {
 
 	private int pelletsRemaining = 0;
 	private boolean pausePressed = false;
-	
-	
+
+
 	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	boolean isBoostActive = false;
 	int boostDuration;
-	
+
 	private int ateGhostScore = 200; //Score given for eating a ghost
 	private double currentGameTick = 0;
 	private double maxTime = 120 * 60;
 
 	private boolean playerIsWallJumping = false; // This should go in player eventually
-	
+
 	boolean waitingForGridAlignment = false; // used for dash and super dash boosts
 	public int changeColor = 0;
 
@@ -191,6 +191,7 @@ public class Main extends Application {
     public Button loadSaveButton;
     public Button twoPlayerButton;
     public Button threePlayerButton;
+    public Button helpButton;
     public Text currentAbility;
     public Text currentBoost;
     public Text currentSaveFileName;
@@ -203,6 +204,11 @@ public class Main extends Application {
 	StackPane robotSelect;
 	StackPane snacSelect;
 	StackPane glitchSelect;
+	VBox helpFrame = new VBox(20);
+	Button exitHelpButton = new Button("Close");
+	Rectangle helpBackground = new Rectangle(windowWidth, windowHeight-100, Color.WHITESMOKE);
+	Text helpText = new Text();
+	StackPane textFrame = new StackPane(helpBackground, helpText);
 
     //Save/Load
     private File saveFile;
@@ -213,7 +219,7 @@ public class Main extends Application {
     private Charset utf8 = StandardCharsets.UTF_8;
     private String baseSaveData = "Player1\r\n110000\r\n00000000000";
 
-	
+
 	public PlayerCharacter playerCharacter = PlayerCharacter.SNACTHESNAKE;
 
 	public enum GameMode {
@@ -223,7 +229,7 @@ public class Main extends Application {
 	}
 
 	public GameMode currentGameMode;
-	
+
 	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 	private static Polygon mouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
 	/**
@@ -293,7 +299,7 @@ public class Main extends Application {
 	private int convertToIndex(double position, boolean isXCoord) {
 		return (int)(position-(isXCoord ? levelOffsetX:levelOffsetY)) / gridSquareSize;
 	}
-	
+
 	/** Converts an index value (tile posititon in level) to a position (pixel position on screen) */
 	private double convertToPosition(int index, boolean isXCoord) {
 		return (index * gridSquareSize) + (isXCoord ? levelOffsetX : levelOffsetY);
@@ -328,7 +334,7 @@ public class Main extends Application {
 		return true;
 	}
 
-	/** 
+	/**
 	 * Places LevelObjects (walls, pickups, enemies, player) in the level*/
 	private void placeLevelObject(LevelObject obj, int x, int y) {
 		currentLevel.getChildren().add(obj.getModel());
@@ -465,7 +471,7 @@ public class Main extends Application {
 	/**
 	 * Loads the next level, clears previous level
 	 * @param primaryStage
-	 * @param newLevel 
+	 * @param newLevel
 	 * @return true
 	 */
 	private boolean loadNewLevel(Stage primaryStage, Level newLevel) {
@@ -476,6 +482,7 @@ public class Main extends Application {
 		currentLevel.getChildren().clear();
 		initialiseLevel(newLevel);
 		currentLevelText.setText(loadedLevelName);
+		currentLevelText.setStyle("-fx-font: 20px System");
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
 		currentBoost.setText(player.getBoost().toString());
@@ -631,7 +638,7 @@ public class Main extends Application {
 			}
 		}
 		resetPlayerPowerUpState();
-		
+
 		/*Check for solid areas*/
 		for (int xPos = 0; xPos < array[0].length-1; xPos++) {
 			for (int yPos = 0; yPos < array.length-1; yPos++) {
@@ -717,8 +724,43 @@ public class Main extends Application {
 		exitButton = (Button) launchScene.lookup("#exitButton");
 		loadSaveButton = (Button) launchScene.lookup("#loadSaveFile");
 		currentSaveFileName = (Text) launchScene.lookup("#currentSaveFileName");
-		Button twoPlayerButton = (Button) launchScene.lookup("#twoPlayerButton");
-		Button threePlayerButton = (Button) launchScene.lookup("#threePlayerButton");
+		twoPlayerButton = (Button) launchScene.lookup("#twoPlayerButton");
+		threePlayerButton = (Button) launchScene.lookup("#threePlayerButton");
+		helpButton = (Button) launchScene.lookup("#helpButton");
+
+		helpButton.setOnAction(e -> {
+			helpFrame.getChildren().addAll(textFrame,exitHelpButton);
+			launchScreen.getChildren().add(helpFrame);
+
+			helpFrame.prefWidthProperty().bind(textFrame.widthProperty());
+			exitHelpButton.setTranslateX(550);
+			helpText.setStyle("-fx-font: 16px System");
+
+			helpText.setText("Controls:\n"
+					+ "Single Player: W,A,S,D or Arrow keys for movement\n"
+					+ "C for boost\n"
+					+ "V for ability where applicable\nMulti-Player:\n"
+					+ "Arrows for player\n"
+					+ "W,A,S,D and I,J,K,L for ghosts\n"
+					+ "\n"
+					+ "P: Pauses the game\n"
+					+ "ESC: Closes game\n"
+					+ "\nCharacters:\nPacman: Loves eating pellets and ghosts OM-NOM-NOM.\n"
+					+ "Ability: Can eat ghosts for a short time after eating a power pellet.\n"
+					+ "Ms.Pacman: Girls just wanna eat pellets and ghosts.\n"
+					+ "Ability: Can eat ghosts for a short time after eating a power pellet.\n"
+					+ "PacKid: Full of ENERGY!\n"
+					+ "Ability: Can jump over two walls after eating a power pellet.\n"
+					+ "Robot: Beep-boop-beep.\nAbility: Can fire a laser that kills(?) ghost in front and behind him\n"
+					+ "Snac the Snake: Everyday is a loooong day\n"
+					+ "Ability: Grows in size as snac eats pellets\n"
+					+ "\nGlitch the ghost: &^$*%^$)*&^*%$$#@@*)*(&*^()\n\nBoosts:\nChoose at start of each level, limited use, if random chosen has a chance of being super.\n"
+					+ "Dash\nShield\nPellet Magnet\nInvisibility\nTime Slow\nInvert Controls\nRandom Teleport\n");
+
+
+		});
+
+		exitHelpButton.setOnAction(e -> launchScreen.getChildren().removeAll(helpFrame));
 
 		twoPlayerButton.setOnAction(e -> {
 			currentGameMode = GameMode.TWOPLAYER;
@@ -791,6 +833,8 @@ public class Main extends Application {
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
 		currentLevelText = (Text) gameScene.lookup("#currentLevelText");
+
+		currentScoreText.setStyle("-fx-font: 20px System");
 
 		showPostLevelScreen();
 
@@ -1139,16 +1183,16 @@ public class Main extends Application {
 			//baseModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
 			//baseModel.setRotate(180);
 		}
-		
-		
+
+
 		double rotation = player.getModel().getRotate();
-		int animationFrame; 
-		
+		int animationFrame;
+
 		switch (player.getPrevDirection()){
 			default:
 			case UP:
-			case DOWN:{ 
-				animationFrame = (int) (player.getPosition()[1] - levelOffsetY) % (gridSquareSize); break;}			
+			case DOWN:{
+				animationFrame = (int) (player.getPosition()[1] - levelOffsetY) % (gridSquareSize); break;}
 			case LEFT:
 			case RIGHT:{
 				animationFrame = (int) (player.getPosition()[0] - levelOffsetX) % (gridSquareSize); break;}
@@ -1157,7 +1201,7 @@ public class Main extends Application {
 		player.manageAnimation(animationFrame, baseModel);
 		currentLevel.getChildren().add(player.getModel());
 	}
-	
+
 	private Integer[] findRandomValidIndexes(){
 		Random rand = new Random();
 		int randYIndex;
@@ -1177,7 +1221,7 @@ public class Main extends Application {
 		} while ( validMove == false );
 		return new Integer[] {randXIndex, randYIndex};
 	}
-	
+
 	/**Checks to see if a Character is aligned with the tile grid, or if it is currently moving between tiles*/
 	private boolean isGridAligned(Character character) {
 		if ( ((character.getPosition()[0] - levelOffsetX) % gridSquareSize == 0) && ((character.getPosition()[1] - levelOffsetY) % gridSquareSize == 0) ) {
@@ -1301,7 +1345,6 @@ public class Main extends Application {
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
 
-
 			glitchTheGhostModel.setRotate(180);
 			glitchTheGhostModel.setFill(Color.RED);
 
@@ -1313,7 +1356,7 @@ public class Main extends Application {
 			}
 
 			timeBar.setLayoutY(50);
-			timeBar.setLayoutX(588);
+			timeBar.setLayoutX(610);
 			timeBar.setScaleX(10);
 
 			Text currentCharacter = (Text) launchScene.lookup("#currentCharacter");
@@ -1763,7 +1806,7 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/** this function is in charge of stopping other snakePieces if the player stops moving*/
 	private void manageSnakePieceMovement(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
@@ -1818,12 +1861,12 @@ public class Main extends Application {
 			}
 		}
 	}
-	
+
 	/** This function manages the player picking up pellets when they walk over them*/
 	private void managePelletPickup(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
 		int yIndex = convertToIndex(player.getPosition()[1], false);
-		
+
 		player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
 		currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
 		if (player == null) {
@@ -1862,7 +1905,7 @@ public class Main extends Application {
 			sound.pelletPickup();
 		}
 	}
-	
+
 	/** This function gets the next player move by reading buttons pressed*/
 	private int[] getNextPlayerMove(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
@@ -1918,13 +1961,13 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-	
+
 	/**This function manages picking up pellets when the player uses the pelletMagnet boost */
 	private void managePelletMagnet(){
 		int xIndex = convertToIndex(player.getPosition()[0], true);
 		int yIndex = convertToIndex(player.getPosition()[1], false);
 		int pickupRadius = player.getPickupRadius();
-		
+
 		for (int i = -pickupRadius; i <= pickupRadius; i++){
 			for (int j = -pickupRadius ; j <= pickupRadius; j++){
 				try{
@@ -1948,8 +1991,8 @@ public class Main extends Application {
 				catch(ArrayIndexOutOfBoundsException e) {}
 			}
 		}
-	}	
-	
+	}
+
 	private int[] calculatePlayerMovement(Player player) throws LevelCompleteException, PlayerCaughtException{
 		int[] delta = {0,0};
 		// Is this playerGhost colliding with the player?
@@ -2006,7 +2049,7 @@ public class Main extends Application {
 			}
 
 			player.setPrevIndex(xIndex, yIndex);
-			
+
 			if (isBoostActive && ( player.getBoost() == Player.Boost.SUPERPELLETMAGNET ||  player.getBoost() == Player.Boost.PELLETMAGNET)){
 				managePelletMagnet();
 			}
@@ -2024,7 +2067,7 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-	
+
 	private Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
@@ -2175,7 +2218,7 @@ public class Main extends Application {
 	}
 
 	/**
-	 * This function controls the players ability usage. 
+	 * This function controls the players ability usage.
 	 * A boolean parameter shows if this is being activated from the user pressing the ability button, or from a power pellet being collected*/
 	private void usePlayerAbility(boolean fromPickup) {
 		if (fromPickup == false) {

@@ -14,12 +14,12 @@
         <items>
           <AnchorPane fx:id="HUDBar" minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
-                  <Text fx:id="currentScoreText" layoutX="55.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" text="currentScore" wrappingWidth="143.27957916259766" />
-                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="40.0" layoutX="599.0" layoutY="9.0" stroke="BLACK" strokeType="INSIDE" width="40.0" AnchorPane.rightAnchor="639.2857142857142" />
-                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#e11fff" height="40.0" layoutX="801.0" layoutY="9.0" stroke="BLACK" strokeType="INSIDE" width="40.0" />
-                  <Text fx:id="currentBoost" layoutX="659.0" layoutY="33.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--current boost--" />
-                  <Text fx:id="currentAbility" layoutX="863.0" layoutY="33.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--currentSuper--" wrappingWidth="116.99386596679688" />
-                  <Polygon fill="DODGERBLUE" layoutX="649.0" layoutY="39.0" opacity="0.38" rotate="90.0" scaleX="0.2" scaleY="0.2" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0" AnchorPane.leftAnchor="599.0">
+                  <Text fx:id="currentScoreText" layoutX="77.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" text="currentScore" wrappingWidth="143.27957916259766" AnchorPane.leftAnchor="75.0" AnchorPane.topAnchor="15.0" />
+                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="40.0" layoutX="828.0" layoutY="8.0" stroke="BLACK" strokeType="INSIDE" width="40.0" AnchorPane.rightAnchor="410.2857142857142" />
+                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#e11fff" height="40.0" layoutX="1030.0" layoutY="8.0" stroke="BLACK" strokeType="INSIDE" width="40.0" />
+                  <Text fx:id="currentBoost" layoutX="888.0" layoutY="32.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--current boost--" />
+                  <Text fx:id="currentAbility" layoutX="1092.0" layoutY="32.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--currentSuper--" wrappingWidth="116.99386596679688" />
+                  <Polygon fill="DODGERBLUE" layoutX="878.0" layoutY="38.0" opacity="0.38" rotate="90.0" scaleX="0.2" scaleY="0.2" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0" AnchorPane.leftAnchor="828.0">
                     <points>
                       <Double fx:value="-50.0" />
                       <Double fx:value="40.0" />
@@ -29,7 +29,7 @@
                       <Double fx:value="-60.0" />
                     </points>
                   </Polygon>
-                  <Polygon fill="#d01fff" layoutX="851.0" layoutY="38.0" opacity="0.38" rotate="90.0" scaleX="0.2" scaleY="0.2" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0">
+                  <Polygon fill="#d01fff" layoutX="1080.0" layoutY="37.0" opacity="0.38" rotate="90.0" scaleX="0.2" scaleY="0.2" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0">
                      <points>
                         <Double fx:value="-50.0" />
                         <Double fx:value="40.0" />
@@ -39,14 +39,17 @@
                         <Double fx:value="-60.0" />
                      </points>
                   </Polygon>
-                  <Text layoutX="243.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Current Level:">
+                  <Text layoutX="281.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Current Level:">
                      <font>
-                        <Font name="System Bold" size="16.0" />
+                        <Font size="20.0" />
                      </font>
                   </Text>
                   <Text layoutX="347.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" />
-                  <Text layoutX="14.0" layoutY="36.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Score:" />
-                  <Text fx:id="currentLevelText" layoutX="356.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" />
+                  <Text layoutX="14.0" layoutY="36.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Score:">
+                     <font>
+                        <Font name="System Bold" size="20.0" />
+                     </font></Text>
+                  <Text fx:id="currentLevelText" layoutX="410.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" />
                </children>
             </AnchorPane>
           <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="0.0" minWidth="0.0" prefHeight="990.0" prefWidth="1280.0">
