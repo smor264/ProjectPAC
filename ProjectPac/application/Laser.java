@@ -191,7 +191,7 @@ public class Laser {
 			}
 		}
 		animationTick++;
-
+		lasers.toFront();
 	}
 	public Group getLaserGroup() {
 		return lasers;

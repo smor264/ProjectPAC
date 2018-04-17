@@ -71,7 +71,7 @@ public class Character extends LevelObject {
 			case right:{ model.setRotate(0); mouth.setRotate(0); break;}
 		}
 	}
-	public void manageAnimation(int animationFrame) {
+	public void manageAnimation(int animationFrame, Shape baseModel) {
 		if (model instanceof Rectangle) {
 			return;
 		}
@@ -80,16 +80,22 @@ public class Character extends LevelObject {
 		double rotate = model.getRotate();
 		if (animationFrame <= 18) {
 			xPos = 4*((5.3/18.0) * animationFrame + 12.7);
-			yPos = 4*((5.3/18.0) * animationFrame - 5.3);
+			yPos = 6*((5.3/18.0) * animationFrame - 5.3);
 		}
 		else {
 			xPos = 4*((-5.3/18.0) * animationFrame + 23.3);
-			yPos = 4*((-5.3 / 18.0) * animationFrame + 5.3);
+			yPos = 6*((-5.3 / 18.0) * animationFrame + 5.3);
 		}
+		
 		mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos),(yPos), 0.0,0.0, (xPos),(-yPos), 18.0,18.0, -18.0,18.0 );
-		Shape newModel = Shape.intersect(new Circle(width/2), mouth);
+		
+		Shape newModel = Shape.intersect(baseModel, mouth);
 		this.setModel(newModel);
 		model.setFill(regularColor);
 		model.setRotate(rotate);
+		
+		if (baseModel instanceof Circle){
+			model.setTranslateX(-(xPos/16)+Main.gridSquareSize/8-1);
+		}
 	}
 }
