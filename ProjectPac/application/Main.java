@@ -121,6 +121,7 @@ public class Main extends Application {
 	private Scanner scanFile;
 
 	private AnimationTimer gameLoop;
+	private Boolean isPostScreenShowing = false;
 
 	//Scenes and Panes
 	private AnchorPane gameUI = new AnchorPane();
@@ -501,6 +502,49 @@ public class Main extends Application {
 		showPostLevelScreen();
 	}
 
+	private void closeGame(Stage primaryStage) {
+		if(!isPostScreenShowing) {
+			gameLoop.stop();
+		}
+
+		Button closeButton = new Button("Close game");
+		Button cancelButton = new Button("Return to game");
+		Rectangle exitBackground = new Rectangle(400,200,Color.WHITESMOKE);
+		HBox exitButtons = new HBox(75);
+		VBox exitTitle = new VBox(50);
+		Text exitDialog = new Text();
+
+		exitDialog.setText("Are you sure you want to quit?");
+		exitDialog.setStyle("-fx-font: 20px Arial");
+		exitDialog.setTranslateX(50);
+		exitDialog.setTranslateY(50);
+
+		exitTitle.getChildren().addAll(exitDialog,exitButtons);
+
+		StackPane exitBox = new StackPane(exitBackground, exitTitle);
+
+		exitBox.relocate(primaryStage.getWidth()/2-200,primaryStage.getHeight()/2-50);
+		exitBackground.setArcHeight(20);
+		exitBackground.setArcWidth(20);
+		exitButtons.setTranslateY(20);
+		exitButtons.setTranslateX(70);
+
+		exitButtons.getChildren().addAll(cancelButton, closeButton);
+
+
+		currentLevel.getChildren().add(exitBox);
+
+
+		closeButton.setOnAction(e -> primaryStage.close());
+		cancelButton.setOnAction(e -> {
+			currentLevel.getChildren().remove(exitBox);
+			if(!isPostScreenShowing) {
+				gameLoop.start();
+			}
+		});
+
+	}
+
 	private boolean showOverlay(StackPane overlay) {
 		return currentLevel.getChildren().add(overlay);
 	}
@@ -514,12 +558,14 @@ public class Main extends Application {
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
+		isPostScreenShowing = true;
 		//writeSave(saveFile);
 
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
 	private boolean hidePostLevelScreen() {
+		isPostScreenShowing = false;
 		return currentLevel.getChildren().removeAll(postLevelOverlay);
 	}
 
@@ -807,7 +853,7 @@ public class Main extends Application {
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
 					case ESCAPE:{
-						primaryStage.close();
+						closeGame(primaryStage);
 						 break;
 						}
 					case P: { pausePressed = !pausePressed;
@@ -841,7 +887,7 @@ public class Main extends Application {
 						case RIGHT: { player.getHeldButtons().append(inverted ? Direction.left : Direction.right); break;}
 						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
-						case ESCAPE:{ primaryStage.close(); break;}
+						case ESCAPE:{ closeGame(primaryStage); break;}
 						case P: { pausePressed = !pausePressed;
 							if (pausePressed) {
 								println("PAUSED!");
@@ -874,7 +920,7 @@ public class Main extends Application {
 						case L: {playerList.get(2).getHeldButtons().append(Direction.right);break;}
 						case PAGE_DOWN:{ currentGameTick = maxTime; break;}
 
-						case ESCAPE:{ primaryStage.close(); break;}
+						case ESCAPE:{ closeGame(primaryStage); break;}
 						case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
 							println("PAUSED!");
