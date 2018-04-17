@@ -206,7 +206,6 @@ public class Main extends Application {
     private String playerName;
     private String charsUnlocked;
     private String levsComplete;
-    private String saveFilePath;
     private ArrayList<PlayerCharacter> charList = new ArrayList<PlayerCharacter>();
     private Charset utf8 = StandardCharsets.UTF_8;
     private String baseSaveData = "Player1\r\n110000\r\n00000000000";
@@ -375,7 +374,6 @@ public class Main extends Application {
 				levsComplete = "00000000000";
 			}
 
-			saveFilePath = saveFile.getAbsolutePath();
 
 			scanFile.close();
 			currentSaveFileName.setText(saveFile.getName());
@@ -443,8 +441,6 @@ public class Main extends Application {
 			charsUnlocked = glitchUnlock;
 		}
 
-		println(saveFilePath);
-
 		try {
 			buffWriter.write(playerName);
 			buffWriter.newLine();
@@ -494,7 +490,11 @@ public class Main extends Application {
 			levelTree.clearCompletedLevels();
 			println("Bad Luck! You have no more retries! Better luck next time!");
 		}
-
+		try {
+			writeSave(saveFile);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		showPostLevelScreen();
 	}
 
@@ -511,11 +511,8 @@ public class Main extends Application {
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
-		try {
-			writeSave(saveFile);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
+		//writeSave(saveFile);
+
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
@@ -782,6 +779,11 @@ public class Main extends Application {
 
 					case N:{
 						unlockNewLevels();
+						try {
+							writeSave(saveFile);
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						}
 						showPostLevelScreen();
 						gameLoop.stop();
 						break;
@@ -1035,10 +1037,11 @@ public class Main extends Application {
 								TimeUnit.SECONDS.sleep(1);
 								player.resetLives();
 								unlockNewLevels();
+								writeSave(saveFile);
 								showPostLevelScreen();
 								return;
 							}
-							catch(InterruptedException e2){
+							catch(InterruptedException | FileNotFoundException e2){
 								Thread.currentThread().interrupt(); // I'm sure this does something, but right now it's just to stop the compiler complaining.
 							}
 						}
@@ -1177,17 +1180,17 @@ public class Main extends Application {
 			initCharList();
 			initRootLaunchLayout(primaryStage);
 
-			File saveCheck = new File(System.getProperty("user.home"),"auto-save.txt");
+			File saveCheck = new File("auto-save.txt");
 
 			try {
 				if(!saveCheck.exists()) {
 					println("No save exists! Creating one now");
-					Files.write(Paths.get(System.getProperty("user.home"),"auto-save.txt"), baseSaveData.getBytes(utf8));
-					saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
+					Files.write(Paths.get("auto-save.txt"), baseSaveData.getBytes(utf8));
+					saveFile = new File("auto-save.txt");
 					readFromSaveFile(saveFile);
 				}
 				else {
-					saveFile = new File(System.getProperty("user.home")+File.separator+"auto-save.txt");
+					saveFile = new File("auto-save.txt");
 					readFromSaveFile(saveFile);
 				}
 
@@ -1310,7 +1313,6 @@ public class Main extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
-
 
 	private void enemyKilled(Character enemy) {
 		player.modifyScore(ateGhostScore);
