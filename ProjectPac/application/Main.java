@@ -227,13 +227,14 @@ public class Main extends Application {
 	 * A list of all characters that the player can use.
 	 * Each PlayerCharacter has a model (Shape) and an ability (Ability)
 	 * */
+	private static Polygon pacManMouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
 	public static enum PlayerCharacter {
-		PacMan (new Circle(gridSquareSize/2,Color.YELLOW), Player.Ability.eatGhosts, 2),
-		MsPacMan (new Circle(gridSquareSize/2, Color.LIGHTPINK), Player.Ability.eatGhosts, 2),
-		PacKid (new Circle(gridSquareSize/3, Color.GREENYELLOW), Player.Ability.wallJump, 2),
-		GlitchTheGhost (glitchTheGhostModel, Player.Ability.eatSameColor, 2),
-		SnacTheSnake (new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), Player.Ability.snake, 3),
-		Robot (new Rectangle(gridSquareSize/2, gridSquareSize/2, Color.DARKGREY), Player.Ability.gun, 2);
+		PacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.YELLOW, Player.Ability.eatGhosts, 2),
+		MsPacMan (Shape.intersect(new Circle(gridSquareSize/2), pacManMouth), Color.LIGHTPINK, Player.Ability.eatGhosts, 2),
+		PacKid (Shape.intersect(new Circle(gridSquareSize/3), pacManMouth), Color.GREENYELLOW, Player.Ability.wallJump, 2),
+		GlitchTheGhost (glitchTheGhostModel, null, Player.Ability.eatSameColor, 2),
+		SnacTheSnake (Shape.intersect(new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2), pacManMouth), Color.SEAGREEN, Player.Ability.snake, 3),
+		Robot (Shape.intersect(new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0), pacManMouth), Color.DARKGREY , Player.Ability.gun, 2);
 
 		private final Shape model;
 		private final Player.Ability ability;
@@ -241,18 +242,19 @@ public class Main extends Application {
 		private boolean isUnlocked;
 		private final Color originalColor;
 
-		PlayerCharacter(Shape model, Player.Ability ability, int speed){
+		PlayerCharacter(Shape model, Color originalColor, Player.Ability ability, int speed){
 			this.model = model;
 			this.ability = ability;
 			this.speed = speed;
 			this.isUnlocked = true;
-			this.originalColor = (Color) model.getFill();
+			this.originalColor = originalColor;
 		}
 		public Shape model() {return model;}
 		public Player.Ability ability() {return ability;}
 		public int speed() {return speed;}
 		public void setUnlockedState(Boolean state) {isUnlocked = state;}
 		public void resetColor() { this.model().setFill(originalColor);}
+		public Color originalColor() {return originalColor;}
 	}
 
 	/**
@@ -323,9 +325,10 @@ public class Main extends Application {
 	}
 
 	private void placeLevelObject(LevelObject obj, int x, int y) { // Places objects (wall, pickups, player, enemies) in the level
-		obj.moveTo(gridSquareSize*x + levelOffsetX, gridSquareSize*y + levelOffsetY);
-		levelObjectArray[y][x] = obj;
 		currentLevel.getChildren().add(obj.getModel());
+		obj.moveTo(convertToPosition(x, true), convertToPosition(y, false));
+		levelObjectArray[y][x] = obj;
+		
 	}
 
 	private void restartLevel() {
@@ -575,7 +578,20 @@ public class Main extends Application {
 					placeLevelObject(pickUp, xPos, yPos);
 				}
 			}
-			resetPlayerPowerUpState();
+		}
+		resetPlayerPowerUpState();
+		
+		/*Check for solid areas*/
+		for (int xPos = 0; xPos < array[0].length-1; xPos++) {
+			for (int yPos = 0; yPos < array.length-1; yPos++) {
+				if (array[yPos][xPos] == 1 && array[yPos][xPos+1] == 1 && array[yPos+1][xPos] == 1 && array[yPos+1][xPos+1] == 1) {
+					double xAvg = (convertToPosition(xPos+1, true) +convertToPosition(xPos+2, true))/2.0 - Main.gridSquareSize/4;
+					double yAvg = (convertToPosition(yPos+1, false) +convertToPosition(yPos+2, false))/2.0 - Main.gridSquareSize/4;
+					Wall wall = new Wall(Wall.WallType.single, Direction.up, level.getWallColor());
+					wall.moveTo(xAvg, yAvg);
+					currentLevel.getChildren().add(wall.getModel());
+				}
+			}
 		}
 		player.getModel().toFront(); // Draw player and enemies over top of pellets, etc.
 		for (Enemy enemy: enemyList) {
@@ -591,9 +607,9 @@ public class Main extends Application {
 				playerList.add(playerGhost);
 				playerGhost.moveTo(convertToPosition(enemyList.get(0).getStartIndex()[0],true), convertToPosition(enemyList.get(0).getStartIndex()[1],false));
 				playerGhost.setStartIndex(enemyList.get(0).getStartIndex());
-				currentLevel.getChildren().remove(enemyList.get(0).getModel());
+				currentLevel.getChildren().remove(enemyList.get(0).getContainer());
 				enemyList.remove(0);
-				currentLevel.getChildren().add(playerGhost.getModel());
+				currentLevel.getChildren().add(playerGhost.getContainer());
 			}
 		}
 
@@ -977,6 +993,7 @@ public class Main extends Application {
 							delta = new int[] {0,0};
 							delta = calculatePlayerMovement(playerList.get(i));
 							playerList.get(i).moveBy(delta[0], delta[1]);
+							manageAnimation(playerList.get(i));
 						}
 
 						if (player.getAbility() == Player.Ability.snake) {
@@ -1060,6 +1077,47 @@ public class Main extends Application {
 		}
 	}
 
+	private void manageAnimation(Player player){
+		if (player.getPrevDirection() == null) {
+			return;
+		}
+		Shape baseModel;
+		if (playerCharacter == PlayerCharacter.SnacTheSnake){
+			baseModel = new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2);
+		}
+		else if (playerCharacter == PlayerCharacter.Robot){
+			baseModel = new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0);
+		}
+		else if (playerCharacter == PlayerCharacter.PacMan || playerCharacter == PlayerCharacter.MsPacMan ){
+			baseModel = new Circle(gridSquareSize/2.0);
+		}
+		else if (playerCharacter == PlayerCharacter.PacKid){
+			baseModel = new Circle(gridSquareSize/3.0);
+		}
+		else {
+			return;
+			//baseModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
+			//baseModel.setRotate(180);
+		}
+		
+		
+		double rotation = player.getModel().getRotate();
+		int animationFrame; 
+		
+		switch (player.getPrevDirection()){
+			default:
+			case up:
+			case down:{ 
+				animationFrame = (int) (player.getPosition()[1] - levelOffsetY) % (gridSquareSize); break;}			
+			case left:
+			case right:{
+				animationFrame = (int) (player.getPosition()[0] - levelOffsetX) % (gridSquareSize); break;}
+		}
+		currentLevel.getChildren().remove(player.getModel());
+		player.manageAnimation(animationFrame, baseModel);
+		currentLevel.getChildren().add(player.getModel());
+	}
+	
 	private Integer[] findRandomValidIndexes(){
 		Random rand = new Random();
 		int randYIndex;
@@ -1655,7 +1713,7 @@ public class Main extends Application {
 
 				case euclidean:{
 					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
-					println("euc");
+					//println("euc");
 					break;
 				}
 				default:{throw new IllegalArgumentException("Invalid algorithm");}
@@ -1669,7 +1727,6 @@ public class Main extends Application {
 
 	private int[] calculatePlayerMovement(Player player) throws LevelCompleteException, PlayerCaughtException{
 		int[] delta = {0,0};
-
 		// Is this playerGhost colliding with the player?
 		if(player != playerList.get(0)) {
 			if ((Math.abs(player.getPosition()[0] - playerList.get(0).getPosition()[0]) < gridSquareSize/2) && (Math.abs(player.getPosition()[1] - playerList.get(0).getPosition()[1]) < gridSquareSize/2)) {
@@ -1704,7 +1761,7 @@ public class Main extends Application {
 
 			}
 
-			//This bit is for the snake player, who needs to stop all his other pieces to stop moving if he stops
+			//This bit is for the snake player, who needs to stop all his other pieces if he stops
 			if (player.getAbility() == Player.Ability.snake) {
 				if (player.getHeldButtons().isEmpty()) {
 					player.setPrevDirection(null);
@@ -1774,17 +1831,14 @@ public class Main extends Application {
 					if (player.incrementPelletCounter()) {
 						//println("Spawning new snake bit");
 						SnakePiece newPiece;
-						Random rand = new Random();
-						double rand1 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
-						double rand2 = 0;//(rand.nextInt(2*gridSquareSize)-gridSquareSize)/16.0;
 						if (snakePieces.isEmpty()) {
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), player);
-							newPiece.moveTo(player.getPosition()[0] + rand1 , player.getPosition()[1] + rand2);
+							newPiece = new SnakePiece(new Rectangle(gridSquareSize,gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), player);
+							newPiece.moveTo(player.getPosition()[0]+gridSquareSize, player.getPosition()[1]+gridSquareSize);
 						}
 						else {
 							SnakePiece lastPiece = snakePieces.get(snakePieces.size() - 1);
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize,Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
-							newPiece.moveTo(lastPiece.getPosition()[0] + rand1, lastPiece.getPosition()[1] + rand2);
+							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
+							newPiece.moveTo(lastPiece.getPosition()[0]+gridSquareSize, lastPiece.getPosition()[1]+gridSquareSize);
 						}
 						snakePieces.add(newPiece);
 						currentLevel.getChildren().add(newPiece.getModel());
@@ -1822,10 +1876,14 @@ public class Main extends Application {
 								 if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
 									 if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
 										 usePlayerAbility(true);
+										 sound.powerPelletPickup();
+									 }
+									 else {
+										 sound.pelletPickup();
 									 }
 									 player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
 									 currentScoreText.setText(player.getScoreString());
-									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getModel()));
+									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
 									 levelObjectArray[yIndex + j][xIndex + i] = null;
 									 pelletsRemaining--;
 								 }
@@ -1843,6 +1901,7 @@ public class Main extends Application {
 					// If regular move...
 					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
 						delta[1] = -(int)player.getSpeed();
+						player.pointModel(Direction.up);
 						player.setPrevDirection(Direction.up);
 						break;
 					} // If wrapping around screen...
@@ -1853,6 +1912,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
 					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
 						delta[1] = (int)player.getSpeed();
+						player.pointModel(Direction.down);
 						player.setPrevDirection(Direction.down);
 						break;
 					}
@@ -1863,6 +1923,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
 					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
 						delta[0] = -(int)player.getSpeed();
+						player.pointModel(Direction.left);
 						player.setPrevDirection(Direction.left);
 						break;
 					}
@@ -1873,6 +1934,7 @@ public class Main extends Application {
 				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
 					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
 						delta[0] = (int)player.getSpeed();
+						player.pointModel(Direction.right);
 						player.setPrevDirection(Direction.right);
 						break;
 					}
@@ -1882,7 +1944,10 @@ public class Main extends Application {
 				}
 			}
 		}
-		else { // If player not aligned with grid, continue in same direction.
+		else if (player.getPrevDirection() == null){ // If player not aligned with grid, continue in same direction.
+			snapToGrid(player);
+		}
+		else {
 			switch (player.getPrevDirection()) {
 				case up: {delta[1] = -(int)player.getSpeed(); break;}
 				case down: {delta[1] = (int)player.getSpeed(); break;}
@@ -1893,7 +1958,24 @@ public class Main extends Application {
 		}
 		return delta;
 	}
-
+	
+	private void snapToGrid(LevelObject object) {
+		double xPos = object.getPosition()[0];
+		double yPos = object.getPosition()[1];
+		println(xPos +", " + yPos);
+		/*println(((xPos - levelOffsetX) / gridSquareSize) + ", " + ((yPos - levelOffsetY) / gridSquareSize));
+		
+		int xIndex = convertToIndex(xPos, true);
+		int yIndex = convertToIndex(yPos, false);
+		
+		println(xIndex + ", " + yIndex);
+		
+		xPos = convertToPosition(xIndex, true);
+		yPos = convertToPosition(yIndex, false);*/
+		
+		//object.moveTo((int)xPos, (int)yPos);
+	}
+	
 	private Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {
@@ -1929,7 +2011,7 @@ public class Main extends Application {
 			case (4):{
 				type[0] = Wall.WallType.cross;
 				type[1] = Direction.up;
-				return type;
+				break;
 			}
 			case (3): {
 				type[0] = Wall.WallType.tee;
@@ -1944,7 +2026,7 @@ public class Main extends Application {
 				else {
 					type[1] = Direction.left;
 				}
-				return type;
+				break;
 			}
 			case (2): {
 				if (northNeighbour && southNeighbour) {
@@ -1970,7 +2052,7 @@ public class Main extends Application {
 						type[1] = Direction.left;
 					}
 				}
-				return type;
+				break;
 			}
 			case (1): {
 				type[0] = Wall.WallType.end;
@@ -1986,15 +2068,16 @@ public class Main extends Application {
 				else {
 					type[1] = Direction.right;
 				}
-				return type;
+				break;
 			}
 			case(0): {
 				type[0] = Wall.WallType.single;
 				type[1] = Direction.up;
-				return type;
+				break;
 			}
 			default: {throw new UnsupportedOperationException();}
 		}
+		return type;
 	}
 
 	private Object[] determineEnemyCharacteristics(int num) {
@@ -2164,12 +2247,12 @@ public class Main extends Application {
 		if (isHorizontal) {
 			height = 1.5*gridSquareSize;
 			xPos = 0.0;
-			yPos = player.getPosition()[1] - height + 4;
+			yPos = player.getPosition()[1] - height/2.0 - 5;
 
 		}
 		else {
 			width = 1.5*gridSquareSize;
-			xPos = player.getPosition()[0] - width + 4;
+			xPos = player.getPosition()[0] - width/2.0 - 5;
 			yPos = 0.0;
 		}
 		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
