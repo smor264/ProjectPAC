@@ -170,13 +170,13 @@ public class Main extends Application {
 												ice1Select, ice2Select,
 												garden1Select, garden2Select};
 
-
 	private HBox postLevelTitles = new HBox(25);
 	private HBox postLevelElements = new HBox(25);
 	private VBox postLevelScreen = new VBox(25);
 	private Rectangle postLevelBackground = new Rectangle(1000, 500);
     private StackPane postLevelOverlay = new StackPane(postLevelBackground, postLevelScreen);
     private GridPane worldMap = new GridPane();
+    private Text postLevelStory = new Text();
 
 	//FXML
 	//Game FXML
@@ -218,6 +218,8 @@ public class Main extends Application {
     private ArrayList<PlayerCharacter> charList = new ArrayList<PlayerCharacter>();
     private Charset utf8 = StandardCharsets.UTF_8;
     private String baseSaveData = "Player1\r\n110000\r\n00000000000";
+
+	Story story = new Story("Player 1");
 
 
 	public PlayerCharacter playerCharacter = PlayerCharacter.SNACTHESNAKE;
@@ -571,6 +573,7 @@ public class Main extends Application {
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
 		isPostScreenShowing = true;
+		postLevelStory.setText(story.getStoryFor(loadedLevel));
 		//writeSave(saveFile);
 
 		return currentLevel.getChildren().add(postLevelOverlay);
@@ -1290,7 +1293,11 @@ public class Main extends Application {
 		worldMap.setHalignment(medieval1Select, HPos.LEFT);
 		worldMap.setHalignment(level1Select, HPos.RIGHT);
 
-		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements);
+		postLevelStory.setText("--");
+		postLevelStory.setTranslateY(-100);
+		postLevelStory.setTranslateX(25);
+		postLevelStory.setStyle("-fx-font: 14 System");
+		postLevelScreen.getChildren().addAll(postLevelTitles, postLevelElements, postLevelStory);
 		postLevelTitles.getChildren().addAll(postLevelTitle);
 		postLevelElements.getChildren().addAll(givenBoostButton,randomBoostButton,worldMap);
 
