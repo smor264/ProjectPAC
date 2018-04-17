@@ -1724,7 +1724,191 @@ public class Main extends Application {
 			e.printStackTrace();
 		}
 	}
+	/** this function is in charge of stopping other snakePieces if the player stops moving*/
+	private void manageSnakePieceMovement(){
+		int xIndex = convertToIndex(player.getPosition()[0], true);
+		int yIndex = convertToIndex(player.getPosition()[1], false);
+		if (player.getHeldButtons().isEmpty()) {
+			player.setPrevDirection(null);
+		}
+		else {
+			boolean validMoveExists = false;
+			for (int i = 0; i < player.getHeldButtons().size(); i++) {
+				boolean valid = true;
+				switch(player.getHeldButtons().getNFromTop(i)) {
+					case up:{
+						try {
+							if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {
+								valid = false;
+								break;
+							}
+						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+					}
+					case down:{
+						try {
+							if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {
+								valid = false;
+								break;
+							}
+						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+					}
+					case left:{
+						try {
+							if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {
+								valid = false;
+								break;
+							}
+						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+					}
+					case right:{
+						try {
+							if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {
+								valid = false;
+								break;
+							}
+						}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
+					}
+					if (valid == true) {
+						validMoveExists = true;
+					}
+				}
+			}
+			if (!validMoveExists) {
+				player.setPrevDirection(null);
+			}
+		}
+	}
+	
+	/** This function manages the player picking up pellets when they walk over them*/
+	private void managePelletPickup(){
+		int xIndex = convertToIndex(player.getPosition()[0], true);
+		int yIndex = convertToIndex(player.getPosition()[1], false);
+		
+		player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
+		currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
+		if (player == null) {
+			print("Player is null");
+		}
+		if (currentScoreText == null) {
+			print("currentScoreText is null");
+		}
+		currentScoreText.setText(player.getScoreString());
 
+		pelletsRemaining--;
+
+		if (player.getAbility() == Player.Ability.snake) {
+			if (player.incrementPelletCounter()) {
+				//println("Spawning new snake bit");
+				SnakePiece newPiece;
+				if (snakePieces.isEmpty()) {
+					newPiece = new SnakePiece(new Rectangle(gridSquareSize,gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), player);
+					newPiece.moveTo(player.getPosition()[0]+gridSquareSize, player.getPosition()[1]+gridSquareSize);
+				}
+				else {
+					SnakePiece lastPiece = snakePieces.get(snakePieces.size() - 1);
+					newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
+					newPiece.moveTo(lastPiece.getPosition()[0]+gridSquareSize, lastPiece.getPosition()[1]+gridSquareSize);
+				}
+				snakePieces.add(newPiece);
+				currentLevel.getChildren().add(newPiece.getModel());
+			}
+		}
+		//Is this pickup a power pellet?
+		if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
+			sound.powerPelletPickup();
+			usePlayerAbility(true);
+		}
+		else{
+			sound.pelletPickup();
+		}
+	}
+	
+	/** This function gets the next player move by reading buttons pressed*/
+	private int[] getNextPlayerMove(){
+		int xIndex = convertToIndex(player.getPosition()[0], true);
+		int yIndex = convertToIndex(player.getPosition()[1], false);
+		int[] delta = {0,0};
+		for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
+
+			if((player.getHeldButtons().getNFromTop(n) == Direction.up) ) {
+				// If regular move...
+				if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
+					delta[1] = -(int)player.getSpeed();
+					player.pointModel(Direction.up);
+					player.setPrevDirection(Direction.up);
+					break;
+				} // If wrapping around screen...
+				else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
+					player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
+				}
+			}
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
+				if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
+					delta[1] = (int)player.getSpeed();
+					player.pointModel(Direction.down);
+					player.setPrevDirection(Direction.down);
+					break;
+				}
+				else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
+					player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
+				}
+			}
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
+				if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
+					delta[0] = -(int)player.getSpeed();
+					player.pointModel(Direction.left);
+					player.setPrevDirection(Direction.left);
+					break;
+				}
+				else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
+					player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
+				}
+			}
+			else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
+				if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
+					delta[0] = (int)player.getSpeed();
+					player.pointModel(Direction.right);
+					player.setPrevDirection(Direction.right);
+					break;
+				}
+				else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
+					player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
+				}
+			}
+		}
+		return delta;
+	}
+	
+	/**This function manages picking up pellets when the player uses the pelletMagnet boost */
+	private void managePelletMagnet(){
+		int xIndex = convertToIndex(player.getPosition()[0], true);
+		int yIndex = convertToIndex(player.getPosition()[1], false);
+		
+		 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
+			 for (int j = -pelletPickupSize ; j <= pelletPickupSize; j++){
+				 try{
+					 if (AdjacencyMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pelletPickupSize) {
+						 if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
+							 if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
+								 usePlayerAbility(true);
+								 sound.powerPelletPickup();
+							 }
+							 else {
+								 sound.pelletPickup();
+							 }
+							 player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
+							 currentScoreText.setText(player.getScoreString());
+							 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
+							 levelObjectArray[yIndex + j][xIndex + i] = null;
+							 pelletsRemaining--;
+						 }
+					 }
+				 }
+				 catch(ArrayIndexOutOfBoundsException e) {}
+			 }
+		 }
+	}
+	
 	private int[] calculatePlayerMovement(Player player) throws LevelCompleteException, PlayerCaughtException{
 		int[] delta = {0,0};
 		// Is this playerGhost colliding with the player?
@@ -1746,6 +1930,7 @@ public class Main extends Application {
 			int xIndex = convertToIndex(player.getPosition()[0], true);
 			int yIndex = convertToIndex(player.getPosition()[1], false);
 
+			/* If the player is wall jumping, we need to take over for one gridSquare */
 			if (playerIsWallJumping) {
 				if (levelObjectArray[yIndex][xIndex] instanceof Wall) {
 					playerIsWallJumping = false;
@@ -1758,100 +1943,15 @@ public class Main extends Application {
 					case right: {delta[0] = (int)player.getSpeed(); break;}
 					default: {break;}
 				}
-
 			}
 
 			//This bit is for the snake player, who needs to stop all his other pieces if he stops
 			if (player.getAbility() == Player.Ability.snake) {
-				if (player.getHeldButtons().isEmpty()) {
-					player.setPrevDirection(null);
-				}
-				else {
-					boolean validMoveExists = false;
-					for (int i = 0; i < player.getHeldButtons().size(); i++) {
-						boolean valid = true;
-						switch(player.getHeldButtons().getNFromTop(i)) {
-							case up:{
-								try {
-									if (levelObjectArray[yIndex-1][xIndex] instanceof Wall) {
-										valid = false;
-										break;
-									}
-								}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
-							}
-							case down:{
-								try {
-									if (levelObjectArray[yIndex+1][xIndex] instanceof Wall) {
-										valid = false;
-										break;
-									}
-								}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
-							}
-							case left:{
-								try {
-									if (levelObjectArray[yIndex][xIndex-1] instanceof Wall) {
-										valid = false;
-										break;
-									}
-								}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
-							}
-							case right:{
-								try {
-									if (levelObjectArray[yIndex][xIndex+1] instanceof Wall) {
-										valid = false;
-										break;
-									}
-								}catch(ArrayIndexOutOfBoundsException e) {valid = false;}
-							}
-							if (valid == true) {
-								validMoveExists = true;
-							}
-						}
-					}
-					if (!validMoveExists) {
-						player.setPrevDirection(null);
-					}
-				}
+				manageSnakePieceMovement();
 			}
 
 			if(levelObjectArray[yIndex][xIndex] instanceof PickUp && !player.getIsGhost()) {
-				player.modifyScore(((PickUp)(levelObjectArray[yIndex][xIndex])).getScoreValue());
-				currentLevel.getChildren().remove((levelObjectArray[yIndex][xIndex].getModel()));
-				if (player == null) {
-					print("Player is null");
-				}
-				if (currentScoreText == null) {
-					print("currentScoreText is null");
-				}
-				currentScoreText.setText(player.getScoreString());
-
-				pelletsRemaining--;
-
-				if (player.getAbility() == Player.Ability.snake) {
-					if (player.incrementPelletCounter()) {
-						//println("Spawning new snake bit");
-						SnakePiece newPiece;
-						if (snakePieces.isEmpty()) {
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize,gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), player);
-							newPiece.moveTo(player.getPosition()[0]+gridSquareSize, player.getPosition()[1]+gridSquareSize);
-						}
-						else {
-							SnakePiece lastPiece = snakePieces.get(snakePieces.size() - 1);
-							newPiece = new SnakePiece(new Rectangle(gridSquareSize, gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), lastPiece);
-							newPiece.moveTo(lastPiece.getPosition()[0]+gridSquareSize, lastPiece.getPosition()[1]+gridSquareSize);
-						}
-						snakePieces.add(newPiece);
-						currentLevel.getChildren().add(newPiece.getModel());
-					}
-				}
-				//Is this pickup a power pellet?
-				if (((PickUp)(levelObjectArray[yIndex][xIndex])).getPickUpType() == PickUp.PickUpType.powerPellet) {
-					sound.powerPelletPickup();
-					usePlayerAbility(true);
-				}
-				else{
-					sound.pelletPickup();
-				}
+				managePelletPickup();
 			}
 
 			//Set and clear the player's position in the object array, unless the player is doing something weird like using the wall jump ability
@@ -1859,93 +1959,18 @@ public class Main extends Application {
 				//println("setting " + xIndex + ", " + yIndex + " to be player");
 				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			}
-
 			if (!player.getIsGhost() && levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] instanceof Player) {
 				//println("clearing " + xIndex + ", " + yIndex);
 				levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
 			}
 
 			player.setPrevIndex(xIndex, yIndex);
-
-
+			
 			if (isBoostActive && ( player.getBoost() == Player.Boost.superPelletMagnet ||  player.getBoost() == Player.Boost.pelletMagnet)){
-				 for (int i = -pelletPickupSize; i <= pelletPickupSize; i++){
-					 for (int j = -pelletPickupSize ; j <= pelletPickupSize; j++){
-						 try{
-							 if (AdjacencyMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pelletPickupSize) {
-								 if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
-									 if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
-										 usePlayerAbility(true);
-										 sound.powerPelletPickup();
-									 }
-									 else {
-										 sound.pelletPickup();
-									 }
-									 player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
-									 currentScoreText.setText(player.getScoreString());
-									 currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
-									 levelObjectArray[yIndex + j][xIndex + i] = null;
-									 pelletsRemaining--;
-								 }
-							 }
-						 }
-						 catch(ArrayIndexOutOfBoundsException e) {}
-					 }
-				 }
+				managePelletMagnet();
 			}
-
 			//Loop through the held movement keys in order of preference
-			for (int n = 0; n< Integer.min(player.getHeldButtons().size(), 2) ; n++) {
-
-				if((player.getHeldButtons().getNFromTop(n) == Direction.up) ) {
-					// If regular move...
-					if ((yIndex != 0) && !(levelObjectArray[yIndex-1][xIndex] instanceof Wall)) {
-						delta[1] = -(int)player.getSpeed();
-						player.pointModel(Direction.up);
-						player.setPrevDirection(Direction.up);
-						break;
-					} // If wrapping around screen...
-					else if ((yIndex == 0) && !(levelObjectArray[levelObjectArray.length-1][xIndex] instanceof Wall)){
-						player.moveTo(convertToPosition(xIndex, true), (levelObjectArray.length-1)*gridSquareSize + levelOffsetY);
-					}
-				}
-				else if(player.getHeldButtons().getNFromTop(n) == Direction.down) {
-					if ((yIndex != levelObjectArray.length - 1) && !(levelObjectArray[yIndex+1][xIndex] instanceof Wall)) {
-						delta[1] = (int)player.getSpeed();
-						player.pointModel(Direction.down);
-						player.setPrevDirection(Direction.down);
-						break;
-					}
-					else if ((yIndex == levelObjectArray.length - 1) && !(levelObjectArray[0][xIndex] instanceof Wall)){
-						player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
-					}
-				}
-				else if(player.getHeldButtons().getNFromTop(n) == Direction.left) {
-					if ((xIndex != 0) && !(levelObjectArray[yIndex][xIndex-1] instanceof Wall)) {
-						delta[0] = -(int)player.getSpeed();
-						player.pointModel(Direction.left);
-						player.setPrevDirection(Direction.left);
-						break;
-					}
-					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
-						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
-					}
-				}
-				else if(player.getHeldButtons().getNFromTop(n) == Direction.right) {
-					if ((xIndex != levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][xIndex+1] instanceof Wall)) {
-						delta[0] = (int)player.getSpeed();
-						player.pointModel(Direction.right);
-						player.setPrevDirection(Direction.right);
-						break;
-					}
-					else if ((xIndex == levelObjectArray[0].length - 1) && !(levelObjectArray[yIndex][0] instanceof Wall)) {
-						player.moveTo(convertToPosition(0, true), convertToPosition(yIndex, false));
-					}
-				}
-			}
-		}
-		else if (player.getPrevDirection() == null){ // If player not aligned with grid, continue in same direction.
-			snapToGrid(player);
+			delta = getNextPlayerMove();
 		}
 		else {
 			switch (player.getPrevDirection()) {
@@ -1957,23 +1982,6 @@ public class Main extends Application {
 			}
 		}
 		return delta;
-	}
-	
-	private void snapToGrid(LevelObject object) {
-		double xPos = object.getPosition()[0];
-		double yPos = object.getPosition()[1];
-		println(xPos +", " + yPos);
-		/*println(((xPos - levelOffsetX) / gridSquareSize) + ", " + ((yPos - levelOffsetY) / gridSquareSize));
-		
-		int xIndex = convertToIndex(xPos, true);
-		int yIndex = convertToIndex(yPos, false);
-		
-		println(xIndex + ", " + yIndex);
-		
-		xPos = convertToPosition(xIndex, true);
-		yPos = convertToPosition(yIndex, false);*/
-		
-		//object.moveTo((int)xPos, (int)yPos);
 	}
 	
 	private Object[] determineWallType(int[][] array, int i, int j) {
@@ -2225,22 +2233,22 @@ public class Main extends Application {
 
 		if (player.getHeldButtons().isEmpty()) {
 			switch (player.getPrevDirection()) {
+			default:
 			case up:
 			case down: {isHorizontal = false; break;}
 
 			case left:
 			case right: {isHorizontal = true; break;}
-			default: {break;}
 			}
 		}
 		else {
 			switch(player.getHeldButtons().getTop()) {
+				default:
 				case up:
 				case down:{isHorizontal = false; break;}
 
 				case left:
 				case right: {isHorizontal = true; break;}
-				default: {break;}
 			}
 		}
 
