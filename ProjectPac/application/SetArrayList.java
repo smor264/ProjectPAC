@@ -9,11 +9,11 @@ import java.util.ArrayList;
 
 public class SetArrayList<T> {
 	ArrayList<T> array;
-	
+
 	public SetArrayList()  {
 		array = new ArrayList<T>();
 	}
-	
+
 	public boolean append(T element) {
 		if (array.contains(element)) {
 			return false;
@@ -22,14 +22,14 @@ public class SetArrayList<T> {
 			return array.add(element);
 		}
 	}
-	
+
 	public void remove(T element) {
 		int index = array.indexOf(element);
 		if (index >= 0) {
 			array.remove(index);
 		}
 	}
-	
+
 	public T getTop() {
 		if (array.size() == 0) {
 			return null;
@@ -46,7 +46,7 @@ public class SetArrayList<T> {
 			return array.get(array.size() - 1 - n);
 		}
 	}
-	
+
 	public int size() {
 		return array.size();
 	}
