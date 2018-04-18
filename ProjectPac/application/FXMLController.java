@@ -52,6 +52,10 @@ public class FXMLController {
 
 	@FXML Text livesRemaining;
 
+	@FXML Text boostChargesText;
+
+	@FXML Text abilityChargesText;
+
 	@FXML
 	private void initialize() {
 		currentScoreText.setText("--");
