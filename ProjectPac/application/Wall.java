@@ -1,7 +1,7 @@
 package application;
 
 import javafx.scene.shape.Rectangle;
-
+import application.Main.Direction;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 
@@ -174,6 +174,111 @@ public abstract class Wall extends LevelObject{
 		width = container.getBoundsInLocal().getWidth();
 		height = container.getBoundsInLocal().getHeight();
 		container.getChildren().add(model);
+	}
+	
+	
+	public static Object[] determineWallType(int[][] array, int i, int j) {
+		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
+		try {
+			if (array[j-1][i] == 1) {
+				northNeighbour = true;
+			}
+		}
+		catch(ArrayIndexOutOfBoundsException e){;}
+		try {
+			if (array[j+1][i] == 1) {
+				southNeighbour = true;
+			}
+		}
+		catch(ArrayIndexOutOfBoundsException e){;}
+		try {
+			if (array[j][i-1] == 1) {
+				leftNeighbour = true;
+			}
+		}
+		catch(ArrayIndexOutOfBoundsException e){;}
+
+		try {
+			if (array[j][i+1] == 1) {
+				rightNeighbour = true;
+			}
+		}
+		catch(ArrayIndexOutOfBoundsException e){;}
+
+		int numNeighbours = (northNeighbour ? 1:0) + (southNeighbour ? 1:0) + (leftNeighbour ? 1:0) + (rightNeighbour ? 1:0);
+		Object[] type = new Object[2];
+
+		switch(numNeighbours) {
+			case (4):{
+				type[0] = Wall.WallType.CROSS;
+				type[1] = Direction.UP;
+				break;
+			}
+			case (3): {
+				type[0] = Wall.WallType.TEE;
+				if (!northNeighbour) {
+					type[1] = Direction.DOWN;}
+				else if (!southNeighbour) {
+					type[1] = Direction.UP;
+				}
+				else if (!leftNeighbour) {
+					type[1] = Direction.RIGHT;
+				}
+				else {
+					type[1] = Direction.LEFT;
+				}
+				break;
+			}
+			case (2): {
+				if (northNeighbour && southNeighbour) {
+					type[0] = Wall.WallType.STRAIGHT;
+					type[1] = Direction.UP;
+				}
+				else if (leftNeighbour && rightNeighbour) {
+					type[0] = Wall.WallType.STRAIGHT;
+					type[1] = Direction.RIGHT;
+				}
+				else {
+					type[0] = Wall.WallType.CORNER;
+					if (southNeighbour && rightNeighbour) {
+						type[1] = Direction.UP;
+					}
+					else if (leftNeighbour && southNeighbour) {
+						type[1] = Direction.DOWN;
+					}
+					else if (northNeighbour && leftNeighbour) {
+						type[1] = Direction.RIGHT;
+					}
+					else {
+						type[1] = Direction.LEFT;
+					}
+				}
+				break;
+			}
+			case (1): {
+				type[0] = Wall.WallType.END;
+				if (northNeighbour) {
+					type[1] = Direction.UP;
+				}
+				else if (southNeighbour) {
+					type[1] = Direction.DOWN;
+				}
+				else if (leftNeighbour) {
+					type[1] = Direction.LEFT;
+				}
+				else {
+					type[1] = Direction.RIGHT;
+				}
+				break;
+			}
+			case(0): {
+				type[0] = Wall.WallType.SINGLE;
+				type[1] = Direction.UP;
+				break;
+			}
+			default: {throw new UnsupportedOperationException();}
+		}
+		return type;
 	}
 
 }
