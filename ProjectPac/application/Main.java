@@ -1381,6 +1381,7 @@ public class Main extends Application {
 	public void start(Stage primaryStage) {
 		try {
 
+			primaryStage.setTitle("Project Pac -- By ATLAS");
 			initCharList();
 			initRootLaunchLayout(primaryStage);
 
@@ -1933,7 +1934,6 @@ public class Main extends Application {
 
 		if (player.getAbility() == Player.Ability.SNAKE) {
 			if (player.incrementPelletCounter()) {
-				//println("Spawning new snake bit");
 				SnakePiece newPiece;
 				if (snakePieces.isEmpty()) {
 					newPiece = new SnakePiece(new Rectangle(gridSquareSize,gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), player);
@@ -2176,6 +2176,7 @@ public class Main extends Application {
 					}
 					else {
 						fireLaser();
+						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 					}
 
 					break;
@@ -2186,6 +2187,7 @@ public class Main extends Application {
 					}
 					else {
 						wallJump();
+						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 					}
 					break;
 				}
@@ -2208,7 +2210,7 @@ public class Main extends Application {
 					}
 				}
 				case LASER:
-				case WALLJUMP: {player.incrementAbilityCharges(); break;}
+				case WALLJUMP: {player.incrementAbilityCharges(); abilityChargesText.setText(Integer.toString(player.getAbilityCharges())); break;}
 
 				default: {break;}
 			}

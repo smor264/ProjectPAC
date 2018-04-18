@@ -3,3 +3,5 @@ ProjectPac/.*
 *.class
 
 *.db
+
+ProjectPac/auto-save\.txt
