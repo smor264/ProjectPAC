@@ -27,7 +27,7 @@ public class LevelButton extends Button {
 	public Level getConnectedLevel(){
 		return this.connectedLevel;
 	}
-	public void getConnectedLevel(Level connectedLevel){
+	public void setConnectedLevel(Level connectedLevel){
 		this.connectedLevel = connectedLevel;
 	}
 

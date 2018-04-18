@@ -75,7 +75,7 @@ public class Main extends Application {
 	private LevelObject[][] levelObjectArray = new LevelObject[levelHeight][levelWidth]; //Array storing all objects in the level (walls, pellets, enemies, player)
 	private Player player; //= new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 	private ArrayList<Enemy> enemyList = new ArrayList<Enemy>(); // Stores all enemies so we can loop through them for AI pathing
-	private AdjacencyMatrix adjMatrix; // Pathfinding array
+	private PathfindingMatrix path; // Pathfinding array
 	private ArrayList<Player> playerList = new ArrayList<Player>();
 
 	private int pelletsRemaining = 0;
@@ -464,7 +464,12 @@ public class Main extends Application {
 		levelObjectArray = new LevelObject[levelHeight][levelWidth];
 		currentLevel.getChildren().clear();
 		initialiseLevel(newLevel);
-		currentLevelText.setText(loadedLevelName);
+		for (LevelButton button : levelSelectButtons){
+			if (loadedLevel == button.getConnectedLevel()) {
+				currentLevelText.setText(button.getText());
+			}
+		}
+		
 		currentLevelText.setStyle("-fx-font: 20px System");
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
@@ -656,7 +661,7 @@ public class Main extends Application {
 		for (Enemy enemy: enemyList) {
 			enemy.getModel().toFront();
 		}
-		adjMatrix = new AdjacencyMatrix(levelObjectArray);
+		path = new PathfindingMatrix(levelObjectArray);
 
 
 		//For multiplayer, replaces AI with playable ghosts
@@ -1543,7 +1548,7 @@ public class Main extends Application {
 			//The beginning of more AI decisions goes here
 			if (player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive() ) {
 				//Take the direction that maximises euclidean distance to the player
-				enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
+				enemy.setNextMove(path.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 			}
 			else if (player.getInvisible()){
 				if (enemy.getPathLength() == 0){
@@ -1651,11 +1656,11 @@ public class Main extends Application {
 						//int guardYIndex = 5;
 						//int guardXIndex = 6;
 						Integer[] guardIndexes = findRandomValidIndexes();
-						if (AdjacencyMatrix.calcDistance(new Integer[] {guardIndexes[1], guardIndexes[0]}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
+						if (PathfindingMatrix.calcDistance(new Integer[] {guardIndexes[1], guardIndexes[0]}, new Integer[] {playerYIndex, playerXIndex}) < guardRadius) {
 							// Is the player near my guard point? Chase them!
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						}
-						else if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1], guardIndexes[0]}) > guardRadius) {
+						else if (PathfindingMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1], guardIndexes[0]}) > guardRadius) {
 							// Am I far from my guard point? Move closer
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {guardIndexes[1], guardIndexes[0]});
 						}
@@ -1700,7 +1705,7 @@ public class Main extends Application {
 					}*/
 					case SCARED: {
 						int scaredRadius = 1;
-						if (AdjacencyMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
+						if (PathfindingMatrix.calcDistance(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}) > scaredRadius && !enemy.isScared()) {
 							//If the player is far away
 							chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 						}
@@ -1710,7 +1715,7 @@ public class Main extends Application {
 							//This function acts as hysteresis, to keep the ghost scared for a few turns
 							enemy.manageScared();
 
-							enemy.setNextMove(adjMatrix.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
+							enemy.setNextMove(path.findEuclideanDirection(new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex}, false));
 						}
 						break;
 					}
@@ -1805,24 +1810,24 @@ public class Main extends Application {
 			switch (enemy.getAlgorithm()) {
 				case BFS:{
 					// set next moves to be the directions from enemy to player
-					enemy.setNextMoves(adjMatrix.findBFSPath(source, destination));
+					enemy.setNextMoves(path.findBFSPath(source, destination));
 					break;
 				}
 				case DFS:{
 					// Since DFS's paths are so windy, we actually need to let them complete before repathing
 					if (enemy.getPathLength() == 0) {
-						enemy.setNextMoves(adjMatrix.findDFSPath(source, destination));
+						enemy.setNextMoves(path.findDFSPath(source, destination));
 					}
 					break;
 				}
 				case DIJKSTRA:{
 					//System.out.println(targetXIndex + ", " + targetYIndex);
-					enemy.setNextMoves(adjMatrix.findDijkstraPath(source, destination));
+					enemy.setNextMoves(path.findDijkstraPath(source, destination));
 					break;
 				}
 
 				case EUCLIDEAN:{
-					enemy.setNextMove(adjMatrix.findEuclideanDirection(source, destination, true));
+					enemy.setNextMove(path.findEuclideanDirection(source, destination, true));
 					//println("euc");
 					break;
 				}
@@ -2045,7 +2050,7 @@ public class Main extends Application {
 		for (int i = -pickupRadius; i <= pickupRadius; i++){
 			for (int j = -pickupRadius ; j <= pickupRadius; j++){
 				try{
-					if (AdjacencyMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pickupRadius) {
+					if (PathfindingMatrix.calcDistance(new Integer[] {xIndex, yIndex}, new Integer[] {xIndex + i, yIndex + j}) <= pickupRadius) {
 						if (levelObjectArray[yIndex + j][xIndex + i] instanceof PickUp){
 							if (((PickUp)levelObjectArray[yIndex + j][xIndex + i]).getPickUpType() == PickUp.PickUpType.powerPellet){
 								usePlayerAbility(true);
@@ -2452,7 +2457,7 @@ public class Main extends Application {
 			if (!isBoostActive) {
 				enemy.resetSpeed();
 			}
-
+			/*Make sure the enemy doesn't become misaligned with the grid*/
 			int[] delta = {0,0};
 			if (((int)enemy.getPosition()[0] & 1) != 0) {
 				// If horizontal position is odd
@@ -2579,7 +2584,7 @@ public class Main extends Application {
 						pos = findRandomValidIndexes();
 						for (Enemy enemy : enemyList){
 							Integer[] enemyIndex = {convertToIndex(enemy.getPosition()[0], true), convertToIndex(enemy.getPosition()[1], false)};
-							dist = AdjacencyMatrix.calcDistance(enemyIndex, pos);
+							dist = PathfindingMatrix.calcDistance(enemyIndex, pos);
 							if (dist < minDist) {
 								minDist = dist;
 							}

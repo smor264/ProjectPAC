@@ -12,18 +12,18 @@ import java.util.Set;
 import java.util.Stack;
 
 /*
- * AdjacencyMatrix creates a representation of a graph from a 2D array of objects
+ * PathfindingMatrix creates a representation of a graph from a 2D array of objects
  * Used for calculating paths through the maze
  *  
  *  */
-public class AdjacencyMatrix{
+public class PathfindingMatrix{
 
 	HashMap<String, Integer> map = new HashMap<String, Integer>(); // Used to map coordinate pairs to a unique node ID
 	HashMap<Integer, String> reverseMap = new HashMap<Integer, String>(); // Used to map those node IDs back to our coordinates
 	private int[][] matrix;
 	private int[] dimensions = new int[2];
 	
-	public AdjacencyMatrix(Object[][] array) {
+	public PathfindingMatrix(Object[][] array) {
 		for (Integer i = 0; i < array.length; i++) {
 			for (Integer j = 0; j < array[0].length; j++) {
 				if (!(array[i][j] instanceof SolidWall)) {
