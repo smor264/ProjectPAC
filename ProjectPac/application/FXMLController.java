@@ -50,6 +50,7 @@ public class FXMLController {
 
 	@FXML Text currentLevelText;
 
+	@FXML Text livesRemaining;
 
 	@FXML
 	private void initialize() {

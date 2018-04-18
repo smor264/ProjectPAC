@@ -166,6 +166,7 @@ public class Main extends Application {
 	public Text currentScoreText = (Text) gameScene.lookup("#currentScoreText");
     public AnchorPane HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
     public Text currentLevelText;
+    public Text livesRemaining;
 
     //Start Screen FXML
     public Button playButton;
@@ -466,7 +467,6 @@ public class Main extends Application {
 			}
 		}
 
-		currentLevelText.setStyle("-fx-font: 20px System");
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
 		currentBoost.setText(player.getBoost().text());
@@ -503,7 +503,7 @@ public class Main extends Application {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private void closeGame(Stage primaryStage) {
@@ -859,8 +859,10 @@ public class Main extends Application {
 		currentAbility = (Text) gameScene.lookup("#currentAbility");
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
 		currentLevelText = (Text) gameScene.lookup("#currentLevelText");
+		livesRemaining = (Text) gameScene.lookup("#livesRemaining");
 
 		currentScoreText.setStyle("-fx-font: 20px System");
+		livesRemaining.setText(Integer.toString(player.getLives()+1));
 
 		showPostLevelScreen(true, false);
 
@@ -1513,6 +1515,7 @@ public class Main extends Application {
 		currentGameTick = 0;
 		TimeUnit.SECONDS.sleep(1);
 		player.decrementLives();
+		livesRemaining.setText(Integer.toString(player.getLives()+1));
 
 		restartLevel();
 	}
