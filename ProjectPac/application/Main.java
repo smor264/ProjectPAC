@@ -494,7 +494,7 @@ public class Main extends Application {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		showPostLevelScreen();
+		showPostLevelScreen(false);
 	}
 
 	private void closeGame(Stage primaryStage) {
@@ -548,15 +548,18 @@ public class Main extends Application {
 		return currentLevel.getChildren().removeAll(overlay);
 	}
 
-	private boolean showPostLevelScreen() {
+	private boolean showPostLevelScreen(boolean firstTime) {
 		int randBoostIndex = rand.nextInt(5) * 2;
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
 		isPostScreenShowing = true;
-		postLevelStory.setText(story.getStoryFor(loadedLevel));
-		//writeSave(saveFile);
-
+		if (firstTime){
+			postLevelStory.setText(story.getInitialStory());
+		}
+		else{
+			postLevelStory.setText(story.getStoryFor(loadedLevel));
+		}
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
 
@@ -845,7 +848,7 @@ public class Main extends Application {
 
 		currentScoreText.setStyle("-fx-font: 20px System");
 
-		showPostLevelScreen();
+		showPostLevelScreen(true);
 
 
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
@@ -892,7 +895,7 @@ public class Main extends Application {
 						} catch (FileNotFoundException e) {
 							e.printStackTrace();
 						}
-						showPostLevelScreen();
+						showPostLevelScreen(false);
 						gameLoop.stop();
 						break;
 					}
@@ -951,7 +954,7 @@ public class Main extends Application {
 								} catch (FileNotFoundException e) {
 									e.printStackTrace();
 								}
-								showPostLevelScreen();
+								showPostLevelScreen(false);
 								gameLoop.stop();
 								break;
 							}
@@ -1160,7 +1163,7 @@ public class Main extends Application {
 								player.resetLives();
 								unlockNewLevels();
 								writeSave(saveFile);
-								showPostLevelScreen();
+								showPostLevelScreen(false);
 								return;
 							}
 							catch(InterruptedException | FileNotFoundException e2){
