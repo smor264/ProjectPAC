@@ -167,6 +167,8 @@ public class Main extends Application {
     public AnchorPane HUDBar = (AnchorPane) gameScene.lookup("#HUDBar");
     public Text currentLevelText;
     public Text livesRemaining;
+    public Text boostChargesText;
+    public Text abilityChargesText;
 
     //Start Screen FXML
     public Button playButton;
@@ -856,6 +858,11 @@ public class Main extends Application {
 		currentBoost = (Text) gameScene.lookup("#currentBoost");
 		currentLevelText = (Text) gameScene.lookup("#currentLevelText");
 		livesRemaining = (Text) gameScene.lookup("#livesRemaining");
+		boostChargesText = (Text) gameScene.lookup("#boostChargesText");
+		abilityChargesText = (Text) gameScene.lookup("#abilityChargesText");
+
+		boostChargesText.setText(Integer.toString(player.getBoostCharges()));
+		abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 
 		currentScoreText.setStyle("-fx-font: 20px System");
 		livesRemaining.setText(Integer.toString(player.getLives()+1));
@@ -909,6 +916,8 @@ public class Main extends Application {
 						}
 						showPostLevelScreen(false, false);
 						gameLoop.stop();
+						player.resetBoostCharges();
+						boostChargesText.setText(Integer.toString(player.getBoostCharges()));
 						break;
 					}
 					case PAGE_DOWN:{ currentGameTick = maxTime; break;}
@@ -964,6 +973,8 @@ public class Main extends Application {
 								}
 								showPostLevelScreen(false, false);
 								gameLoop.stop();
+								player.resetBoostCharges();
+								boostChargesText.setText(Integer.toString(player.getBoostCharges()));
 								break;
 							}
 						}
@@ -1169,6 +1180,8 @@ public class Main extends Application {
 							try {
 								TimeUnit.SECONDS.sleep(1);
 								player.resetLives();
+								player.resetBoostCharges();
+								boostChargesText.setText(Integer.toString(player.getBoostCharges()));
 								unlockNewLevels();
 								writeSave(saveFile);
 								showPostLevelScreen(false, false);
@@ -1360,6 +1373,7 @@ public class Main extends Application {
 	public void start(Stage primaryStage) {
 		try {
 
+			primaryStage.setTitle("Project Pac -- By ATLAS");
 			initCharList();
 			initRootLaunchLayout(primaryStage);
 
@@ -2153,6 +2167,7 @@ public class Main extends Application {
 					}
 					else {
 						fireLaser();
+						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 					}
 
 					break;
@@ -2163,6 +2178,7 @@ public class Main extends Application {
 					}
 					else {
 						wallJump();
+						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 					}
 					break;
 				}
@@ -2185,7 +2201,7 @@ public class Main extends Application {
 					}
 				}
 				case LASER:
-				case WALLJUMP: {player.incrementAbilityCharges(); break;}
+				case WALLJUMP: {player.incrementAbilityCharges(); abilityChargesText.setText(Integer.toString(player.getAbilityCharges())); break;}
 
 				default: {break;}
 			}
@@ -2219,6 +2235,7 @@ public class Main extends Application {
 					playerIsWallJumping = true;
 					player.setPrevDirection(player.getHeldButtons().getTop());
 					player.decrementAbilityCharges();
+					abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 					sound.wallJump();
 				}
 			}
@@ -2272,6 +2289,7 @@ public class Main extends Application {
 		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
 			currentLevel.getChildren().add(laserFactory.getLaserGroup());
 			player.decrementAbilityCharges();
+			abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
 			sound.laser();
 			for (Enemy enemy : enemyList) {
 				if (isHorizontal) {
@@ -2456,6 +2474,7 @@ public class Main extends Application {
 				isBoostActive = true;
 			}
 			player.decrementBoostCharges();
+			boostChargesText.setText(Integer.toString(player.getBoostCharges()));
 		}
 	}
 
