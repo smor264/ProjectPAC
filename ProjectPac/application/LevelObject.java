@@ -82,7 +82,7 @@ public abstract class LevelObject {
 	public void moveTo(double x, double y) {
 		final double cx = container.getBoundsInLocal().getWidth()/2;
 		final double cy = container.getBoundsInLocal().getHeight()/2;
-		//System.out.println("moving object to " + Double.toString(x-2*cx) + ", " + Double.toString(y-2*cy));
+
 		if((x - 2*cx >= 0) && (x <= Main.windowWidth) && (y - 2*cy >= 0) && (y <= Main.windowHeight)) {
 			container.relocate(x-2*cx, y-2*cy);
 		}

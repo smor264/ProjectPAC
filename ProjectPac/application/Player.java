@@ -267,6 +267,7 @@ public class Player extends Character{
 		mouth = new Polygon(-18.0,-18.0, 18.0,-18.0, (xPos),(yPos), 0.0,0.0, (xPos),(-yPos), 18.0,18.0, -18.0,18.0 );
 		
 		Shape newModel = Shape.intersect(baseModel, mouth);
+		newModel.setOpacity( (this.getInvisible() ? 0.35 : 1) );
 		this.setModel(newModel);
 		model.setFill(regularColor);
 		model.setRotate(rotate);

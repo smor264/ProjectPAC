@@ -160,7 +160,6 @@ public class Enemy extends Character {
 			case AMBUSH:{
 				if (nextMoves.size() < 6 || ambushTimer > 30) {
 					//If close to the player, stop trying to cut them off and just chase
-					System.out.println("Chasing the player!");
 					ambushTimer = 0;
 					ambusherState = AmbusherState.CHASE;
 				}
@@ -172,7 +171,6 @@ public class Enemy extends Character {
 			case CHASE:{
 				if (chaseTimer >= 10) {
 					//signal to pick a random spot on the map to move to so you might be able to ambush
-					System.out.println("Choosing a random position to move to...");
 					ambusherState = AmbusherState.RETREAT;
 					chaseTimer = 0;
 				}
@@ -184,13 +182,11 @@ public class Enemy extends Character {
 			}
 			case RETREAT:{
 				/*We've chosen a random position to move to in the datapath section*/
-				System.out.println("Moving to selected random location...");
 				ambusherState = AmbusherState.REPOSITION;
 				break;
 			}
 			case REPOSITION:{
 				if (nextMoves.size() == 0){
-					System.out.println("Time to ambush!");
 					ambusherState = AmbusherState.AMBUSH;
 				}
 			}

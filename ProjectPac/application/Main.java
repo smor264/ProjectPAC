@@ -388,7 +388,6 @@ public class Main extends Application {
 					charList.get(i).setUnlockedState(true);
 				}
 				else {
-					println("Corrupted/Incompatible save file");
 				}
 			}
 
@@ -410,7 +409,6 @@ public class Main extends Application {
 		BufferedWriter buffWriter = new BufferedWriter(writer);
 
 		if(levsComplete == null) {
-			println("LevsUnlocked is null!");
 		}
 
 		levsComplete = levsComplete.substring(0, LevelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(LevelTree.levelList.indexOf(loadedLevel)+1);
@@ -480,10 +478,11 @@ public class Main extends Application {
 		player.resetBoostCharges();
 		player.setScore((int)(player.getScore()/2.0));
 		gameLoop.stop();
-
+		player.resetLives();
+		livesRemaining.setText(Integer.toString(player.getLives() + 1));
+		
 		if (retries >= 0){
 			retries--;
-			player.resetLives();
 			println("You have " + (retries + 1) + " retries remaining.");
 			if (loadedLevel == LevelTree.level1){
 				showPostLevelScreen(true, true);
@@ -686,14 +685,13 @@ public class Main extends Application {
 				model.setFill(enemyColors[enemyList.size()]);
 
 				Player playerGhost = new Player(model, playerCharacter.speed(), true,enemyColors[i]);
-				println(playerGhost.getContainer().getBoundsInLocal().getWidth() +"");
+
 				playerList.add(playerGhost);
 				playerGhost.moveTo(convertToPosition(enemyList.get(0).getStartIndex()[0]+1,true), convertToPosition(enemyList.get(0).getStartIndex()[1]+1,false));
 				playerGhost.setStartIndex(enemyList.get(0).getStartIndex());
 				currentLevel.getChildren().remove(enemyList.get(0).getModel());
 				enemyList.remove(0);
 				currentLevel.getChildren().add(playerGhost.getModel());
-				println(playerGhost.getPosition()[0] +", " + playerGhost.getPosition()[1]);
 			}
 		}
 
@@ -793,14 +791,12 @@ public class Main extends Application {
 			currentGameMode = GameMode.TWOPLAYER;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
 
-			println("TwoPlayer Selected!");
 			game(primaryStage);
 		});
 
 		threePlayerButton.setOnAction(e -> {
 			currentGameMode = GameMode.THREEPLAYER;
 			player = new Player(playerCharacter.model(), playerCharacter.speed(), playerCharacter.ability());
-			println("ThreePlayer Selected");
 			game(primaryStage);
 		});
 
@@ -904,7 +900,7 @@ public class Main extends Application {
 					case C :{ if (currentGameTick >= 240) {usePlayerBoost();} break; }
 					case V:{ if (currentGameTick >= 240) {usePlayerAbility(false);} break; }
 
-					case N:{
+					case PAGE_UP:{
 						unlockNewLevels();
 						try {
 							writeSave(saveFile);
@@ -923,11 +919,9 @@ public class Main extends Application {
 						}
 					case P: { pausePressed = !pausePressed;
 						if (pausePressed) {
-							println("PAUSED!");
 							showOverlay(pauseOverlay);
 						}
 						else {
-							println("UNPAUSED!");
 							hideOverlay(pauseOverlay);
 						}
 						break;
@@ -954,16 +948,14 @@ public class Main extends Application {
 							case ESCAPE:{ closeGame(primaryStage); break;}
 							case P: { pausePressed = !pausePressed;
 								if (pausePressed) {
-									println("PAUSED!");
 									showOverlay(pauseOverlay);
 								}
 								else {
-									println("UNPAUSED!");
 									hideOverlay(pauseOverlay);
 								}
 								break;
 								}
-							case N:{
+							case PAGE_UP:{
 								unlockNewLevels();
 								try {
 									writeSave(saveFile);
@@ -998,11 +990,9 @@ public class Main extends Application {
 							case ESCAPE:{ closeGame(primaryStage); break;}
 							case P: { pausePressed = !pausePressed;
 								if (pausePressed) {
-									println("PAUSED!");
 									showOverlay(pauseOverlay);
 								}
 								else {
-									println("UNPAUSED!");
 									hideOverlay(pauseOverlay);
 								}
 								break;
@@ -1095,6 +1085,7 @@ public class Main extends Application {
 						if ( !manageTime() ) {
 							return;
 						}
+
 						if (pelletsRemaining == 0) {
 							sound.levelComplete();
 							throw new LevelCompleteException();
@@ -1103,8 +1094,7 @@ public class Main extends Application {
 
 						if (player.getAbility() == Player.Ability.EATSAMECOLOR) {
 							if(currentGameTick%(2*60) == 0) {
-								println("Time to change!");
-								if(changeColor < enemyColors.length-1) { changeColor++; println("Colour Change!" + Integer.toString(changeColor));}
+								if(changeColor < enemyColors.length-1) { changeColor++;}
 								else {changeColor = 0;}
 								player.model.setFill(enemyColors[changeColor]);
 							}
@@ -1125,7 +1115,7 @@ public class Main extends Application {
 						else if (player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive()) {
 							manageEatGhosts();
 						}
-
+						
 
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
@@ -1156,6 +1146,9 @@ public class Main extends Application {
 						if (laserFactory.getAnimationTick() != null) {
 							laserFactory.createNextLaserFrame();
 						}
+						if (player.getShield() != null){
+							player.getShield().toFront();
+						}
 					}
 					catch (GameFinishedException exception) {
 						if (exception instanceof LossException) {
@@ -1172,7 +1165,6 @@ public class Main extends Application {
 							}
 						}
 						else if (exception instanceof WinException) {
-							println("LEVEL COMPLETE!");
 							this.stop();
 							try {
 								TimeUnit.SECONDS.sleep(1);
@@ -1375,7 +1367,6 @@ public class Main extends Application {
 
 			try {
 				if(!saveCheck.exists()) {
-					println("No save exists! Creating one now");
 					Files.write(Paths.get("auto-save.txt"), baseSaveData.getBytes(utf8));
 					saveFile = new File("auto-save.txt");
 					readFromSaveFile(saveFile);
@@ -1507,11 +1498,10 @@ public class Main extends Application {
 	private void enemyKilled(Character enemy) {
 		player.modifyScore(ateGhostScore);
 		enemy.moveTo(convertToPosition(enemy.getStartIndex()[0],true), convertToPosition(enemy.getStartIndex()[1],false));
+		currentScoreText.setText(player.getScoreString());
 	}
 
 	private void playerCaught() throws InterruptedException {
-		println("CAUGHT!");
-		println("You have " + (player.getLives()) + " lives remaining");
 		currentGameTick = 0;
 		TimeUnit.SECONDS.sleep(1);
 		player.decrementLives();
@@ -1594,7 +1584,6 @@ public class Main extends Application {
 						switch (enemy.getAmbusherState()) {
 							case RETREAT:{
 								/* If it's now time to ambush, pick a random spot on the map to move to, from there we can try to cut the player off */
-								//println("Choosing a random position to move to...");
 								Random rand = new Random();
 								int randXIndex;
 								int randYIndex;
@@ -1920,7 +1909,6 @@ public class Main extends Application {
 
 		if (player.getAbility() == Player.Ability.SNAKE) {
 			if (player.incrementPelletCounter()) {
-				//println("Spawning new snake bit");
 				SnakePiece newPiece;
 				if (snakePieces.isEmpty()) {
 					newPiece = new SnakePiece(new Rectangle(gridSquareSize,gridSquareSize, Color.SEAGREEN), (int)player.getSpeed(), player);
@@ -2106,10 +2094,10 @@ public class Main extends Application {
 				}
 
 				switch (player.getPrevDirection()) {
-					case UP: {delta[1] = -(int)player.getSpeed(); break;}
-					case DOWN: {delta[1] = (int)player.getSpeed(); break;}
-					case LEFT: {delta[0] = -(int)player.getSpeed(); break;}
-					case RIGHT: {delta[0] = (int)player.getSpeed(); break;}
+					case UP: {delta[1] = -(int)player.getSpeed(); player.pointModel(player.getPrevDirection());break;}
+					case DOWN: {delta[1] = (int)player.getSpeed(); player.pointModel(player.getPrevDirection());break;}
+					case LEFT: {delta[0] = -(int)player.getSpeed(); player.pointModel(player.getPrevDirection());break;}
+					case RIGHT: {delta[0] = (int)player.getSpeed(); player.pointModel(player.getPrevDirection());break;}
 					default: {break;}
 				}
 			}
@@ -2137,7 +2125,9 @@ public class Main extends Application {
 				managePelletMagnet();
 			}
 			//Loop through the held movement keys in order of preference
-			delta = getNextPlayerMove(player);
+			if (!playerIsWallJumping){
+				delta = getNextPlayerMove(player);
+			}
 		}
 		else {
 			switch (player.getPrevDirection()) {
@@ -2422,7 +2412,7 @@ public class Main extends Application {
 				case SUPERINVISIBILITY: {player.setInvisible(true); break;}
 
 				case SHIELD: {player.setShield(createShield(Color.BLUE)); break;}
-				case SUPERSHIELD: {player.setShield(createShield(Color.BLUE)); break;}
+				case SUPERSHIELD: {player.setShield(createShield(Color.GREEN)); break;}
 
 				case INVERTCONTROLS:{
 					player.setControlsInverted(true);
@@ -2453,11 +2443,8 @@ public class Main extends Application {
 					int val = rand.nextInt(Player.Boost.values().length - 1);
 					player.setBoost(Player.Boost.values()[val]);
 					currentBoost.setText(Player.Boost.values()[val].text());
-					println("You got... " + Player.Boost.values()[val].text() + "!");
-
 					//If it is a debuff, use it immediately
 					if (val == 10 || val == 11){
-						println("Bad Luck!");
 						usePlayerBoost();
 					}
 					player.incrementBoostCharges();

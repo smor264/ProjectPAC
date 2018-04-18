@@ -175,15 +175,10 @@ public class PathfindingMatrix{
 
 		/*Once we have the parent array, we can follow it back to find the shortest path*/
 		path = findPathFromParents(sourceIndex, destinationIndex, parent);
-		//for (Integer thing : path) {
-		//	System.out.println(thing + ", ");
-		//}
-		//System.out.println();
+
 		/*Then we need to convert from our array indices back to the grid coordinates*/
 		coordPath = convertPathToCoordinates(path);
-		//for (Integer[] thing : coordPath) {
-		//	System.out.println(Arrays.toString(thing));
-		//}
+
 		/* The we need to convert those coordinates into directions for the ghost to follow*/
 		directionPath = convertCoordPathToDirections(coordPath);
 		
@@ -209,7 +204,6 @@ public class PathfindingMatrix{
 		
 		while (!queue.isEmpty()) {
 			Integer path = queue.poll();
-			System.out.println(path);
 			ArrayList<Integer> neighbours = new ArrayList<Integer>();
 			neighbours = getNeighbours(path);
 			for (Integer node : neighbours) {
@@ -386,19 +380,17 @@ public class PathfindingMatrix{
 		
 		Double[] distanceArray = new Double[neighbours.size()];
 		Arrays.fill(distanceArray, Double.POSITIVE_INFINITY);
-		//System.out.println("I am at: " + Arrays.toString(source));
 		
-		//System.out.print("I have neighbours: ");
 		/* Loop through node's neighbours, store distance from this node to destination*/
 		for (int i = 0; i < neighbours.size(); i++) {
 			//Splice our string "[x, y]" into "x" and "y" 
 			String[] stringCoords = (reverseMap.get(neighbours.get(i))).replace("[", "").replace("]", "").split(", "); 
-			//System.out.print(reverseMap.get(neighbours.get(i)) + ", ");
+
 			// Parse our "x" and "y" strings into ints
 			Integer[] coords = {Integer.parseInt(stringCoords[0]), Integer.parseInt(stringCoords[1])}; 
 			distanceArray[i] = calcDistance(coords, destination);
 		}
-		//System.out.println();
+
 		int index;
 		if (getCloser) {
 			/*Find min distance, and consequently the index of the point that gives least distance*/
@@ -439,7 +431,6 @@ public class PathfindingMatrix{
 			}
 		}
 		
-		//System.out.println("It looks like " + reverseMap.get(neighbours.get(minIndex)) + " minimises the distance to my target at " + Arrays.toString(destination));
 		/*Convert the coordinates of our point that minimises distance*/
 		String[] minStringCoords = (reverseMap.get(neighbours.get(index))).replace("[", "").replace("]", "").split(", "); 
 		Integer[] minCoords = {Integer.parseInt(minStringCoords[0]), Integer.parseInt(minStringCoords[1])}; 
@@ -453,8 +444,6 @@ public class PathfindingMatrix{
 		directionPath = convertCoordPathToDirections(coordPath);
 
 		direction = directionPath.get(0);
-		//System.out.println("So I'll go " + direction);
-		//System.out.println();
 		return direction;
 		
 	}
