@@ -469,7 +469,7 @@ public class Main extends Application {
 				currentLevelText.setText(button.getText());
 			}
 		}
-		
+
 		currentLevelText.setStyle("-fx-font: 20px System");
 		currentGameTick = 0;
 		currentLevel.getChildren().add(timeBar);
@@ -621,7 +621,7 @@ public class Main extends Application {
 					double g = gridSquareSize;
 					Shape top = new Circle(g/2.0);
 					top.setTranslateY(-g/8.0);
-					
+
 					Shape bottom = new Polygon(-g/2,-g/4, -g/2,5*g/8.0, -g/3,g/2, -g/6,5*g/8, 0,g/2, g/6,5*g/8, g/3,g/2, g/2,5*g/8, g/2,-g/4);
 					Shape model = Shape.union(top, bottom);
 					model.setFill(enemyColors[enemyList.size()]);
@@ -671,11 +671,11 @@ public class Main extends Application {
 				Shape top = new Circle(g/2.4);
 				top.setTranslateY(-3);
 				top.setScaleX(1.2);
-				
+
 				Shape bottom = new Polygon(-g/2,0, -g/2,g/2.0, -g/3,g/2-g/8, -g/6,g/2, 0,g/2-g/8, g/6,g/2, g/3,g/2-g/8, g/2,g/2, g/2,0);
 				Shape model = Shape.union(top, bottom);
 				model.setFill(enemyColors[enemyList.size()]);
-				
+
 				Player playerGhost = new Player(model, playerCharacter.speed(), true,enemyColors[i]);
 				println(playerGhost.getContainer().getBoundsInLocal().getWidth() +"");
 				playerList.add(playerGhost);
@@ -744,9 +744,10 @@ public class Main extends Application {
 		twoPlayerButton = (Button) launchScene.lookup("#twoPlayerButton");
 		threePlayerButton = (Button) launchScene.lookup("#threePlayerButton");
 		helpButton = (Button) launchScene.lookup("#helpButton");
+		helpFrame.getChildren().addAll(textFrame,exitHelpButton);
 
 		helpButton.setOnAction(e -> {
-			helpFrame.getChildren().addAll(textFrame,exitHelpButton);
+
 			launchScreen.getChildren().add(helpFrame);
 
 			helpFrame.prefWidthProperty().bind(textFrame.widthProperty());
@@ -827,7 +828,6 @@ public class Main extends Application {
 		for (LevelButton button : levelSelectButtons) {
 			button.setDisable(true);
 			if ( levelTree.isUnlocked(button.getConnectedLevel()) ) {
-				println(button.getConnectedLevel().getLevelName() + " is unlocked!");
 				button.setDisable(false);
 			}
 		}
@@ -929,17 +929,17 @@ public class Main extends Application {
 						switch (event.getCode()) {
 							case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
 							case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
-	
+
 							case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
 							case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
-	
+
 							case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
 							case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
-	
+
 							case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
 							case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
 							case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-	
+
 							case ESCAPE:{ closeGame(primaryStage); break;}
 							case P: { pausePressed = !pausePressed;
 								if (pausePressed) {
@@ -970,20 +970,20 @@ public class Main extends Application {
 							case W: {playerList.get(1).getHeldButtons().append(Direction.UP);break;}
 							case UP: {player.getHeldButtons().append( (inverted ? Direction.DOWN: Direction.UP) ); break;}
 							case I: {playerList.get(2).getHeldButtons().append(Direction.UP);break;}
-	
+
 							case S: {playerList.get(1).getHeldButtons().append(Direction.DOWN);break;}
 							case DOWN: { player.getHeldButtons().append( (inverted ? Direction.UP: Direction.DOWN) ); break;}
 							case K: {playerList.get(2).getHeldButtons().append(Direction.DOWN);break;}
-	
+
 							case A: {playerList.get(1).getHeldButtons().append(Direction.LEFT);break;}
 							case LEFT: { player.getHeldButtons().append(inverted ? Direction.RIGHT : Direction.LEFT); break;}
 							case J: {playerList.get(2).getHeldButtons().append(Direction.LEFT);break;}
-	
+
 							case D: {playerList.get(1).getHeldButtons().append(Direction.RIGHT);break;}
 							case RIGHT: { player.getHeldButtons().append(inverted ? Direction.LEFT : Direction.RIGHT); break;}
 							case L: {playerList.get(2).getHeldButtons().append(Direction.RIGHT);break;}
 							case PAGE_DOWN:{ currentGameTick = maxTime; break;}
-	
+
 							case ESCAPE:{ closeGame(primaryStage); break;}
 							case P: { pausePressed = !pausePressed;
 								if (pausePressed) {
@@ -1191,7 +1191,7 @@ public class Main extends Application {
 	}
 
 	protected void manageAnimation(Enemy enemy) {
-				
+
 	}
 
 	private void manageAnimation(Player player){
@@ -1554,7 +1554,6 @@ public class Main extends Application {
 				if (enemy.getPathLength() == 0){
 					Random rand = new Random();
 					int searchRadius = 5;
-					println("I can't see anything!");
 					int randYIndex = rand.nextInt(searchRadius) - searchRadius / 2;
 					int randXIndex = rand.nextInt(searchRadius) - searchRadius / 2;
 					boolean validMove = false;
@@ -1613,7 +1612,6 @@ public class Main extends Application {
 							case AMBUSH:{
 								//If far away, try to cut the player off
 								//use player direction to aim ahead of the player
-								//println("Time to ambush!");
 								int[] del = {0,0};
 								if (player.getPrevDirection() != null) {
 									switch (player.getPrevDirection()) {
@@ -1641,7 +1639,6 @@ public class Main extends Application {
 								break;
 							}
 							case CHASE:{
-								//println("Chasing the player...");
 								chooseMoveFromAlgorithm(enemy, new Integer[] {yIndex, xIndex}, new Integer[] {playerYIndex, playerXIndex});
 								enemy.manageAmbusherFSM();
 								break;
@@ -1727,7 +1724,6 @@ public class Main extends Application {
 			enemy.setPrevIndex(xIndex, yIndex);
 
 			//Choose new direction to move in
-			//System.out.println("Attempting to move " + enemy.getNextMove());
 			Direction next = enemy.popNextMove();
 			if (next == null){
 				return delta;
@@ -1821,14 +1817,12 @@ public class Main extends Application {
 					break;
 				}
 				case DIJKSTRA:{
-					//System.out.println(targetXIndex + ", " + targetYIndex);
 					enemy.setNextMoves(path.findDijkstraPath(source, destination));
 					break;
 				}
 
 				case EUCLIDEAN:{
 					enemy.setNextMove(path.findEuclideanDirection(source, destination, true));
-					//println("euc");
 					break;
 				}
 				default:{throw new IllegalArgumentException("Invalid algorithm");}
@@ -1988,7 +1982,7 @@ public class Main extends Application {
 						player.moveTo(convertToPosition(xIndex, true), levelOffsetY);
 					}
 				}
-				
+
 			}
 			else if(player.getHeldButtons().getNFromTop(n) == Direction.LEFT) {
 				if (player.getIsGhost()) {
@@ -2012,7 +2006,7 @@ public class Main extends Application {
 					else if ((xIndex == 0) && !(levelObjectArray[yIndex][levelObjectArray[0].length - 1] instanceof Wall)) {
 						player.moveTo(convertToPosition(levelObjectArray[0].length - 1, true), convertToPosition(yIndex, false));
 					}
-				}			
+				}
 			}
 			else if(player.getHeldButtons().getNFromTop(n) == Direction.RIGHT) {
 				if (player.getIsGhost()) {
@@ -2119,11 +2113,9 @@ public class Main extends Application {
 
 			//Set and clear the player's position in the object array, unless the player is doing something weird like using the wall jump ability
 			if (!player.getIsGhost() &&  !(levelObjectArray[yIndex][xIndex] instanceof Wall) ){
-				//println("setting " + xIndex + ", " + yIndex + " to be player");
 				levelObjectArray[yIndex][xIndex] = player; // set new player position in array
 			}
 			if (!player.getIsGhost() && levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] instanceof Player) {
-				//println("clearing " + xIndex + ", " + yIndex);
 				levelObjectArray[player.getPrevIndex()[1]][player.getPrevIndex()[0]] = null; //clear old player position in collision detection array
 			}
 
@@ -2453,7 +2445,7 @@ public class Main extends Application {
 		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
-			//println(Boolean.toString(isBoostActive));
+
 			if (!isBoostActive) {
 				enemy.resetSpeed();
 			}
@@ -2473,7 +2465,7 @@ public class Main extends Application {
 
 		for (int i = 1; i < playerList.size(); i++) {
 			playerList.get(i).resetColor();
-			//println(Boolean.toString(isBoostActive));
+
 			if (!isBoostActive) {
 				playerList.get(i).resetSpeed();
 			}

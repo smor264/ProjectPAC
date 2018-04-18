@@ -10,14 +10,14 @@ public class PickUp extends LevelObject {
 	public static enum PickUpType {
 		pellet,
 		powerPellet,
-		powerUp,
+		powerUp, //Not used
 	}
 
 	private PickUpType type;
 
 	private final static double powerPelletSize = Main.gridSquareSize / 5.0; // 4 when gridsquare = 20
 
-	
+
 	public PickUp(int ID) {
 		super();
 		switch(ID){
