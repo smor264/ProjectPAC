@@ -200,9 +200,53 @@ public class Enemy extends Character {
 
 	}
 
-
 	public AmbusherState getAmbusherState() {
 		return ambusherState;
+	}
+	
+	public static Object[] determineEnemyCharacteristics(int num) {
+		// Enemies have their characteristics encoded using prime factorisation.
+		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
+		Object[] array = new Object[3];
+
+		int twoExponent = 0;
+		while(num%2 == 0) {
+			twoExponent++;
+			num = num/2;
+		}
+		switch (twoExponent) {
+			case 0: {array[0] = Enemy.Intelligence.DUMB; break;}
+			case 1: {array[0] = Enemy.Intelligence.MODERATE; break;}
+			case 2: {array[0] = Enemy.Intelligence.SMART; break;}
+			case 3: {array[0] = Enemy.Intelligence.PERFECT; break;}
+		}
+
+		int threeExponent = 0;
+		while (num%3 == 0) {
+			threeExponent++;
+			num = num/3;
+		}
+		switch (threeExponent) {
+			case 0: {array[1] = Enemy.Behaviour.HUNTER; break;}
+			case 1: {array[1] = Enemy.Behaviour.AMBUSHER; break;}
+			case 2: {array[1] = Enemy.Behaviour.GUARD; break;}
+			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
+			case 4: {array[1] = Enemy.Behaviour.SCARED; break;}
+		}
+
+		int fiveExponent = 0;
+		while (num%5 == 0) {
+			fiveExponent++;
+			num = num/5;
+		}
+		switch (fiveExponent) {
+			case 0: {array[2] = Enemy.Algorithm.DIJKSTRA; break;}
+			case 1: {array[2] = Enemy.Algorithm.EUCLIDEAN; break;}
+			case 2: {array[2] = Enemy.Algorithm.BFS; break;}
+			case 3: {array[2] = Enemy.Algorithm.DFS; break;}
+		}
+
+		return array;
 	}
 
 }

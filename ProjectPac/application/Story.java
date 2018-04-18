@@ -12,7 +12,7 @@ public class Story {
 			  "You've gotta help me! My name's Justin Tyme, and \n"
 			+ "the evil Dr. Clocktopus is trying to rewrite all of time! \n"
 			+ "He's broken it into pieces and I need your help to reassemble it! \n"
-			+ "I’ll give you something to fight back with! Careful though, they only have two uses per area!"};
+			+ "I’ll give you something to fight back with! Careful though, they only have two uses per level!"};
 	private final String[] level1 = {
 			  "Wow! You're a natural! \n"
 			+ "Your world is safe now, but there are more worlds that need your help!\n"
@@ -52,6 +52,9 @@ public class Story {
 	private final String[] garden2 = {
 			  "Wow! I thought we would never make it outta there, I was so lost. \n"
 			+ "\"Ssssssss\" \nSnac! You’re free, good to see you, will you help us? \n“SsS” (Yes)"};
+	private final String[] loss = {
+			  "Oh dear! Don't worry! I'm sure you'll get it this time! \n"
+			+ "Maybe try a different level and come back to this one later!"};
 
 	public Story(String playerName) {
 		map.put(LevelTree.level1, level1);
@@ -85,6 +88,19 @@ public class Story {
 	
 	public String getInitialStory(){
 		String[] storyBits = start;
+		String story = "";
+		for (int i = 0; i < storyBits.length; i++) {
+			if (i != storyBits.length - 1) {
+				story += storyBits[i] + playerName;
+			}
+			else {
+				story += storyBits[i];
+			}
+		}
+		return story;
+	}
+	public String getLossStory(){
+		String[] storyBits = loss;
 		String story = "";
 		for (int i = 0; i < storyBits.length; i++) {
 			if (i != storyBits.length - 1) {

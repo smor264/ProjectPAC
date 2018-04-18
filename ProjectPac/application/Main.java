@@ -408,15 +408,11 @@ public class Main extends Application {
 		PrintWriter writer = new PrintWriter(saveFile);
 		BufferedWriter buffWriter = new BufferedWriter(writer);
 
-		String newLvl;
-
 		if(levsComplete == null) {
 			println("LevsUnlocked is null!");
 		}
 
-		newLvl = levsComplete.substring(0, LevelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(LevelTree.levelList.indexOf(loadedLevel)+1);
-		levsComplete = newLvl;
-
+		levsComplete = levsComplete.substring(0, LevelTree.levelList.indexOf(loadedLevel)) + "1" + levsComplete.substring(LevelTree.levelList.indexOf(loadedLevel)+1);
 
 		if(levelTree.isCompleted(LevelTree.level1)) {
 			String pacKidUnlock;
@@ -489,17 +485,25 @@ public class Main extends Application {
 			retries--;
 			player.resetLives();
 			println("You have " + (retries + 1) + " retries remaining.");
+			if (loadedLevel == LevelTree.level1){
+				showPostLevelScreen(true, true);
+			}
+			else{
+				showPostLevelScreen(false, true);
+			}
 		}
 		else{
 			levelTree.clearCompletedLevels();
+			levsComplete = "00000000000";
 			println("Bad Luck! You have no more retries! Better luck next time!");
+			showPostLevelScreen(true, true);
 		}
 		try {
 			writeSave(saveFile);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		showPostLevelScreen(false);
+		
 	}
 
 	private void closeGame(Stage primaryStage) {
@@ -553,17 +557,22 @@ public class Main extends Application {
 		return currentLevel.getChildren().removeAll(overlay);
 	}
 
-	private boolean showPostLevelScreen(boolean firstTime) {
+	private boolean showPostLevelScreen(boolean firstTime, boolean loss) {
 		int randBoostIndex = rand.nextInt(5) * 2;
 		givenBoostButton.setText(Player.Boost.values()[randBoostIndex].text());
 		givenBoostButton.setOnAction(e -> {player.setBoost(Player.Boost.values()[randBoostIndex]);} );
 		checkUnlockedLevels();
 		isPostScreenShowing = true;
-		if (firstTime){
-			postLevelStory.setText(story.getInitialStory());
+		if (loss){
+			postLevelStory.setText(story.getLossStory());
 		}
 		else{
-			postLevelStory.setText(story.getStoryFor(loadedLevel));
+			if (firstTime){
+				postLevelStory.setText(story.getInitialStory());
+			}
+			else{
+				postLevelStory.setText(story.getStoryFor(loadedLevel));
+			}
 		}
 		return currentLevel.getChildren().add(postLevelOverlay);
 	}
@@ -617,7 +626,7 @@ public class Main extends Application {
 					placeLevelObject(gate, xPos, yPos);
 				}
 				else if (array[yPos][xPos] < 0) { //Enemy
-					Object[] characteristics = determineEnemyCharacteristics(-array[yPos][xPos]);
+					Object[] characteristics = Enemy.determineEnemyCharacteristics(-array[yPos][xPos]);
 					double g = gridSquareSize;
 					Shape top = new Circle(g/2.0);
 					top.setTranslateY(-g/8.0);
@@ -853,7 +862,7 @@ public class Main extends Application {
 
 		currentScoreText.setStyle("-fx-font: 20px System");
 
-		showPostLevelScreen(true);
+		showPostLevelScreen(true, false);
 
 
 		if ((gridSquareSize %2) == 0) {} else { throw new ArithmeticException("gridSquareSize can only be even"); }
@@ -900,7 +909,7 @@ public class Main extends Application {
 						} catch (FileNotFoundException e) {
 							e.printStackTrace();
 						}
-						showPostLevelScreen(false);
+						showPostLevelScreen(false, false);
 						gameLoop.stop();
 						break;
 					}
@@ -959,7 +968,7 @@ public class Main extends Application {
 								} catch (FileNotFoundException e) {
 									e.printStackTrace();
 								}
-								showPostLevelScreen(false);
+								showPostLevelScreen(false, false);
 								gameLoop.stop();
 								break;
 							}
@@ -1168,7 +1177,7 @@ public class Main extends Application {
 								player.resetLives();
 								unlockNewLevels();
 								writeSave(saveFile);
-								showPostLevelScreen(false);
+								showPostLevelScreen(false, false);
 								return;
 							}
 							catch(InterruptedException | FileNotFoundException e2){
@@ -2251,50 +2260,6 @@ public class Main extends Application {
 		return type;
 	}
 
-	private Object[] determineEnemyCharacteristics(int num) {
-		// Enemies have their characteristics encoded using prime factorisation.
-		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
-		Object[] array = new Object[3];
-
-		int twoExponent = 0;
-		while(num%2 == 0) {
-			twoExponent++;
-			num = num/2;
-		}
-		switch (twoExponent) {
-			case 0: {array[0] = Enemy.Intelligence.DUMB; break;}
-			case 1: {array[0] = Enemy.Intelligence.MODERATE; break;}
-			case 2: {array[0] = Enemy.Intelligence.SMART; break;}
-			case 3: {array[0] = Enemy.Intelligence.PERFECT; break;}
-		}
-
-		int threeExponent = 0;
-		while (num%3 == 0) {
-			threeExponent++;
-			num = num/3;
-		}
-		switch (threeExponent) {
-			case 0: {array[1] = Enemy.Behaviour.HUNTER; break;}
-			case 1: {array[1] = Enemy.Behaviour.AMBUSHER; break;}
-			case 2: {array[1] = Enemy.Behaviour.GUARD; break;}
-			case 3: {array[1] = Enemy.Behaviour.patrol; break;}
-			case 4: {array[1] = Enemy.Behaviour.SCARED; break;}
-		}
-
-		int fiveExponent = 0;
-		while (num%5 == 0) {
-			fiveExponent++;
-			num = num/5;
-		}
-		switch (fiveExponent) {
-			case 0: {array[2] = Enemy.Algorithm.DIJKSTRA; break;}
-			case 1: {array[2] = Enemy.Algorithm.EUCLIDEAN; break;}
-			case 2: {array[2] = Enemy.Algorithm.BFS; break;}
-			case 3: {array[2] = Enemy.Algorithm.DFS; break;}
-		}
-
-		return array;
-	}
 
 	/**
 	 * This function controls the players ability usage.
