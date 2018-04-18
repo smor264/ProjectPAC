@@ -159,6 +159,10 @@ public class Player extends Character{
 	public int getBoostCharges(){
 		return boostCharges;
 	}
+	public void resetBoostCharges(){
+		boostCharges = 2;
+	}
+	
 	public void incrementBoostCharges(){
 		boostCharges++;
 	}

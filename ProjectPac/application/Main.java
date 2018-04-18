@@ -82,7 +82,7 @@ public class Main extends Application {
 	private boolean pausePressed = false;
 
 
-	private int playerPowerUpDuration = 10 * 60; // Powerup duration time in ticks
+	private int playerPowerUpDuration = 7 * 60; // Powerup duration time in ticks
 	private int playerPowerUpTimer = 0;// This counts down from playerPowerUpDuration to zero, at which point the powerup expires
 	boolean isBoostActive = false;
 	int boostDuration;
@@ -477,7 +477,7 @@ public class Main extends Application {
 	 * Stops the gameLoop and hands game over UI
 	 */
 	private void gameOver() {
-
+		player.resetBoostCharges();
 		player.setScore((int)(player.getScore()/2.0));
 		gameLoop.stop();
 
@@ -1658,7 +1658,7 @@ public class Main extends Application {
 						break;
 					}
 					case GUARD: {
-						int guardRadius = 10;
+						int guardRadius = 15;
 						//int guardYIndex = 5;
 						//int guardXIndex = 6;
 						Integer[] guardIndexes = findRandomValidIndexes();
@@ -1682,8 +1682,8 @@ public class Main extends Application {
 							boolean validMove = true;
 							do {
 								validMove = true;
-								randomXCoord = random.nextInt(2*guardRadius) - guardRadius; // random index from (-guardRadius) to (guardRadius)
-								randomYCoord = random.nextInt(2*guardRadius) - guardRadius;
+								randomXCoord = random.nextInt(4*guardRadius) - 2*guardRadius; // random index from (-guardRadius) to (guardRadius)
+								randomYCoord = random.nextInt(4*guardRadius) - 2*guardRadius;
 								try{
 									if (levelObjectArray[guardIndexes[1] - randomYCoord][guardIndexes[0] - randomXCoord] instanceof SolidWall) {
 										validMove = false;
