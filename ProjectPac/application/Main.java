@@ -351,7 +351,7 @@ public class Main extends Application {
 
 	private void configureFileChooser(FileChooser fileChooser) {
 		fileChooser.setTitle("Choose your save file");
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.setInitialDirectory(new File("."));
 		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
 	}
 
@@ -482,7 +482,7 @@ public class Main extends Application {
 		gameLoop.stop();
 		player.resetLives();
 		livesRemaining.setText(Integer.toString(player.getLives() + 1));
-		
+
 		if (retries >= 0){
 			retries--;
 			println("You have " + (retries + 1) + " retries remaining.");
@@ -1126,7 +1126,7 @@ public class Main extends Application {
 						else if (player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive()) {
 							manageEatGhosts();
 						}
-						
+
 
 						for (int i=0; i< enemyList.size(); i++){
 							delta = new int[] {0,0};
