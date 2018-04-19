@@ -7,6 +7,9 @@ import java.io.IOException;
 
 import javafx.scene.paint.Color;
 
+/**Level reads from a file and records the level as an array of ints. 
+ * This array is read and converted into a 2D LevelObject array when a level is initialised in Main
+ * The string parameter is the text file to read, minus the file extension (.txt)*/
 public class Level {
 	private int[][] positionArray = new int[Main.levelHeight][Main.levelWidth];
 

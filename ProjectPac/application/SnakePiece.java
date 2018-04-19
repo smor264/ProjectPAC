@@ -5,6 +5,8 @@ import java.util.Queue;
 
 import javafx.scene.shape.Shape;
 
+/**snakePiece are instances of Snac The snake's body as he grows longer.
+ * They record the movements of their parent and perform them later*/
 public class SnakePiece extends Character {
 	int positionNumber;
 	

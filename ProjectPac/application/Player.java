@@ -7,7 +7,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
 
-
+/**a Player is any instance of a Character that is controlled through the keyboard.
+ * The Player class manages player abilities, boosts, status effects, lives, etc...
+ * In multiplayer, some Players act as ghosts*/
 public class Player extends Character{
 	int Score = 0;
 	private SetArrayList<Main.Direction> heldButtons = new SetArrayList<Main.Direction>();

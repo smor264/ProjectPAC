@@ -5,6 +5,9 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
+/**LevelObject is any object that is designed to be in the level, e.g Enemies, Players, Walls, Pickups, etc.
+ * A LevelObject has a model and a StackPane that the model sits inside. 
+ * So long as the model is contained within one tile ( < squareGridSize * squareGridSize), changing the model does not move the LevelObject.*/
 public abstract class LevelObject {
 	protected double width = Main.gridSquareSize;
 	protected double height = Main.gridSquareSize;

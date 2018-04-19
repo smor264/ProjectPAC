@@ -13,12 +13,11 @@ import java.util.Stack;
 
 /*
  * PathfindingMatrix creates a representation of a graph from a 2D array of objects
- * Used for calculating paths through the maze
- *  
- *  */
+ * Used for pathfinding through the maze*/
 public class PathfindingMatrix{
 
-	HashMap<String, Integer> map = new HashMap<String, Integer>(); // Used to map coordinate pairs to a unique node ID
+	/**Maps a coordinate pair to a single int, e.g [1][1] => 1, [1][2] => 2, etc...*/
+	HashMap<String, Integer> map = new HashMap<String, Integer>(); 
 	HashMap<Integer, String> reverseMap = new HashMap<Integer, String>(); // Used to map those node IDs back to our coordinates
 	private int[][] matrix;
 	private int[] dimensions = new int[2];

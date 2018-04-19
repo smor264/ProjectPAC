@@ -2,6 +2,8 @@ package application;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 
+/**LevelButton is simply a button that can have a Level connected to it.
+ * This makes the onAction method much easier to code.*/
 public class LevelButton extends Button {
 	
 	Level connectedLevel;
