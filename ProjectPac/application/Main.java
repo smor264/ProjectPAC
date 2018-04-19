@@ -2072,7 +2072,7 @@ public class Main extends Application {
 							}
 							player.modifyScore(((PickUp)(levelObjectArray[yIndex + j][xIndex + i])).getScoreValue());
 							currentScoreText.setText(player.getScoreString());
-							currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getContainer()));
+							currentLevel.getChildren().remove((levelObjectArray[yIndex + j][xIndex + i].getModel()));
 							levelObjectArray[yIndex + j][xIndex + i] = null;
 							pelletsRemaining--;
 						}
