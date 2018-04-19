@@ -1,4 +1,4 @@
-Project Pac: A Bite Out Of Time
+﻿Project Pac: A Bite Out Of Time
 Project Pac is a action/adventure game based off the 1980 arcade game PAC-MAN from Namco. Project Pac adds a wide variety of levels, characters, abilities, and boosts to the original game format, as well as complicated ghost AI and a fun story.
 
 Requirements:
@@ -9,7 +9,7 @@ e(FX)clipse
 
 Install:
 Open eclipse
-Choose the src folder as the workspace (../[git folder]/src/ProjectPac/…)
+Choose the folder above "ProjectPac" as the workspace, e.g (../[git folder]/src/ProjectPac/…)
 Create new javafx project (New -> Other -> JavaFx  -> New JavaFX project)
 Enter the project name “ProjectPac” (case-sensitive)
 Wait for project to build.
