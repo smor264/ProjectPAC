@@ -2,6 +2,7 @@ package application;
 
 import java.util.HashMap;
 
+/**Story holds all the strings for the between-level screens*/
 public class Story {
 	private HashMap<Level, String[]> map = new HashMap<Level, String[]>();
 	private String playerName;
@@ -19,7 +20,7 @@ public class Story {
 			+ "Clocktopus has broken both the past and the future! You'll have to choose which world to help next!"};
 	private final String[] medieval1 = {
 			  "Looks like you're back in the past, try not to change the timeline! \n"
-			+ "Well, it's not like we can do more damage than Dr. Clocktopus…"};
+			+ "Well, it's not like we can do more damage than Dr. Clocktopusï¿½"};
 	private final String[] medieval2 = {
 			  "Excellent! You've saved the past and I think you made a good impression with the royalty! \n"
 			+ "Another world saved, but still more to go!\n"
@@ -48,10 +49,10 @@ public class Story {
 			+ "Another world saved, only a few left now!"};
 	private final String[] garden1 = {
 			  "Watch your step! My friend Snac the Snake lives around here somewhere, \n"
-			+ "don't worry he doesn't bite, unless you step on him... \n Try to avoid that…"};
+			+ "don't worry he doesn't bite, unless you step on him... \n Try to avoid thatï¿½"};
 	private final String[] garden2 = {
 			  "Wow! I thought we would never make it outta there, I was so lost. \n"
-			+ "\"Ssssssss\" \nSnac! You're free, good to see you, will you help us? \n“SsS” (Yes)"};
+			+ "\"Ssssssss\" \nSnac! You're free, good to see you, will you help us? \nï¿½SsSï¿½ (Yes)"};
 	private final String[] loss = {
 			  "Oh dear! Don't worry! I'm sure you'll get it this time! \n"
 			+ "Maybe try a different level and come back to this one later!"};

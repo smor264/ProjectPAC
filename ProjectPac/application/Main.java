@@ -43,17 +43,6 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
-/* Thoughts about random level generation:
- * - Every node must have at least two neighbours (degree two)
- * - No loops of four or less (girth of 5+)
- *
- * */
-/*To Do List:
- * Add AI elements to Enemy, e.g intelligence, randomness, unique behaviour
- * Make start menu and transition between levels
- * Implement more behaviour types
- * Think about flood-fill-esque algorithm for detecting surrounded wall pieces to make them look filled in rather than cross pieces
- * */
 
 public class Main extends Application {
 	//Unchanged
@@ -68,7 +57,6 @@ public class Main extends Application {
 
 
 	private LevelTree levelTree = new LevelTree();
-	private Level loadedLevel;
 
 	//Managed Variables and Objects
 	private int retries = 2;
@@ -115,7 +103,8 @@ public class Main extends Application {
 	private Scene gameScene = new Scene(gameUI, windowWidth, windowHeight, Color.GREY); //Scene is where all visible objects are stored to be displayed on the stage (i.e window)
 
 	//Levels
-	private String loadedLevelName;
+	private Level loadedLevel;
+
 
 
 	//Overlays
@@ -217,7 +206,7 @@ public class Main extends Application {
 
 	public GameMode currentGameMode;
 
-	private static Shape glitchTheGhostModel = new Polygon(0.0,-Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, Main.gridSquareSize/2.0, -Main.gridSquareSize/2.0,Main.gridSquareSize/2.0);
+	private static Shape glitchTheGhostModel = new Polygon(-gridSquareSize/2,-gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,0, gridSquareSize/2,gridSquareSize/2, -gridSquareSize/2,-gridSquareSize/2, 0,gridSquareSize/2, -gridSquareSize/2,0, -gridSquareSize/2,-gridSquareSize/2);
 	private static Polygon mouth = new Polygon(-18.0,-18.0, 40.0,-40.0, 15.6,-9.0, 0.0,0.0, 15.6,9.0, 40.0,40.0, -18.0,18.0 );
 	/**
 	 * A list of all characters that the player can use.
@@ -227,7 +216,7 @@ public class Main extends Application {
 		PACMAN (Shape.intersect(new Circle(gridSquareSize/2), mouth), Color.YELLOW, Player.Ability.EATGHOSTS, 2),
 		MSPACMAN (Shape.intersect(new Circle(gridSquareSize/2), mouth), Color.LIGHTPINK, Player.Ability.EATGHOSTS, 2),
 		PACKID (Shape.intersect(new Circle(gridSquareSize/3), mouth), Color.GREENYELLOW, Player.Ability.WALLJUMP, 2),
-		GLITCHTHEGHOST (glitchTheGhostModel, null, Player.Ability.EATSAMECOLOR, 2),
+		GLITCHTHEGHOST (new Polygon(-gridSquareSize/2,-gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,0, gridSquareSize/2,gridSquareSize/2, -gridSquareSize/2,-gridSquareSize/2, 0,gridSquareSize/2, -gridSquareSize/2,0, -gridSquareSize/2,-gridSquareSize/2), Color.RED, Player.Ability.EATSAMECOLOR, 2),
 		SNACTHESNAKE (Shape.intersect(new Polygon(-gridSquareSize/2,-gridSquareSize/2, -gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,gridSquareSize/2, gridSquareSize/2,-gridSquareSize/2), mouth), Color.SEAGREEN, Player.Ability.SNAKE, 3),
 		ROBOT (Shape.intersect(new Polygon(-gridSquareSize/4.0,-gridSquareSize/4.0, -gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,gridSquareSize/4.0, gridSquareSize/4.0,-gridSquareSize/4.0), mouth), Color.DARKGREY , Player.Ability.LASER, 2);
 
@@ -351,7 +340,7 @@ public class Main extends Application {
 
 	private void configureFileChooser(FileChooser fileChooser) {
 		fileChooser.setTitle("Choose your save file");
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.setInitialDirectory(new File("."));
 		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
 	}
 
@@ -594,7 +583,6 @@ public class Main extends Application {
 		background.toBack();
 		background.setTranslateY(60);
 		pelletsRemaining = 0;
-		loadedLevelName = level.getLevelName();
 		loadedLevel = level;
 
 		for (int xPos = 0; xPos < array[0].length; xPos++) {
@@ -781,7 +769,10 @@ public class Main extends Application {
 					+ "Robot: Beep-boop-beep.\nAbility: Can fire a laser that kills(?) ghost in front and behind him\n"
 					+ "Snac the Snake: Everyday is a loooong day\n"
 					+ "Ability: Grows in size as snac eats pellets\n"
-					+ "\nGlitch the ghost: &^$*%^$)*&^*%$$#@@*)*(&*^()\n\nBoosts:\nChoose at start of each level, limited use, if random chosen has a chance of being super.\n"
+					+ "\nGlitch: E&A^T$*%G^H$O)S*T&S^*%W_I$T$H##&S@A@M*E)*(C&O*L^O(R)\n\n"
+					+ "Boosts:\n"
+					+ "Choose at start of each level, limited use. \n"
+					+ "If you choose the 'random' boost, then you have a chance of getting a super version but also the possibility of a debuff!.\n"
 					+ "Dash\nShield\nPellet Magnet\nInvisibility\nTime Slow\nInvert Controls\nRandom Teleport\n");
 
 
@@ -840,6 +831,14 @@ public class Main extends Application {
 		}
 	}
 
+	private void updateAbilityChargesText(){
+		if (player.getAbility() == Player.Ability.LASER || player.getAbility() == Player.Ability.WALLJUMP){
+			abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+		}
+		else{
+			abilityChargesText.setText("-");
+		}
+	}
 	/**
 	 * Loads , displays, and runs the game itself
 	 * @param primaryStage
@@ -862,7 +861,8 @@ public class Main extends Application {
 		abilityChargesText = (Text) gameScene.lookup("#abilityChargesText");
 
 		boostChargesText.setText(Integer.toString(player.getBoostCharges()));
-		abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+		updateAbilityChargesText();
+		
 
 		currentScoreText.setStyle("-fx-font: 20px System");
 		livesRemaining.setText(Integer.toString(player.getLives()+1));
@@ -1108,6 +1108,11 @@ public class Main extends Application {
 								if(changeColor < enemyColors.length-1) { changeColor++;}
 								else {changeColor = 0;}
 								player.model.setFill(enemyColors[changeColor]);
+							}
+							else if (currentGameTick%(2*10) == 0){
+								int random = rand.nextInt(4);
+								player.pointModel(Direction.values()[random]);
+								
 							}
 						}
 
@@ -1359,10 +1364,10 @@ public class Main extends Application {
                 "-fx-base: #" + LevelTree.levelList.get(i).getBackground().toString());
 			*/
 				levelSelectButtons[i].setStyle("-fx-background-radius: 5em; " +
-		                "-fx-min-width: 60px; " +
-		                "-fx-min-height: 60px; " +
-		                "-fx-max-width: 60px; " +
-		                "-fx-max-height: 60px;" +
+		                "-fx-min-width: 70px; " +
+		                "-fx-min-height: 70px; " +
+		                "-fx-max-width: 70px; " +
+		                "-fx-max-height: 70px;" +
 		                "-fx-base: #41C7F6");
 
 		}
@@ -1397,9 +1402,7 @@ public class Main extends Application {
 			initPostLevel(primaryStage);
 			primaryStage.setScene(launchScene);
 			primaryStage.show();
-
-			glitchTheGhostModel.setRotate(180);
-			glitchTheGhostModel.setFill(Color.RED);
+			primaryStage.setResizable(false);
 
 			//Unlocks characters based off save file
 			for(int i = 0; i < charList.size(); i++) {
@@ -2167,7 +2170,7 @@ public class Main extends Application {
 					}
 					else {
 						fireLaser();
-						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+						updateAbilityChargesText();
 					}
 
 					break;
@@ -2178,7 +2181,7 @@ public class Main extends Application {
 					}
 					else {
 						wallJump();
-						abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+						updateAbilityChargesText();
 					}
 					break;
 				}
@@ -2201,7 +2204,7 @@ public class Main extends Application {
 					}
 				}
 				case LASER:
-				case WALLJUMP: {player.incrementAbilityCharges(); abilityChargesText.setText(Integer.toString(player.getAbilityCharges())); break;}
+				case WALLJUMP: {player.incrementAbilityCharges(); updateAbilityChargesText();; break;}
 
 				default: {break;}
 			}
@@ -2235,7 +2238,7 @@ public class Main extends Application {
 					playerIsWallJumping = true;
 					player.setPrevDirection(player.getHeldButtons().getTop());
 					player.decrementAbilityCharges();
-					abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+					updateAbilityChargesText();
 					sound.wallJump();
 				}
 			}
@@ -2289,7 +2292,7 @@ public class Main extends Application {
 		if (laserFactory.createNewLaser(xPos, yPos, isHorizontal)) {
 			currentLevel.getChildren().add(laserFactory.getLaserGroup());
 			player.decrementAbilityCharges();
-			abilityChargesText.setText(Integer.toString(player.getAbilityCharges()));
+			updateAbilityChargesText();
 			sound.laser();
 			for (Enemy enemy : enemyList) {
 				if (isHorizontal) {
@@ -2316,8 +2319,9 @@ public class Main extends Application {
 		playerIsWallJumping = false;
 		for (Enemy enemy : enemyList) {
 			enemy.resetColor();
-
-			if (!isBoostActive) {
+			
+			// If TimeSlow is activated when the slow ghost effect should expire, then let disableBoost reset the ghost's speed
+			if (!((player.getBoost() == Player.Boost.TIMESLOW || player.getBoost() == Player.Boost.SUPERTIMESLOW) && isBoostActive)) {
 				enemy.resetSpeed();
 			}
 			/*Make sure the enemy doesn't become misaligned with the grid*/
@@ -2482,21 +2486,22 @@ public class Main extends Application {
 		switch(player.getBoost()){
 			case TIMESLOW:
 			case SUPERTIMESLOW:{
-				for (Enemy enemy : enemyList){
-					enemy.resetSpeed();
-					int[] delta = {0,0};
-					if (((int)enemy.getPosition()[0] & 1) != 0) {
-						// If horizontal position is odd
-						delta[0] = 1;
-
+				if (!(player.getAbility() == Player.Ability.EATGHOSTS && player.isAbilityActive())){
+					for (Enemy enemy : enemyList){
+						enemy.resetSpeed();
+						int[] delta = {0,0};
+						if (((int)enemy.getPosition()[0] & 1) != 0) {
+							// If horizontal position is odd
+							delta[0] = 1;
+	
+						}
+						if (((int)enemy.getPosition()[1] & 1) != 0) {
+							// If position is odd
+							delta[1] = 1;
+						}
+						enemy.moveBy(delta[0], delta[1]);
 					}
-					if (((int)enemy.getPosition()[1] & 1) != 0) {
-						// If position is odd
-						delta[1] = 1;
-					}
-					enemy.moveBy(delta[0], delta[1]);
 				}
-
 				break;
 			}
 

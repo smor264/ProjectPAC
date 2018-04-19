@@ -3,6 +3,8 @@ package application;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+/**LevelTree contains all the Levels in the game and how they are connected to eachother.
+ * An instance of LevelTree has a list of completedLevels*/
 public class LevelTree {
 
 	public final static Level level1 = new Level("level1");
@@ -34,10 +36,11 @@ public class LevelTree {
 	private ArrayList<TreeNode<Level>> completedLevels;
 
 	public LevelTree() {
+		/*Since our world map is a Tree structure, we wrap each Level in a TreeNode, which can have parents and children.*/
 		for (int i = 0; i < levelList.size(); i++) {
 			treeNodeList.add(new TreeNode<Level>(levelList.get(i)));
 		}
-
+		/*This is how all the levels are connected to one another*/
 		treeNodeList.get(0).addChild(treeNodeList.get(1)); // Add future1 as a child of level1
 			treeNodeList.get(1).addChild(treeNodeList.get(2)); // Add future2 as child of future1
 				treeNodeList.get(2).addChild(treeNodeList.get(7)); // Add ice1 as child of future2
@@ -63,7 +66,8 @@ public class LevelTree {
 	public void clearCompletedLevels(){
 		completedLevels.clear();
 	}
-	
+	/**We don't want to deal with TreeNodes outside this class, 
+	 * so any public methods need to convert a level into the equivalent TreeNode that contains that level*/
 	private TreeNode<Level> getTreeNodeEquivalent(Level level){
 		for (int i = 0; i < levelList.size(); i++) {
 			if (level == levelList.get(i)) {
@@ -78,6 +82,7 @@ public class LevelTree {
 		return null;
 	}
 
+	/**A level is complete if it has no parents, or if one of it's parents is completed*/
 	public boolean isUnlocked(Level level) {
 		if (getTreeNodeEquivalent(level).getParents().isEmpty()) {
 			return true;

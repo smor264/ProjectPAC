@@ -5,3 +5,5 @@ ProjectPac/.*
 *.db
 
 ProjectPac/auto-save\.txt
+/.metadata/
+/.recommenders/

@@ -14,7 +14,7 @@
         <items>
           <AnchorPane fx:id="HUDBar" minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
-                  <Text fx:id="currentScoreText" layoutX="77.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" text="currentScore" wrappingWidth="143.27957916259766" AnchorPane.leftAnchor="75.0" AnchorPane.topAnchor="15.0">
+                  <Text fx:id="currentScoreText" layoutX="150.0" layoutY="35.0" strokeType="OUTSIDE" strokeWidth="0.0" text="currentScore" wrappingWidth="143.27957916259766" AnchorPane.leftAnchor="85.0" AnchorPane.topAnchor="15.0">
                      <font>
                         <Font size="20.0" />
                      </font></Text>
@@ -58,7 +58,7 @@
                      <font>
                         <Font name="System Bold" size="20.0" />
                      </font></Text>
-                  <Text fx:id="currentLevelText" layoutX="410.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" AnchorPane.topAnchor="15.0">
+                  <Text fx:id="currentLevelText" layoutX="430.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" AnchorPane.topAnchor="15.0">
                      <font>
                         <Font size="20.0" />
                      </font></Text>
@@ -67,7 +67,7 @@
                         <Font size="20.0" />
                      </font>
                   </Text>
-                  <Text fx:id="livesRemaining" layoutX="670.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" AnchorPane.topAnchor="15.0">
+                  <Text fx:id="livesRemaining" layoutX="700.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" AnchorPane.topAnchor="15.0">
                      <font>
                         <Font size="20.0" />
                      </font>

@@ -5,6 +5,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
 
+/**A Pickup is any LevelObject that is designed to be picked up by the Player.*/
 public class PickUp extends LevelObject {
 
 	public static enum PickUpType {

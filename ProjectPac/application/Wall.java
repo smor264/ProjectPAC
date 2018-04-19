@@ -176,7 +176,8 @@ public abstract class Wall extends LevelObject{
 		container.getChildren().add(model);
 	}
 	
-	
+	/**This function takes an array and a position and figures out what type of wall should be in this position.
+	 * These can then be passed into the Wall constructor to create a wall there.*/
 	public static Object[] determineWallType(int[][] array, int i, int j) {
 		boolean northNeighbour = false, southNeighbour = false, leftNeighbour = false, rightNeighbour = false;
 		try {

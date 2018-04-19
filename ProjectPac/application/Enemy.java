@@ -6,6 +6,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
 
+/**Enemy extends Character and adds support for AI types and storing next moves, etc.*/
 public class Enemy extends Character {
 
 	private ArrayList<Main.Direction> nextMoves;
@@ -152,9 +153,7 @@ public class Enemy extends Character {
 		}
 	}
 
-	/**
-	 * Updates the ambusher FSM. Reposition -> Ambush -> Chase -> Reposition ...
-	 * */
+	/** Updates the ambusher FSM. Reposition -> Ambush -> Chase -> Reposition ...*/
 	public void manageAmbusherFSM() {
 		switch(ambusherState) {
 			case AMBUSH:{
@@ -200,9 +199,10 @@ public class Enemy extends Character {
 		return ambusherState;
 	}
 	
+	/** Enemies have their characteristics encoded in a Level using prime factorisation.
+		 Every enemy is of the form 2^x * 3^y * 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used.*/
 	public static Object[] determineEnemyCharacteristics(int num) {
-		// Enemies have their characteristics encoded using prime factorisation.
-		// Every enemy is of the form 2^x x 3^y x 5^z, where the x is the intelligence, y is the behaviour, and z is the algorithm used
+		
 		Object[] array = new Object[3];
 
 		int twoExponent = 0;

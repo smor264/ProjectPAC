@@ -4,7 +4,7 @@ import java.io.File;
 
 import javafx.scene.media.AudioClip;
 
-
+/**The SoundController manages the playing of all sound in the game*/
 public class SoundController {
 	private String pelletPickupSoundString = "res/PelletPickup.wav";
 	private String powerPelletPickupSoundString = "res/PowerPelletPickup.wav";

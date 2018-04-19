@@ -6,6 +6,8 @@ import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+/**The laser class creates a bunch of rectangles when createNewLaser is called. 
+ * Laser also manages the animation of these rectangles throughout their lifetime.*/
 public class Laser {
 	private double width;
 	private double height;

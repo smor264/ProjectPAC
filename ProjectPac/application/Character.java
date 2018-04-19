@@ -1,11 +1,11 @@
 package application;
 
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Polygon;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
+/** Character implements further usability for LevelObjects that are designed to move.
+ * This includes recording the previously move direction, the ability to point the model in a particular direction
+ * Also includes a speed and start indices*/
 public abstract class Character extends LevelObject {
 
 	protected double speed = 2;
