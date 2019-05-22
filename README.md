@@ -1,6 +1,8 @@
 ﻿Project Pac: A Bite Out Of Time
 Project Pac is a action/adventure game based off the 1980 arcade game PAC-MAN from Namco. Project Pac adds a wide variety of levels, characters, abilities, and boosts to the original game format, as well as complicated ghost AI and a fun story.
 
+A Google slides presentation found [here](https://docs.google.com/presentation/d/1-i7ifvSSleP5qeVpaUZys5yurUHVeM7btUJ4UJAUhhw/edit?usp=sharing) shows off the game with videos of different characters abilities and new level designs.
+
 Requirements:
 Oracle Java 8 or equivalent
 JavaFX
